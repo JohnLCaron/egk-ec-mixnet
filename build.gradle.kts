@@ -11,6 +11,7 @@ repositories {
 
 dependencies {
     implementation(files("libs/egklib-jvm-2.0.3-SNAPSHOT.jar"))
+    implementation(libs.bundles.eglib)
     implementation(libs.bundles.logging)
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }

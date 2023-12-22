@@ -101,7 +101,7 @@ fun shuffleProof(
 
     val t = listOf(t_1, t_2, t_3, Pair(t_41, t_42), bold_t_hat)
     val y = listOf(ciphertexts, shuffled, bold_c, bold_c_hat, publicKey)
-    val c = getChallenge(y, t)
+    val c = getChallenge(group, y, t)
 
     // var r_bar = ZZ_q.sum(bold_r);
     val r_bar = with (group) { bold_r.addQ() }
@@ -141,26 +141,13 @@ fun shuffleProof(
     return ShuffleProof(c, s_1, s_2, s_3, s_4, bold_s_hat, bold_s_tilde, bold_c, bold_c_hat)
 }
 
-fun GroupContext.sumProd(term1: List<ElementModQ>, term2: List<ElementModQ>) : ElementModQ {
-    require(term1.size == term2.size)
-    val products = term1.mapIndexed { idx, it -> it * term2[idx] }
-    return with (this) { products.addQ()}
+fun getChallenges(n: Int, listOf: List<Any>): List<ElementModQ> {
+    return emptyList()
+
 }
 
-fun GroupContext.prodPow(term1: List<ElementModP>, exp: List<ElementModQ>) : ElementModP {
-    require(term1.size == exp.size)
-    val products = term1.mapIndexed { idx, it -> it powP exp[idx] }
-    return with (this) { products.multP()}
-}
-
-fun GroupContext.prod(terms: List<ElementModP>) : ElementModP {
-    return with (this) { terms.multP()}
-}
-
-fun GroupContext.prod(terms: List<ElementModQ>) : ElementModQ {
-    var result = this.ONE_MOD_Q
-    terms.forEach { result *= it }
-    return result
+fun getChallenge(group: GroupContext,y: List<Any>, t: List<Any>): ElementModQ {
+  return group.ONE_MOD_Q
 }
 
 data class ShuffleProof(

@@ -43,7 +43,7 @@ fun checkShuffleProof(
     // ALGORITHM
     val bold_h = getGenerators(group, N, U)
     val bold_u = getChallenges(N, listOf(bold_e, bold_e_tilde, bold_c, pk))
-    val c_hat_0: ElementModP = group.get_h() // TODO
+    val c_hat_0: ElementModP = group.ONE_MOD_P // group.get_h() // TODO
     // val c_bar = ZZPlus_p.divide(ZZPlus_p.prod(bold_c), ZZPlus_p.prod(bold_h))
     val c_bar = group.prod(bold_c) / group.prod(bold_h)
     val u = group.prod(bold_u)
@@ -69,6 +69,6 @@ fun checkShuffleProof(
 
     val t = listOf(t_1, t_2, t_3, Pair(t_41, t_42), bold_t_hat)
     val y = listOf(bold_e, bold_e_tilde, bold_c, bold_c_hat, pk)
-    val c_prime = getChallenge(y, t)
+    val c_prime = getChallenge(group, y, t)
     return c.equals(c_prime)
 }

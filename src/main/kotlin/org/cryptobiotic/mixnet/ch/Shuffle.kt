@@ -31,7 +31,16 @@ fun shuffle(
 // create random permutation of the list {0..n-1}
 fun permute(n: Int): List<Int> {
     val result = MutableList(n) { it }
-    result.shuffle(SecureRandom.getInstanceStrong()) // TODO secure ?? cache?
+    // result.shuffle(SecureRandom.getInstanceStrong())
+    return result
+}
+
+// create random permutation of the list {0..n-1}
+fun permuteInv(permute: List<Int>): IntArray {
+    val result = IntArray(permute.size)
+    for (idx in permute) {
+        result[permute[idx]] = idx
+    }
     return result
 }
 
