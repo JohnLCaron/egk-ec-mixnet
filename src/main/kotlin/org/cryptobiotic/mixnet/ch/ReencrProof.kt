@@ -36,12 +36,12 @@ fun reencrProof(
     ciphertexts: List<ElGamalCiphertext>, // ciphertexts = bold_e
     shuffled: List<ElGamalCiphertext>, // shuffled ciphertexts = bold_e_tilde
     nonces: List<ElementModQ>, // re-encryption nonces = bold_r_tilde
-    permutation: List<Int>, // permutation = psi
+    psi: Permutation, // permutation = psi
     publicKey: ElGamalPublicKey, // public key = pk
 ) : Pair<ElGamalCiphertext, ElGamalCiphertext> {
     val N = ciphertexts.size
     val bold_u = List(N) { group.randomElementModQ(minimum = 1) }
-    val bold_u_tilde = bold_u.mapIndexed { idx, _ -> bold_u[permutation[idx]]}
+    val bold_u_tilde = bold_u.mapIndexed { idx, _ -> bold_u[psi.of(idx)]}
 
     val left = prodPow(shuffled, bold_u_tilde)
 
@@ -53,20 +53,17 @@ fun reencrProof(
     return Pair(right, left)
 }
 
+// 5.2,4. Cant use directly, because this knows the permutation
 fun permuteProof(
     group: GroupContext,
     U: String,  // election event identifier
     ciphertexts: List<ElGamalCiphertext>, // ciphertexts = bold_e
-    shuffled: List<ElGamalCiphertext>, // shuffled ciphertexts = bold_e_tilde
-    // nonces: List<ElementModQ>, // re-encryption nonces = bold_r_tilde
-    permutation: List<Int>, // permutation = psi
-    publicKey: ElGamalPublicKey, // public key = pk
-) {
+    psi: Permutation, // permutation = psi
+): Pair<ElementModP, ElementModP> {
     val N = ciphertexts.size
 
-    val generators = getGenerators(group, N, U) // List<ElementModP> = bold_h
-    val (bold_c, bold_r) = permutationCommitment(group, permutation, generators) // 2) Pair<List<ElementModP>, List<ElementModQ>>
-
+    val (h, generators) = getGenerators(group, N, U) // List<ElementModP> = bold_h
+    val (bold_c, bold_r) = permutationCommitment(group, psi, generators) // 2) Pair<List<ElementModP>, List<ElementModQ>>
 
     // 5.2
     val prodC = with (group) { bold_c.multP() }
@@ -75,7 +72,7 @@ fun permuteProof(
     require( prodC == group.gPowP(sumR) * prodH)
 
     val bold_u = List(N) { group.randomElementModQ(minimum = 1) }
-    val bold_u_tilde = bold_u.mapIndexed { idx, _ -> bold_u[permutation[idx]]}
+    val bold_u_tilde = bold_u.mapIndexed { idx, _ -> bold_u[psi.of(idx)]}
 
     // 5.3
     val prodU = bold_u.multQ()
@@ -88,4 +85,5 @@ fun permuteProof(
     val right1 = group.gPowP(sumRprod)
     val right2 = group.prodPow(generators, bold_u_tilde)
     require( left == right1 * right2)
+    return Pair(left, right1 * right2)
 }

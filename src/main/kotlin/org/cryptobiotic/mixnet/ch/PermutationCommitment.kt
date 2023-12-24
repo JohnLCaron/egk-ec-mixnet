@@ -13,37 +13,23 @@ import electionguard.core.randomElementModQ
 // Com(bj, rj) = g^rj * hi , for i = ψ-1(j)
 // see 5.2, Pedersen commitments
 fun permutationCommitment(group: GroupContext,
-                          psi: List<Int>,
+                          psi: Permutation,
                           bold_h: List<ElementModP>) : Pair<List<ElementModP>, List<ElementModQ>> {
 
-    val N = psi.size
-    val bold_c = MutableList(N) { group.ZERO_MOD_P }
-    val bold_r = MutableList(N) { group.ZERO_MOD_Q }
+    val bold_c = MutableList(psi.n) { group.ZERO_MOD_P }
+    val bold_r = MutableList(psi.n) { group.ZERO_MOD_Q }
 
     // ALGORITHM
-    repeat(N) { idx ->
-        val j_i = psi[idx]
-        val r_j_i = group.randomElementModQ(minimum = 1)
+    repeat(psi.n) { idx ->
+        val jdx = psi.of(idx)
+        val rj = group.randomElementModQ(minimum = 1)
 
         // val c_j_i: Unit = ZZPlus_p.multiply(ZZPlus_p.pow(g, r_j_i), bold_h.getValue(i))
-        val c_j_i = group.gPowP(r_j_i) * bold_h[idx]
+        val cj = group.gPowP(rj) * bold_h[idx]
 
         // claim that they are both permuted
-        bold_r[j_i] = r_j_i
-        bold_c[j_i] = c_j_i
+        bold_r[jdx] = rj
+        bold_c[jdx] = cj
     }
-
-    val bold_c2 = MutableList(N) { group.ZERO_MOD_P }
-    val invers = permuteInv(psi)
-
-    // ALGORITHM
-    repeat(N) { jdx ->
-        val idx = invers[jdx]
-        val rj = bold_r[jdx]
-        val cji = group.gPowP(rj) * bold_h[idx]
-
-        bold_c2[jdx] = cji
-    }
-
     return Pair(bold_c, bold_r)
 }

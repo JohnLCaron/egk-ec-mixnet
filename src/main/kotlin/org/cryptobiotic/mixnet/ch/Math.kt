@@ -43,3 +43,16 @@ fun List<ElementModQ>.multQ(): ElementModQ {
 
     return this.reduce { a, b -> (a * b) }
 }
+
+fun List<ElementModQ>.sumQ(): ElementModQ {
+    // TODO why not return 1 ?
+    if (this.isEmpty()) {
+        throw ArithmeticException("multP not defined on empty lists")
+    }
+
+    if (this.count() == 1) {
+        return this[0]
+    }
+
+    return this.reduce { a, b -> (a + b) }
+}

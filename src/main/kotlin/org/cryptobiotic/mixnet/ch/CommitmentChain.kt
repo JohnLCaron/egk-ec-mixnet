@@ -7,15 +7,13 @@ import electionguard.core.randomElementModQ
 
 //  * ALGORITHM 8.47
 fun committmentChain(group: GroupContext,
-                      bold_u_tilde: List<ElementModQ> // Permuted public challenges
+                     h: ElementModP, // another generator besides g
+                     bold_u_tilde: List<ElementModQ> // Permuted public challenges
 ): Pair<List<ElementModP>, List<ElementModQ>> {
 
-    val h: ElementModP = group.ONE_MOD_P // params.get_h() // TODO what is h in our group?
-
     val N = bold_u_tilde.size
-    // var builder_bold_c_hat = new Vector.Builder<BigInteger>(1, N); TODO one based?
     val bold_c_hat = mutableListOf<ElementModP>()
-    val bold_r_hat = mutableListOf <ElementModQ>()
+    val bold_r_hat = mutableListOf<ElementModQ>()
 
     var R_i_minus_1 = group.ZERO_MOD_Q
     var U_i_minus_1 = group.ONE_MOD_Q

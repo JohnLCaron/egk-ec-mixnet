@@ -3,11 +3,11 @@ package org.cryptobiotic.mixnet
 import electionguard.core.*
 import org.cryptobiotic.mixnet.ch.*
 import org.junit.jupiter.api.Test
-import java.security.SecureRandom
 import kotlin.random.Random
 import kotlin.test.assertEquals
 
-class ShuffleTest {
+// Run the tests 5.2-5.5 in section 5.5
+class Section55Test {
     @Test
     fun check() {
         val group = productionGroup()
@@ -19,7 +19,7 @@ class ShuffleTest {
     }
 
     @Test
-    fun testShuffle() {
+    fun testSection55() {
         val group = productionGroup()
         val keypair = elGamalKeyPairFromRandom(group)
         val N = 3
@@ -30,7 +30,7 @@ class ShuffleTest {
             ciphertexts.add(message.encrypt(keypair))
         }
 
-        val (shuffled, nonces, permutation) = shuffle(
+        val (shuffled, nonces, psi) = shuffle(
             ciphertexts, keypair.publicKey
         )
 
@@ -51,18 +51,18 @@ class ShuffleTest {
             ciphertexts,
             shuffled,
             nonces,
-            permutation,
+            psi,
             keypair,
         )
 
         val (right, left) = reencrProof(
-                group,
-                ciphertexts,
-                shuffled,
-                nonces,
-                permutation,
-                keypair.publicKey,
-            )
+            group,
+            ciphertexts,
+            shuffled,
+            nonces,
+            psi,
+            keypair.publicKey,
+        )
 
         //println("left = $left")
         //println("right = $right")
@@ -72,9 +72,7 @@ class ShuffleTest {
             group,
             "permuteProof",
             ciphertexts,
-            shuffled,
-            permutation,
-            keypair.publicKey,
+            psi,
         )
 
     }
@@ -113,12 +111,11 @@ fun shuffleCheck(
     ciphertexts: List<ElGamalCiphertext>, // ciphertexts = bold_e
     shuffled: List<ElGamalCiphertext>, // shuffled ciphertexts = bold_e_tilde
     nonces: List<ElementModQ>, // re-encryption nonces = bold_r_tilde
-    permutation: List<Int>, // permutation = psi
+    psi: Permutation, // permutation = psi
     keypair: ElGamalKeypair, // public key = pk
 ) {
-    val permuteInv = permuteInv(permutation)
     ciphertexts.forEachIndexed { idx, it ->
-        val other = shuffled[permuteInv[idx]]
+        val other = shuffled[psi.inverse.of(idx)]
         val ratio = makeCiphertextRatio(it, other)
         val M = ratio.pad powP keypair.secretKey.key // M = A ^ s, spec 2.0.0, eq 66
         val bOverM = ratio.data / M
