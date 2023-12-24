@@ -70,7 +70,7 @@ class MathTest {
 
         val a_tilde = group.prodPow(bold_e.map{ it.data }, bold_u)
         println("a_tilde = ${a_tilde}")
-        val t_41p = (pk powP proof.s4).multInv() * (a_tilde powP proof.challenge) * group.prodPow(bold_e_tilde.map{ it.data }, proof.bold_s_tilde)
+        val t_41p = (pk powP proof.s4).multInv() * (a_tilde powP proof.c) * group.prodPow(bold_e_tilde.map{ it.data }, proof.bold_s_tilde)
         println("t_41p = ${t_41p}")
 
         assertEquals(t_41, t_41p)
