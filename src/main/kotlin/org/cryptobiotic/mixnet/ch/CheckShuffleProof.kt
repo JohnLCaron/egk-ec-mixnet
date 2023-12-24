@@ -20,19 +20,6 @@ fun checkShuffleProof(
 
     val N = bold_e.size
     // TODO check set membership
-    /* Precondition.check(Set.UCS_star.contains(U))
-    Precondition.check(
-        Set.Quadruple(
-            ZZ_twoToTheTau,
-            Set.Sextuple(ZZ_q, ZZ_q, ZZ_q, ZZ_q, Set.List(ZZ_q, N), Set.List(ZZ_q, N)),
-            Set.List(ZZPlus_p, N),
-            Set.List(ZZPlus_p, N)
-        ).contains(pi)
-    )
-    Precondition.check(Set.List(Set.Pair(ZZPlus_p, ZZPlus_p), N).contains(bold_e))
-    Precondition.check(Set.List(Set.Pair(ZZPlus_p, ZZPlus_p), N).contains(bold_e_tilde))
-    Precondition.check(ZZPlus_p.contains(pk))
-     */
 
     val challenge = shuffleProof.challenge
     val s_1 = shuffleProof.s1
@@ -83,12 +70,6 @@ fun checkShuffleProof(
 
     val t = listOf(t_1, t_2, t_3, t_41, t_42, bold_t_hat)
     if (debug) {
-        println("ShuffleProof")
-        println(" t_41= ${shuffleProof.t_41.toStringShort()}")
-        println("   a_tilde= ${a_tilde}")
-        println("   bold_s_tilde= ${bold_s_tilde}")
-        println("   s4= ${shuffleProof.s4}")
-
         println("CheckShuffleProof")
         println(" t_1 = ${t_1.toStringShort()}")
         println(" t_2 = ${t_2.toStringShort()}")

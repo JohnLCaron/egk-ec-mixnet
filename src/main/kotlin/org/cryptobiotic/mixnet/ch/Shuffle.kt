@@ -3,6 +3,10 @@ package org.cryptobiotic.mixnet.ch
 import electionguard.core.*
 import java.security.SecureRandom
 
+/**
+ * Shuffle and reencrypt a list of ElGamalCiphertext.
+ * return reencryptions, nonces, permutation
+ */
 fun shuffle(
     ciphertext: List<ElGamalCiphertext>,
     publicKey: ElGamalPublicKey,
@@ -34,7 +38,6 @@ class Permutation(val psi: IntArray) {
         }
         Permutation(result)
     }
-
     fun of(idx:Int) = psi[idx]
 
     companion object {
@@ -44,7 +47,6 @@ class Permutation(val psi: IntArray) {
             return Permutation(result.toIntArray())
         }
     }
-
 }
 
 //  corresponds to ALGORITHM 8.44. Note that a and b are flipped in ElGamalCiphertext

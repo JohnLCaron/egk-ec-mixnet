@@ -27,8 +27,6 @@ fun shuffleProofPrep(
     //  4. let ubold_tilde = permute(ubold) = { ũi }
     val ubold = getChallenges(group, N, listOf(ciphertexts, shuffled, cbold, publicKey)) // 4) List<ElementModP> challenges = bold_u
     val ubold_tilde: List<ElementModQ> = List(N) { ubold[psi.of(it)] } // 5) permuted challenges = bold_u_tilde
-    //println("prep   uprod = ${group.prod(ubold)}")
-    //println(" uprod+tilde = ${group.prod(ubold_tilde)}")
 
     //  5. Pick random rbold_hat in Zq = { r̂i }
     //  6. compute cbold_hat = { ĉi }, ĉi = g^r̂i * ĉ_i-1^ũi, ĉ0 = h
@@ -39,7 +37,8 @@ fun shuffleProofPrep(
     //  9. rtilde_u = Sumi(rbti * ui) = r̃, where rbti are the reincryption nonces =
     val rbar = rbold.sumQ()
     val r_u = group.sumProd(rbold, ubold)
-    // var r_tilde = ZZ_q.sumProd(bold_r_tilde, bold_u);
+
+    // NOT var r_tilde = ZZ_q.sumProd(bold_r_tilde, bold_u);
     // NOT val rtilde_u = group.sumProd(rbold_tilde, ubold)
     val rtilde_u = group.sumProd(rbold_tilde, ubold_tilde) // only used in s4
 
@@ -84,7 +83,6 @@ data class ShuffleProofPrep(
 
     val rbold_hat: List<ElementModQ>, // r̂bold
     val ubold_tilde: List<ElementModQ>, // ũ permuted challenges
-
     val cbold_hat: List<ElementModP>, // ĉbold
 )
 
@@ -99,7 +97,6 @@ data class ShuffleProofPrep(
 //     4.   ẽ = Prod(ej^uj) = (a_tilde, b_tilde)
 //     5.   ĉbold = { ĉi } = cbold_hat
 // which can be derived from the public inputs e, ẽ, c, ĉ, and pk (and from u, which is derived from e, ẽ, and c).
-
 
 // GenShuffleProof(U, e, ẽ, r̃, ψ, pk) = (event_id, ciphertextx, shuffled, rbold_tilde, permutation, publicKey)
 fun shuffleProof(
@@ -213,12 +210,14 @@ fun shuffleProof(
         val s_tilde_i = bold_omega_tilde[i] - c * prep.ubold_tilde[i]
         bold_s_tilde.add(s_tilde_i)
     }
-    val proof = ShuffleProof(c, s_1, s_2, s_3, s_4, bold_s_hat, bold_s_tilde, prep.cbold, prep.cbold_hat, t_41)
+    val proof = ShuffleProof(c, s_1, s_2, s_3, s_4, bold_s_hat, bold_s_tilde, prep.cbold, prep.cbold_hat)
 
-    val a_tilde : ElementModP = group.prodPow(ciphertexts.map { it.data }, prep.ubold)
-    val t_41p = (a_tilde powP c) * group.prodPow(shuffled.map { it.data }, bold_s_tilde) / (publicKey powP s_4)
-    println(" t_41p= ${t_41p.toStringShort()}")
-    require(t_41 == t_41p)
+    if (debug) {
+        val a_tilde: ElementModP = group.prodPow(ciphertexts.map { it.data }, prep.ubold)
+        val t_41p = (a_tilde powP c) * group.prodPow(shuffled.map { it.data }, bold_s_tilde) / (publicKey powP s_4)
+        println(" t_41p= ${t_41p.toStringShort()}")
+        require(t_41 == t_41p)
+    }
 
     return Pair(prep, proof)
 }
@@ -233,5 +232,4 @@ data class ShuffleProof(
     val bold_s_tilde: List<ElementModQ>,
     val cbold: List<ElementModP>,
     val cbold_hat: List<ElementModP>,
-    val t_41: ElementModP
 )

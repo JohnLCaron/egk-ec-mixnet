@@ -5,7 +5,8 @@ import electionguard.core.GroupContext
 import electionguard.core.toElementModQ
 
 //  simplified (for now) version of ALGORITHM 8.4, 8.5
-//  must be deterministic, so checkProof gets exactly the same
+//  must be deterministic, so CheckProof gets exactly the same results
+
 fun getChallenges(group: GroupContext, n: Int, y: Any): List<ElementModQ> {
     val bold_c = mutableListOf<ElementModQ>()
     val key = "getChallenges".encodeToByteArray()

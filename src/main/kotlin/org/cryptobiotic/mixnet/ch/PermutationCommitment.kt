@@ -12,12 +12,17 @@ import electionguard.core.randomElementModQ
 // Com(phi, r) = ( Com(b1, r1), Com(b2, r2),  ... Com(bN, r1N) )
 // Com(bj, rj) = g^rj * hi , for i = ψ-1(j)
 // see 5.2, Pedersen commitments
+
+/**
+ * Create commitments to the given permutation.
+ * return (commitments, nonces)
+ */
 fun permutationCommitment(group: GroupContext,
                           psi: Permutation,
                           bold_h: List<ElementModP>) : Pair<List<ElementModP>, List<ElementModQ>> {
 
-    val bold_c = MutableList(psi.n) { group.ZERO_MOD_P }
-    val bold_r = MutableList(psi.n) { group.ZERO_MOD_Q }
+    val commitments = MutableList(psi.n) { group.ZERO_MOD_P }
+    val nonces = MutableList(psi.n) { group.ZERO_MOD_Q }
 
     // ALGORITHM
     repeat(psi.n) { idx ->
@@ -27,9 +32,8 @@ fun permutationCommitment(group: GroupContext,
         // val c_j_i: Unit = ZZPlus_p.multiply(ZZPlus_p.pow(g, r_j_i), bold_h.getValue(i))
         val cj = group.gPowP(rj) * bold_h[idx]
 
-        // claim that they are both permuted
-        bold_r[jdx] = rj
-        bold_c[jdx] = cj
+        nonces[jdx] = rj
+        commitments[jdx] = cj
     }
-    return Pair(bold_c, bold_r)
+    return Pair(commitments, nonces)
 }

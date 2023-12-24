@@ -1,6 +1,7 @@
-package org.cryptobiotic.mixnet.ch
+package org.cryptobiotic.mixnet
 
 import electionguard.core.*
+import org.cryptobiotic.mixnet.ch.*
 
 /* The second fundamental idea of Wikström’s proof.
 

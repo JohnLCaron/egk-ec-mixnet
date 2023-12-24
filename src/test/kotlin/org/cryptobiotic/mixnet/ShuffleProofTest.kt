@@ -4,7 +4,6 @@ import electionguard.core.*
 import org.cryptobiotic.mixnet.ch.*
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 // Run the tests 5.2-5.5 in section 5.5
@@ -24,7 +23,6 @@ class ShuffleProofTest {
         val (shuffled, nonces, permutation) = shuffle(
             ciphertexts, keypair.publicKey
         )
-
 
         val (prep, proof) = shuffleProof(
             group,
