@@ -223,7 +223,7 @@ fun shuffleProof(
 }
 
 data class ShuffleProof(
-    val challenge: ElementModQ,
+    val c: ElementModQ,
     val s1: ElementModQ,
     val s2: ElementModQ,
     val s3: ElementModQ,
