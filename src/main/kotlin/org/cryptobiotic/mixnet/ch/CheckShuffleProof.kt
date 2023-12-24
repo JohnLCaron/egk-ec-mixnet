@@ -11,14 +11,16 @@ fun checkShuffleProof(
     proof: ShuffleProof,
     h: ElementModP,
     bold_h: List<ElementModP>, // generators
-    bold_e: List<ElGamalCiphertext>, // ciphertexts
-    bold_e_tilde: List<ElGamalCiphertext>, // shuffled
+    ballots: List<MultiText>, // ciphertexts
+    shuffledBallots: List<MultiText>, // shuffled
 ): Boolean {
 
-    val N = bold_e.size
+    val N = ballots.size
     // TODO check set membership
 
-    val bold_u = getChallenges(group, N, listOf(bold_e, bold_e_tilde, proof.cbold, pk))
+    val ciphertexts = ballots.flatMap { it.ciphertexts }
+    val shuffled = shuffledBallots.flatMap { it.ciphertexts }
+    val bold_u = getChallenges(group, N, listOf(ciphertexts, shuffled, proof.cbold, pk))
     val u = group.prod(bold_u)
 
     // val c_bar = ZZPlus_p.divide(ZZPlus_p.prod(bold_c), ZZPlus_p.prod(bold_h))
@@ -27,8 +29,8 @@ fun checkShuffleProof(
     val c_hat = proof.cbold_hat[N - 1] / (h powP u)
 
     val c_tilde = group.prodPow(proof.cbold, bold_u)
-    val a_tilde : ElementModP = group.prodPow(bold_e.map { it.data }, bold_u)
-    val b_tilde = group.prodPow(bold_e.map { it.pad }, bold_u)
+    val a_tilde : ElementModP = group.prodPowA(ballots, bold_u)
+    val b_tilde = group.prodPowB(ballots, bold_u)
 
     val bold_t_hat = mutableListOf<ElementModP>()
     repeat(N) { i ->
@@ -39,11 +41,26 @@ fun checkShuffleProof(
     val t_1 = (c_bar powP proof.c) * group.gPowP(proof.s1)
     val t_2 = (c_hat powP proof.c) * group.gPowP(proof.s2)
     val t_3 = (c_tilde powP proof.c) * (group.gPowP(proof.s3) * group.prodPow(bold_h, proof.bold_s_tilde))
-    val t_41 = (a_tilde powP proof.c) * group.prodPow(bold_e_tilde.map { it.data }, proof.bold_s_tilde) / (pk powP proof.s4)
-    val t_42 = (b_tilde powP proof.c) * group.prodPow(bold_e_tilde.map { it.pad }, proof.bold_s_tilde) / group.gPowP(proof.s4)
+    val t_41 = (a_tilde powP proof.c) * group.prodPowA(shuffledBallots, proof.bold_s_tilde) / (pk powP proof.s4)
+    val t_42 = (b_tilde powP proof.c) * group.prodPowB(shuffledBallots, proof.bold_s_tilde) / group.gPowP(proof.s4)
 
     val t = listOf(t_1, t_2, t_3, t_41, t_42, bold_t_hat)
-    val y = listOf(bold_e, bold_e_tilde, proof.cbold, proof.cbold_hat, pk)
+    if (debug) {
+        println("ShuffleProof")
+        println("   a_tilde= ${a_tilde}")
+        println("   bold_s_tilde= ${proof.bold_s_tilde}")
+        println("   s4= ${proof.s4}")
+
+        println("CheckShuffleProof")
+        println(" t_1 = ${t_1.toStringShort()}")
+        println(" t_2 = ${t_2.toStringShort()}")
+        println(" t_3 = ${t_3.toStringShort()}")
+        println(" t_41= ${t_41.toStringShort()}")
+        println(" t_42= ${t_42.toStringShort()}")
+        bold_t_hat.forEachIndexed { idx, it -> println(" bt_${idx} = ${it.toStringShort()}") }
+    }
+
+    val y = listOf(ciphertexts, shuffled, proof.cbold, proof.cbold_hat, pk)
     val challenge_prime = getChallenge(group, y, t)
 
     return proof.c.equals(challenge_prime)
