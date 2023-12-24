@@ -3,45 +3,48 @@ package org.cryptobiotic.mixnet.ch
 import electionguard.core.*
 import java.security.SecureRandom
 
-//  ALGORITHM 8.42 analogue
 fun shuffle(
     ciphertext: List<ElGamalCiphertext>,
     publicKey: ElGamalPublicKey,
-): Triple<List<ElGamalCiphertext>, List<ElementModQ>, List<Int>> {
+): Triple<List<ElGamalCiphertext>, List<ElementModQ>, Permutation> {
 
     // TODO check set membership
-    // require(Set.Vector(Set.Pair(ZZPlus_p, ZZPlus_p), N).contains(bold_e))
-    // require(ZZPlus_p.contains(pk))
 
     val reencryptions = mutableListOf<ElGamalCiphertext>()
     val nonces = mutableListOf<ElementModQ>()
 
     // ALGORITHM
     val n = ciphertext.size
-    val permutation = permute(n)
+    val psi = Permutation.random(n)
     repeat(n) { idx ->
-        val permuteIdx = permutation[idx]
+        val permuteIdx = psi.of(idx)
         val (reencrypt, nonce) = ciphertext[permuteIdx].reencrypt(publicKey)
         reencryptions.add(reencrypt)
         nonces.add(nonce)
     }
-    return Triple(reencryptions, nonces, permutation)
+    return Triple(reencryptions, nonces, psi)
 }
 
-// create random permutation of the list {0..n-1}
-fun permute(n: Int): List<Int> {
-    val result = MutableList(n) { it }
-    // result.shuffle(SecureRandom.getInstanceStrong())
-    return result
-}
-
-// create random permutation of the list {0..n-1}
-fun permuteInv(permute: List<Int>): IntArray {
-    val result = IntArray(permute.size)
-    for (idx in permute) {
-        result[permute[idx]] = idx
+class Permutation(val psi: IntArray) {
+    val n = psi.size
+    val inverse: Permutation by lazy {
+        val result = IntArray(n)
+        for (idx in psi) {
+            result[psi[idx]] = idx
+        }
+        Permutation(result)
     }
-    return result
+
+    fun of(idx:Int) = psi[idx]
+
+    companion object {
+        fun random(n: Int) : Permutation{
+            val result = MutableList(n) { it }
+            result.shuffle(SecureRandom.getInstanceStrong())
+            return Permutation(result.toIntArray())
+        }
+    }
+
 }
 
 //  corresponds to ALGORITHM 8.44. Note that a and b are flipped in ElGamalCiphertext
