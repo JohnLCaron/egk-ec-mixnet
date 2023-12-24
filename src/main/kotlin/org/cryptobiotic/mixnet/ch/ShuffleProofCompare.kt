@@ -2,50 +2,46 @@ package org.cryptobiotic.mixnet.ch
 
 import electionguard.core.*
 
-private val debug1 = false
+private val debug1 = true
 private val debug2 = false
 
-fun shuffleProofPrep(
+fun shuffleProofPrepCompare(
     group: GroupContext,
-    U: String,  // election event identifier
+    prep: ShuffleProofPrep,
     publicKey: ElGamalPublicKey, // public key = pk
 
     psi: Permutation, // permutation = psi
-    ballots: List<MultiText>, // ciphertexts = bold_e
-    shuffledBallots: List<MultiText>, // shuffled ciphertexts = bold_e_tilde
+    ciphertexts: List<ElGamalCiphertext>, // ciphertexts = bold_e
+    shuffled: List<ElGamalCiphertext>, // shuffled ciphertexts = bold_e_tilde
     rbold_tilde: List<ElementModQ>, // re-encryption nonces = bold_r_tilde - { rbti }
 ): ShuffleProofPrep {
-    require(psi.n == ballots.size)
-    val N = ballots.size
-    val (h, generators) = getGenerators(group, N, U) // ElementModP = h, List<ElementModP> = bold_h
-
-    // To summarize the preparatory work for the proof generation:
-    //  1. Pick random rbold = (r1 , . . . , rN) in Zq = { ri }
-    //  2. compute cbold = PermuteCommit(ψ, rbold) = { ci }
-    val (cbold, rbold) = permutationCommitment(group, psi, generators) // 2) Pair<List<ElementModP>, List<ElementModQ>>
+    // require(psi.n == ciphertexts.size)
+    val N = ciphertexts.size
 
     //  3. compute ubold = Hash((e, ẽ, c), i) = { ui }
     //  4. let ubold_tilde = permute(ubold) = { ũi }
-    val ciphertexts = ballots.flatMap { it.ciphertexts }
-    val shuffled = shuffledBallots.flatMap { it.ciphertexts }
-    val ubold = getChallenges(group, N, listOf(ciphertexts, shuffled, cbold, publicKey)) // 4) List<ElementModP> challenges = bold_u
-    val ubold_tilde: List<ElementModQ> = List(N) { ubold[psi.of(it)] } // 5) permuted challenges = bold_u_tilde
+    //val ubold = getChallenges(group, N, listOf(ciphertexts, shuffled, prep.cbold, publicKey)) // 4) List<ElementModP> challenges = bold_u
+    //require(ubold == prep.ubold)
+    //val ubold_tilde: List<ElementModQ> = List(N) { ubold[psi.of(it)] } // 5) permuted challenges = bold_u_tilde
+    //require(ubold_tilde == prep.ubold_tilde)
 
     //  5. Pick random rbold_hat in Zq = { r̂i }
     //  6. compute cbold_hat = { ĉi }, ĉi = g^r̂i * ĉ_i-1^ũi, ĉ0 = h
-    val (cbold_hat, rbold_hat) = committmentChain(group, h, ubold_tilde) // 7) Pair<List<ElementModP>, List<ElementModQ>>
+    // val (cbold_hat, rbold_hat) = committmentChain(group, prep.h, ubold_tilde) // 7) Pair<List<ElementModP>, List<ElementModQ>>
+    val ubold = prep.ubold
+    val ubold_tilde = prep.ubold_tilde
+    val cbold_hat= prep.cbold_hat
+    val rbold_hat = prep.rbold_hat
 
     //  7. rbar = Sumi(ri) = r̄
     //  8. r_u = Sumi(ri * ui) = r
     //  9. rtilde_u = Sumi(rbti * ui) = r̃, where rbti are the reincryption nonces =
-    val rbar = rbold.sumQ()
-    val r_u = group.sumProd(rbold, ubold)
+    val rbar = prep.rbold.sumQ()
+    val r_u = group.sumProd(prep.rbold, ubold)
 
     // NOT var r_tilde = ZZ_q.sumProd(bold_r_tilde, bold_u);
     // NOT val rtilde_u = group.sumProd(rbold_tilde, ubold)
-    val width = ballots[0].ciphertexts.size
-    // note here where the didth comes in
-    val rtilde_u = width.toElementModQ(group) * group.sumProd(rbold_tilde, ubold_tilde) // only used in s4
+    val rtilde_u = group.sumProd(rbold_tilde, ubold_tilde) // only used in s4
 
     //  10. rhat_utilde = Sumi(r̂i * (Prodj(ũj), j=i+1..N), i=1..N) = r̂
     val bold_v = MutableList(N) { group.ZERO_MOD_Q }
@@ -56,11 +52,11 @@ fun shuffleProofPrep(
     }
     val rhat_utilde = group.sumProd(rbold_hat, bold_v)
 
-    return ShuffleProofPrep(
-        h,
-        generators,
-        cbold,
-        rbold,
+    val prep1 = ShuffleProofPrep(
+        prep.h,
+        prep.generators,
+        prep.cbold,
+        prep.rbold,
         ubold,
 
         rbar = rbar,
@@ -72,24 +68,10 @@ fun shuffleProofPrep(
         ubold_tilde = ubold_tilde,
         cbold_hat = cbold_hat,
     )
+
+    require(prep == prep1)
+    return prep
 }
-
-data class ShuffleProofPrep(
-    val h: ElementModP,
-    val generators: List<ElementModP>,
-    val cbold: List<ElementModP>, // permutation commitment
-    val rbold: List<ElementModQ>, // permutation nonce
-    val ubold: List<ElementModQ>, // challenges = hash(stuff)
-
-    val rbar: ElementModQ, // r̄ = Sum(rbold)
-    val r_u: ElementModQ, // r = Sum(rbold*ubold)
-    val rtilde_u: ElementModQ, // r̃ = Sum(rbold_tilde*ubold)
-    val rhat_utilde: ElementModQ, // r̂ = Sum(rbold*ubold)
-
-    val rbold_hat: List<ElementModQ>, // r̂bold
-    val ubold_tilde: List<ElementModQ>, // ũ permuted challenges
-    val cbold_hat: List<ElementModP>, // ĉbold
-)
 
 // we have a homomorphic one-way function φ : X -> Y
 //   secret values x = (r̄, r̂, r, r̃, r̂bold, ũ) = (rbar, rhat_utilde, r_u, rbt_u, rbold_hat, ubold_tilde)
@@ -104,20 +86,19 @@ data class ShuffleProofPrep(
 // which can be derived from the public inputs e, ẽ, c, ĉ, and pk (and from u, which is derived from e, ẽ, and c).
 
 // GenShuffleProof(U, e, ẽ, r̃, ψ, pk) = (event_id, ciphertextx, shuffled, rbold_tilde, permutation, publicKey)
-fun shuffleProof(
+fun shuffleProofCompare(
     group: GroupContext,
-    U: String,  // election event identifier
+    prep: ShuffleProofPrep,
+    proof: ShuffleProof,
     publicKey: ElGamalPublicKey, // public key = pk
     psi: Permutation, // permutation = psi
-    ballots: List<MultiText>, // ciphertexts = bold_e
-    shuffledBallots: List<MultiText>, // shuffled ciphertexts = bold_e_tilde
+    ciphertexts: List<ElGamalCiphertext>, // ciphertexts = bold_e
+    shuffled: List<ElGamalCiphertext>, // shuffled ciphertexts = bold_e_tilde
     nonces: List<ElementModQ>, // re-encryption nonces = rbold_tilde
-): Pair<ShuffleProofPrep, ShuffleProof> {
-    val prep = shuffleProofPrep(group, U, publicKey, psi, ballots,  shuffledBallots, nonces)
-    val N = ballots.size
+) {
+    // val prep = shuffleProofPrepCompare(group, prep, publicKey, psi, ciphertexts,  shuffled, nonces)
+    val N = psi.n
 
-    val bold_omega_hat = mutableListOf<ElementModQ>()
-    val bold_omega_tilde = mutableListOf<ElementModQ>()
     val bold_R_prime = mutableListOf<ElementModQ>()
     val bold_U_prime = mutableListOf<ElementModQ>()
     val bold_t_hat = mutableListOf<ElementModP>()
@@ -126,8 +107,8 @@ fun shuffleProof(
     var R_i_minus_1 = group.ZERO_MOD_Q
     var U_i_minus_1 = group.ONE_MOD_Q
     repeat (N) { i ->
-        val omega_hat_i: ElementModQ = group.randomElementModQ(minimum = 1)
-        val omega_tilde_i: ElementModQ = group.randomElementModQ(minimum = 1)
+        val omega_hat_i: ElementModQ = proof.bold_omega_hat[i]
+        val omega_tilde_i: ElementModQ = proof.bold_omega_tilde[i]
 
         // Ri  = r̂i + ũi * Ri-1 mod q
         // var R_i = ZZ_q.add(bold_r_hat.getValue(i), ZZ_q.multiply(bold_u_tilde.getValue(i), R_i_minus_1));
@@ -145,8 +126,6 @@ fun shuffleProof(
         // var U_prime_i = ZZ_q.multiply(omega_tilde_i, U_i_minus_1);
         val U_prime_i = omega_tilde_i * U_i_minus_1
 
-        bold_omega_hat.add(omega_hat_i)
-        bold_omega_tilde.add(omega_tilde_i)
         bold_R_prime.add(R_prime_i)
         bold_U_prime.add(U_prime_i)
 
@@ -160,25 +139,25 @@ fun shuffleProof(
         U_i_minus_1 = U_i // preparation for next loop cycle
     }
 
-    val omega_1: ElementModQ = group.randomElementModQ(minimum = 1)
+    val omega_1: ElementModQ = proof.omega[0]
     val t_1 = group.gPowP(omega_1) // 19) t1 ← g^ω1 mod p
-    val omega_2: ElementModQ = group.randomElementModQ(minimum = 1)
+    val omega_2: ElementModQ = proof.omega[1]
     val t_2 = group.gPowP(omega_2) // 20) t2 ← g^ω2 mod p
 
     // (21) t3 ← g^ω3 * Prod( hi^ωi' )
     //  var t_3 = ZZPlus_p.multiply(ZZPlus_p.pow(g, omega_3), ZZPlus_p.prodPow(bold_h, bold_omega_tilde));
-    val omega_3: ElementModQ = group.randomElementModQ(minimum = 1)
-    val t_3 = group.gPowP(omega_3) * group.prodPow(prep.generators, bold_omega_tilde)
+    val omega_3: ElementModQ = proof.omega[2]
+    val t_3 = group.gPowP(omega_3) * group.prodPow(prep.generators, proof.bold_omega_tilde)
 
     // t_41 = pk^-ω4 * Prod(ãi^ω̃i')
     // var t_41 = ZZPlus_p.multiply(ZZPlus_p.invert(ZZPlus_p.pow(pk, omega_4)),
     //          ZZPlus_p.prodPow(bold_e_tilde.map(Encryption::get_a), bold_omega_tilde)); // a = pk^eps term
-    val omega_4 : ElementModQ = group.randomElementModQ(minimum = 1)
-    val t_41 = group.prodPowA( shuffledBallots, bold_omega_tilde) / (publicKey powP omega_4)
+    val omega_4 : ElementModQ = proof.omega[3]
+    val t_41 = group.prodPow( shuffled.map{ it.data } , proof.bold_omega_tilde) / (publicKey powP omega_4)
     if (debug1) {
-        println("ShuffleProof t_41")
-        println(" bold_omega_tilde = ${bold_omega_tilde}")
-        println(" prodPowA = ${group.prodPowA( shuffledBallots, bold_omega_tilde, true).toStringShort()}")
+        println("ShuffleProofCompare t_41")
+        println(" bold_omega_tilde = ${proof.bold_omega_tilde}")
+        println(" prodPow = ${group.prodPow( shuffled.map{ it.data }, proof.bold_omega_tilde).toStringShort()}")
         println(" omega_4= ${omega_4}")
         println(" pk^omega4 = ${(publicKey powP omega_4)}")
     }
@@ -186,11 +165,11 @@ fun shuffleProof(
     // t_42 = g^-ω4 * Prod(bti^ω̃i'), bt = btilde
     // var t_42 = ZZPlus_p.multiply(ZZPlus_p.invert(ZZPlus_p.pow(g, omega_4)),
     //          ZZPlus_p.prodPow(bold_e_tilde.map(Encryption::get_b), bold_omega_tilde)); // b = g^eps term
-    val t_42 = group.prodPowB(shuffledBallots, bold_omega_tilde) / group.gPowP(omega_4)
+    val t_42 = group.prodPow(shuffled.map{ it.pad } , proof.bold_omega_tilde) / group.gPowP(omega_4)
 
     val t = listOf(t_1, t_2, t_3, t_41, t_42, bold_t_hat)
     if (debug2) {
-        println("ShuffleProof")
+        println("shuffleProofCompare")
         println(" t_1 = ${t_1.toStringShort()}")
         println(" t_2 = ${t_2.toStringShort()}")
         println(" t_3 = ${t_3.toStringShort()}")
@@ -199,68 +178,37 @@ fun shuffleProof(
         bold_t_hat.forEachIndexed { idx, it -> println(" bt_${idx} = ${it.toStringShort()}") }
     }
 
-    val ciphertexts = ballots.flatMap { it.ciphertexts }
-    val shuffled = shuffledBallots.flatMap { it.ciphertexts }
     val y = listOf(ciphertexts, shuffled, prep.cbold, prep.cbold_hat, publicKey)
     val c = getChallenge(group, y, t)
 
     // var s_1 = ZZ_q.subtract(omega_1, ZZ_q.multiply(c, r_bar));
-    val s1 = omega_1 - c * prep.rbar
+    val s_1 = omega_1 - c * prep.rbar
     //  var s_2 = ZZ_q.subtract(omega_2, ZZ_q.multiply(c, r_hat));
-    val s2 = omega_2 - (c * prep.rhat_utilde)
+    val s_2 = omega_2 - (c * prep.rhat_utilde)
     //  var s_3 = ZZ_q.subtract(omega_3, ZZ_q.multiply(c, r));
-    val s3 = omega_3 - (c * prep.r_u)
+    val s_3 = omega_3 - (c * prep.r_u)
     //  var s_4 = ZZ_q.subtract(omega_4, ZZ_q.multiply(c, r_tilde));
-    val s4 = omega_4 - (c * prep.rtilde_u)
+    val s_4 = omega_4 - (c * prep.rtilde_u)
 
     //// loop2
     val bold_s_hat = mutableListOf<ElementModQ>()
     val bold_s_tilde = mutableListOf<ElementModQ>()
     repeat (N) { i ->
         // var s_hat_i = ZZ_q.subtract(bold_omega_hat.getValue(i), ZZ_q.multiply(c, bold_r_hat.getValue(i)));
-        val s_hat_i = bold_omega_hat[i] - c * prep.rbold_hat[i]
+        val s_hat_i = proof.bold_omega_hat[i] - c * prep.rbold_hat[i]
         bold_s_hat.add(s_hat_i)
         // var s_tilde_i = ZZ_q.subtract(bold_omega_tilde.getValue(i), ZZ_q.multiply(c, bold_u_tilde.getValue(i)));
-        val s_tilde_i = bold_omega_tilde[i] - c * prep.ubold_tilde[i]
+        val s_tilde_i = proof.bold_omega_tilde[i] - c * prep.ubold_tilde[i]
         bold_s_tilde.add(s_tilde_i)
     }
-    val proof = ShuffleProof(c, s1, s2, s3, s4, bold_s_hat, bold_s_tilde, prep.cbold, prep.cbold_hat,
-        bold_omega_hat, bold_omega_tilde, listOf(omega_1, omega_2, omega_3, omega_4))
+    //val proof = ShuffleProof(c, s_1, s_2, s_3, s_4, bold_s_hat, bold_s_tilde, prep.cbold, prep.cbold_hat)
 
     if (debug2) {
-        val a_tilde : ElementModP = group.prodPowA(ballots, prep.ubold)
-        val t_41p = (a_tilde powP c) * group.prodPowA(shuffledBallots, bold_s_tilde) / (publicKey powP s4)
-        println("ShuffleProof t_41p= ${t_41p.toStringShort()}")
-
-        val apPowUp = group.prodPowA( shuffledBallots, prep.ubold_tilde)
-        val aPowU = group.prodPowA( ballots, prep.ubold)
-        val encr0 = publicKey powP prep.rtilde_u
-        require(apPowUp == aPowU * encr0)
-
-        println(" a_tilde = ${a_tilde.toStringShort()}")
-        println(" a_tilde^c= ${(a_tilde powP proof.c).toStringShort()}")
-        println(" bold_s_tilde = ${proof.bold_s_tilde}")
-        println(" prodPowA = ${group.prodPowA(shuffledBallots, proof.bold_s_tilde).toStringShort()}")
-        println(" proof.s4= ${proof.s4}")
-        println(" pk^s4 = ${(publicKey powP omega_4).toStringShort()}")
-        // require(t_41 == t_41p)
+        val a_tilde: ElementModP = group.prodPow(ciphertexts.map { it.data }, prep.ubold)
+        val t_41p = (a_tilde powP c) * group.prodPow(shuffled.map { it.data }, bold_s_tilde) / (publicKey powP s_4)
+        println(" t_41p= ${t_41p.toStringShort()}")
+        require(t_41 == t_41p)
     }
 
-    return Pair(prep, proof)
+    //return Pair(prep, proof)
 }
-
-data class ShuffleProof(
-    val c: ElementModQ,
-    val s1: ElementModQ,
-    val s2: ElementModQ,
-    val s3: ElementModQ,
-    val s4: ElementModQ,
-    val bold_s_hat: List<ElementModQ>,
-    val bold_s_tilde: List<ElementModQ>,
-    val cbold: List<ElementModP>,
-    val cbold_hat: List<ElementModP>,
-
-    val bold_omega_hat: List<ElementModQ>,
-    val bold_omega_tilde: List<ElementModQ>,
-    val omega: List<ElementModQ>,
-)

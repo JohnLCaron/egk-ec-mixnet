@@ -7,22 +7,22 @@ import java.security.SecureRandom
  * Shuffle and reencrypt a list of ElGamalCiphertext.
  * return reencryptions, nonces, permutation
  */
-fun shuffle(
-    ciphertext: List<ElGamalCiphertext>,
+fun shuffleMultiText(
+    ballots: List<MultiText>,
     publicKey: ElGamalPublicKey,
-): Triple<List<ElGamalCiphertext>, List<ElementModQ>, Permutation> {
+): Triple<List<MultiText>, List<ElementModQ>, Permutation> {
 
     // TODO check set membership
 
-    val reencryptions = mutableListOf<ElGamalCiphertext>()
+    val reencryptions = mutableListOf<MultiText>()
     val nonces = mutableListOf<ElementModQ>()
 
     // ALGORITHM
-    val n = ciphertext.size
+    val n = ballots.size
     val psi = Permutation.random(n)
     repeat(n) { idx ->
         val permuteIdx = psi.of(idx)
-        val (reencrypt, nonce) = ciphertext[permuteIdx].reencrypt(publicKey)
+        val (reencrypt, nonce) = ballots[permuteIdx].reencrypt(publicKey)
         reencryptions.add(reencrypt)
         nonces.add(nonce)
     }
@@ -38,6 +38,7 @@ class Permutation(val psi: IntArray) {
         }
         Permutation(result)
     }
+
     fun of(idx:Int) = psi[idx]
 
     companion object {
@@ -62,4 +63,27 @@ fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey): Pair<ElGamalCipher
     val bp = publicKey.key powP nonce
     val rencr = ElGamalCiphertext(this.pad * ap, this.data * bp)
     return Pair(rencr, nonce)
+}
+
+//////////////////////////////////////////////////
+// one list of ciphertexts to be shuffled.
+
+fun shuffle(
+    ciphertext: List<ElGamalCiphertext>,
+    publicKey: ElGamalPublicKey,
+): Triple<List<ElGamalCiphertext>, List<ElementModQ>, Permutation> {
+
+    val reencryptions = mutableListOf<ElGamalCiphertext>()
+    val nonces = mutableListOf<ElementModQ>()
+
+    // ALGORITHM
+    val n = ciphertext.size
+    val psi = Permutation.random(n)
+    repeat(n) { idx ->
+        val permuteIdx = psi.of(idx)
+        val (reencrypt, nonce) = ciphertext[permuteIdx].reencrypt(publicKey)
+        reencryptions.add(reencrypt)
+        nonces.add(nonce)
+    }
+    return Triple(reencryptions, nonces, psi)
 }
