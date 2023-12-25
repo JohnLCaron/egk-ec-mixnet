@@ -22,7 +22,7 @@ fun prodPow(term1: List<ElGamalCiphertext>, exp: List<ElementModQ>) : ElGamalCip
     return products.encryptedSum()!!
 }
 
-// Prod ( terms)
+// Prod (terms)
 fun GroupContext.prod(terms: List<ElementModP>) : ElementModP {
     return with (this) { terms.multP()}
 }

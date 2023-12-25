@@ -1,21 +1,20 @@
 package org.cryptobiotic.mixnet.ch
 
 import electionguard.core.*
-import java.security.SecureRandom
 
 /**
  * Shuffle and reencrypt a list of ElGamalCiphertext.
- * return reencryptions, nonces, permutation
+ * return mixed (etilde), rnonces (r), permutation (phi)
+ * TODO maybe nonces should be all the nonces? or are you forced to use same nonce for all texts in MultiText?
+ *   it does seem that this is the only place the nonces are generated
  */
 fun shuffleMultiText(
     ballots: List<MultiText>,
     publicKey: ElGamalPublicKey,
 ): Triple<List<MultiText>, List<ElementModQ>, Permutation> {
 
-    // TODO check set membership
-
-    val reencryptions = mutableListOf<MultiText>()
-    val nonces = mutableListOf<ElementModQ>()
+    val mixed = mutableListOf<MultiText>()
+    val rnonces = mutableListOf<ElementModQ>()
 
     // ALGORITHM
     val n = ballots.size
@@ -23,31 +22,10 @@ fun shuffleMultiText(
     repeat(n) { idx ->
         val permuteIdx = psi.of(idx)
         val (reencrypt, nonce) = ballots[permuteIdx].reencrypt(publicKey)
-        reencryptions.add(reencrypt)
-        nonces.add(nonce)
+        mixed.add(reencrypt)
+        rnonces.add(nonce)
     }
-    return Triple(reencryptions, nonces, psi)
-}
-
-class Permutation(val psi: IntArray) {
-    val n = psi.size
-    val inverse: Permutation by lazy {
-        val result = IntArray(n)
-        for (idx in psi) {
-            result[psi[idx]] = idx
-        }
-        Permutation(result)
-    }
-
-    fun of(idx:Int) = psi[idx]
-
-    companion object {
-        fun random(n: Int) : Permutation{
-            val result = MutableList(n) { it }
-            result.shuffle(SecureRandom.getInstanceStrong())
-            return Permutation(result.toIntArray())
-        }
-    }
+    return Triple(mixed, rnonces, psi)
 }
 
 //  corresponds to ALGORITHM 8.44. Note that a and b are flipped in ElGamalCiphertext

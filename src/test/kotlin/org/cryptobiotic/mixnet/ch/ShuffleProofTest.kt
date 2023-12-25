@@ -1,8 +1,7 @@
-package org.cryptobiotic.mixnet
+package org.cryptobiotic.mixnet.ch
 
 import electionguard.core.*
 import electionguard.util.Stats
-import org.cryptobiotic.mixnet.ch.*
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertTrue
@@ -39,14 +38,16 @@ nballots=3, nciphertext= 100 per ballot
  */
 
 fun expectProof(nballots:Int, width: Int): String {
-    val nexps = 6*(nballots*width)
-    val nacc = 3*(nballots*width)+6
+    val N = nballots*width
+    val nexps = 2*N + 2*nballots + 6
+    val nacc = 3*N + 6
     return " expect ($nexps, $nacc)"
 }
 
 fun expectCheck(nballots:Int, width: Int): String {
-    val nexps = 8*(nballots*width)+6
-    val nacc = (nballots*width)+5
+    val N = nballots*width
+    val nexps = 4*N + 4*nballots + 6
+    val nacc = N + 5
     return " expect ($nexps, $nacc)"
 }
 
@@ -56,8 +57,10 @@ class ShuffleProofTest {
         val group = productionGroup()
 
         runShuffleProof(3, 1, group, true, false)
+        runShuffleProof(11, 1, group, true, false)
         runShuffleProof(3, 2, group, true, false)
-        runShuffleProof(3, 100, group, true, false)
+        runShuffleProof(3, 20, group, true, false)
+        // runShuffleProof(3, 100, group, true, false)
         // runShuffleProof(30, 100, group, true, false)
     }
 
@@ -78,37 +81,38 @@ class ShuffleProofTest {
 
         group.showAndClearCountPowP()
         var starting = getSystemTimeInMillis()
-        val (shuffledBallots, nonces, permutation) = shuffleMultiText(
+        val (mixedBallots, rnonces, permutation) = shuffleMultiText(
             ballots, keypair.publicKey
         )
         //stats.of("shuffle", "exp", "shuffle").accum(getSystemTimeInMillis() - starting, 2*N)
         if (showExps) println("=========================================")
         if (showExps) println("nballots=$nballots, nciphertext= $width per ballot")
-        if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
+        // if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
 
         starting = getSystemTimeInMillis()
-        val (prep, proof) = shuffleProof(
+        val (h, generators) = getGenerators(group, nballots, "shuffleProof2") // List<ElementModP> = bold_h
+        val proof = shuffleProof2(
             group,
-            "permuteProof",
+            h,
+            generators,
             keypair.publicKey,
             permutation,
             ballots,
-            shuffledBallots,
-            nonces,
+            mixedBallots,
+            rnonces,
         )
         //stats.of("shuffleProof", "exp", "shuffle").accum(getSystemTimeInMillis() - starting, 9*N+6)
         if (showExps) println("  after shuffleProof: ${group.showAndClearCountPowP()} ${expectProof(nballots, width)}")
 
         starting = getSystemTimeInMillis()
-        val valid = checkShuffleProof(
+        val valid = checkShuffleProof2(
             group,
-            "permuteProof",
             keypair.publicKey,
+            h,
+            generators,
             proof,
-            prep.h,
-            prep.generators,
             ballots,
-            shuffledBallots,
+            mixedBallots,
         )
         //stats.of("checkShuffleProof", "exp", "shuffle").accum(getSystemTimeInMillis() - starting, 9*N+11)
         if (showExps) println("  after checkShuffleProof: ${group.showAndClearCountPowP()} ${expectCheck(nballots, width)}")
