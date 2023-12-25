@@ -4,7 +4,6 @@ import electionguard.core.*
 
 data class MultiText(val ciphertexts: List<ElGamalCiphertext>)
 
-//  TODO check assumption that we use the same nonce for all
 fun MultiText.reencrypt(publicKey: ElGamalPublicKey): Pair<MultiText, ElementModQ> {
     val group = publicKey.context
     val nonce: ElementModQ = group.randomElementModQ(minimum = 1)
