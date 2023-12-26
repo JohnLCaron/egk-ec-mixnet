@@ -4,9 +4,8 @@ import electionguard.core.*
 
 /**
  * Shuffle and reencrypt a list of ElGamalCiphertext.
- * return mixed (etilde), rnonces (r), permutation (phi)
- * TODO maybe nonces should be all the nonces? or are you forced to use same nonce for all texts in MultiText?
- *   it does seem that this is the only place the nonces are generated
+ * return mixed (etilde), rnonces (pr), permutation (phi)
+ * Note that the pr are associated with the reencryption, and are in permuted order.
  */
 fun shuffleMultiText(
     ballots: List<MultiText>,
@@ -19,9 +18,9 @@ fun shuffleMultiText(
     // ALGORITHM
     val n = ballots.size
     val psi = Permutation.random(n)
-    repeat(n) { idx ->
-        val permuteIdx = psi.of(idx)
-        val (reencrypt, nonce) = ballots[permuteIdx].reencrypt(publicKey)
+    repeat(n) { jdx ->
+        val idx = psi.of(jdx) //  pe[jdx] = e[ps.of(jdx)]; you have an element in pe, and need to get the corresponding element from e
+        val (reencrypt, nonce) = ballots[idx].reencrypt(publicKey)
         mixed.add(reencrypt)
         rnonces.add(nonce)
     }
