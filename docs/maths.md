@@ -1,4 +1,4 @@
-# egk mixnet
+# egk mixnet maths
 
 Preliminary explorations of mixnet implementations to be used with the electionguard-kotlin library.
 
@@ -170,19 +170,78 @@ Further research is needed to see if the restriction that all MultiText must hav
 
 
 
+#### Timing
+
+nrows = number of rows, eg ballots
+
+N = nrows * width = number of ciphertexts to be mixed
+
+|                  | proof              | verify                |
+| ---------------- | ------------------ | --------------------- |
+| regular exps     | 4*nrows + 2 * N    | 4 * nrows + 4 * N + 6 |
+| accelerated exps | 3*nrows + 2 *N + 6 | 8                     |
+
+
+
+```
+nballots=100, nciphertext= 100 per ballot
+  after shuffleProof: countPowP,AccPowP= 20400, 20306 total= 40706  expect (20400, 20306)
+  after checkShuffleProof: countPowP,AccPowP= 40406, 105 total= 40511  expect (40406, 8)
+```
+
+```
+             shuffle: took 238 msecs = 2.38 msecs/text (100 texts) = 238.0 msecs/shuffle for 1 shuffles
+        shuffleProof: took 710 msecs = 7.1 msecs/text (100 texts) = 710.0 msecs/shuffle for 1 shuffles
+   checkShuffleProof: took 1141 msecs = 11.41 msecs/text (100 texts) = 1141.0 msecs/shuffle for 1 shuffles
+               total: took 2089 msecs = 20.89 msecs/text (100 texts) = 2089.0 msecs/shuffle for 1 shuffles
+               
+             shuffle: took 15910 msecs = 1.591 msecs/text (10000 texts) = 15910 msecs/shuffle for 1 shuffles
+        shuffleProof: took 48261 msecs = 4.826 msecs/text (10000 texts) = 48261 msecs/shuffle for 1 shuffles
+   checkShuffleProof: took 94875 msecs = 9.487 msecs/text (10000 texts) = 94875 msecs/shuffle for 1 shuffles
+               total: took 159046 msecs = 15.90 msecs/text (10000 texts) = 159046 msecs/shuffle for 1 shuffles
+```
+
+Total time is 160 secs = 2.5 minutes to shuffle 100 ballots of 100 ciphertexts. = 56.5 * nrows + 15.24 * N msecs.
+
+Not counting i/o or serialization.
+
+Break into batches of 100 ballots each and do in parallel. Each batch would have 2 * 100 * 100 texts (input and shuffled). A ciphertext = 1K bytes. so 20 Mbytes.  The proofs are small (4 * nrows ElementQ = 4 * 100 * 32 = 12K bytes).
+
+
+
+##### Time Verificatum vs egk-mixnet
+
+Vmn in pure Java mode, using BigInteger, shuffle twice:
+
+100 rows, width = 34.
+
+```
+time ./scripts/runMixnetWorkflow.sh
+...
+real	1m30.294s
+user	20m41.260s
+sys	2m17.177s
+```
+
+TODO: is vmn parellel, what is user time?
+
+egk-mixnet, shuffle once:
+
+```
+nrows=100, width= 34 per row, N=3400
+             shuffle: took 5504 msecs = 1.618 msecs/text (3400 texts) = 5504.0 msecs/shuffle for 1 shuffles
+        shuffleProof: took 17497 msecs = 5.146 msecs/text (3400 texts) = 17497 msecs/shuffle for 1 shuffles
+   checkShuffleProof: took 33874 msecs = 9.962 msecs/text (3400 texts) = 33874 msecs/shuffle for 1 shuffles
+               total: took 56875 msecs = 16.72 msecs/text (3400 texts) = 56875 msecs/shuffle for 1 shuffles
+```
+
+
+
 ### References
 
 1. Josh Benaloh and Michael Naehrig, *ElectionGuard Design Specification, Version 2.0.0*, Microsoft Research, August 18, 2023, https://github.com/microsoft/electionguard/releases/download/v2.0/EG_Spec_2_0.pdf 
 2. Rolf Haenni, Reto E. Koenig, Philipp Locher, Eric Dubuis. *CHVote Protocol Specification Version 3.5*, Bern University of Applied Sciences, February 28th, 2023, https://eprint.iacr.org/2017/325.pdf
-3. R. Haenni, P. Locher, R. E. Koenig, and E. Dubuis. *Pseudo-code algorithms for verifi-*
-   *able re-encryption mix-nets*. In M. Brenner, K. Rohloff, J. Bonneau, A. Miller, P. Y. A.
-   Ryan, V. Teague, A. Bracciali, M. Sala, F. Pintore, and M. Jakobsson, editors, FC’17,
-   21st International Conference on Financial Cryptography, LNCS 10323, pages 370–384,
-   Silema, Malta, 2017.
-4. B. Terelius and D. Wikström. *Proofs of restricted shuffles*, In D. J. Bernstein and
-   T. Lange, editors, AFRICACRYPT’10, 3rd International Conference on Cryptology in
-   Africa, LNCS 6055, pages 100–113, Stellenbosch, South Africa, 2010.
-5. D. Wikström. *A commitment-consistent proof of a shuffle.* In C. Boyd and J. González
-   Nieto, editors, ACISP’09, 14th Australasian Conference on Information Security and
-   Privacy, LNCS 5594, pages 407–421, Brisbane, Australia, 2009.
+3. R. Haenni, P. Locher, R. E. Koenig, and E. Dubuis. *Pseudo-code algorithms for verifiable re-encryption mix-nets*. In M. Brenner, K. Rohloff, J. Bonneau, A. Miller, P. Y. A.Ryan, V. Teague, A. Bracciali, M. Sala, F. Pintore, and M. Jakobsson, editors, FC’17, 21st International Conference on Financial Cryptography, LNCS 10323, pages 370–384, Silema, Malta, 2017.
+4. B. Terelius and D. Wikström. *Proofs of restricted shuffles*, In D. J. Bernstein and T. Lange, editors, AFRICACRYPT’10, 3rd International Conference on Cryptology inAfrica, LNCS 6055, pages 100–113, Stellenbosch, South Africa, 2010.
+5. D. Wikström. *A commitment-consistent proof of a shuffle.* In C. Boyd and J. González Nieto, editors, ACISP’09, 14th Australasian Conference on Information Security and Privacy, LNCS 5594, pages 407–421, Brisbane, Australia, 2009.
 6. D. Wikström. *How to Implement a Stand-alone Verifier for the Verificatum Mix-Net VMN Version 3.1.0*, 2022-09-10, https://www.verificatum.org/files/vmnv-3.1.0.pdf
