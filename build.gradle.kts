@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "1.9.21"
+    alias(libs.plugins.serialization)
 }
 
 group = "org.cryptobiotic"
