@@ -6,7 +6,7 @@ Preliminary explorations of mixnet implementations to be used with the ElectionG
 
 Most of the prototype code in egk-mixlib is a port of code found in the OpenCHVote repository.
 
-See [egk mixnet maths](docs/maths.md) as [pdf](docs/maths.pdf)
+See [egk mixnet maths](docs/maths.md) or as [pdf](docs/maths.pdf)
 
 ## Authors
 - [John Caron](https://github.com/JohnLCaron)
