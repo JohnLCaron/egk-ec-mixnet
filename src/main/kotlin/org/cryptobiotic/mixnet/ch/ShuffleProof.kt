@@ -7,14 +7,15 @@ private val debug2 = false
 
 private fun shufflePrep(
     group: GroupContext,
-    h: ElementModP,
-    generators: List<ElementModP>,  // bold_h
+    U: String,
+    seed: ElementModQ,
     publicKey: ElGamalPublicKey, // public key = pk
     psi: Permutation, // permutation = psi
     ciphertexts: List<ElGamalCiphertext>, // ciphertexts = bold_e
     shuffled: List<ElGamalCiphertext>, // shuffled ciphertexts = bold_e_tilde
 ): ShufflePrep {
-    val N = generators.size
+    // create independent, deterministic group generators, from a seed and a string.
+    val (h, generators) = getGenerators(group, psi.n, U, seed) // List<ElementModP> = bold_h
 
     // To summarize the preparatory work for the proof generation:
     //  1. Pick random rbold = (r1 , . . . , rN) in Zq = { ri }
@@ -23,16 +24,18 @@ private fun shufflePrep(
 
     //  3. compute ubold = Hash((e, ẽ, c), i) = { ui }
     //  4. let ubold_tilde = permute(ubold) = { ũi }
-    val challenges = getChallenges(group, N, listOf(ciphertexts, shuffled, pcommit, publicKey)) // 4) List<ElementModP> challenges = bold_u
+    val challenges = getChallenges(group, psi.n, listOf(ciphertexts, shuffled, pcommit, publicKey)) // 4) List<ElementModP> challenges = bold_u
     val ctilde = psi.permute(challenges)                                                        // 5) permuted challenges = bold_u_tilde
 
     //  5. Pick random rbold_hat in Zq = { r̂i }
     //  6. compute cbold_hat = { ĉi }, ĉi = g^r̂i * ĉ_i-1^ũi, ĉ0 = h
     val (cchallenges, ccnonces) = committmentChain(group, h, ctilde) // cbold_hat, rbold_hat
-    return ShufflePrep(pcommit, pnonces, challenges, ctilde, cchallenges, ccnonces)
+    return ShufflePrep(h, generators, pcommit, pnonces, challenges, ctilde, cchallenges, ccnonces)
 }
 
 private data class ShufflePrep(
+    val h: ElementModP,
+    val generators: List<ElementModP>,
     val pcommit: List<ElementModP>, // permutation commitment = cbold
     val pnonces: List<ElementModQ>, // permutation nonces = rbold
     val u: List<ElementModQ>, // challenges = hash(stuff) = bold_u = challenges
@@ -44,8 +47,8 @@ private data class ShufflePrep(
 
 fun shuffleProof(
     group: GroupContext,
-    h: ElementModP,
-    generators: List<ElementModP>,  // bold_h
+    U: String,
+    seed: ElementModQ,
     publicKey: ElGamalPublicKey, // public key = pk
     psi: Permutation, // permutation = psi
     ballots: List<MultiText>, // ciphertexts = bold_e
@@ -55,7 +58,8 @@ fun shuffleProof(
     val N = ballots.size
     val ciphertexts = ballots.flatMap { it.ciphertexts }
     val shuffled = shuffledBallots.flatMap { it.ciphertexts }
-    val prep = shufflePrep(group, h, generators, publicKey, psi, ciphertexts, shuffled)
+
+    val prep = shufflePrep(group, U, seed, publicKey, psi, ciphertexts, shuffled)
 
     val bold_omega_hat = mutableListOf<ElementModQ>()
     val bold_omega_tilde = mutableListOf<ElementModQ>()
@@ -94,7 +98,7 @@ fun shuffleProof(
         // 25) t̂i ← g^ω̂i * ĉi−1^wpi
         // t̂i = g^Rip * h^Uip mod p|
         // val t_hat_i = ZZPlus_p.multiply(ZZPlus_p.pow(g, R_prime_i), ZZPlus_p.pow(h, U_prime_i))
-        val t_hat_i = group.gPowP(R_prime_i) * (h powP U_prime_i)
+        val t_hat_i = group.gPowP(R_prime_i) * (prep.h powP U_prime_i)
         bold_t_hat.add(t_hat_i)
 
         R_i_minus_1 = R_i // preparation for next loop cycle
@@ -109,7 +113,7 @@ fun shuffleProof(
     // (21) t3 ← g^ω3 * Prod( hi^ωi' )
     //  var t_3 = ZZPlus_p.multiply(ZZPlus_p.pow(g, omega_3), ZZPlus_p.prodPow(bold_h, bold_omega_tilde));
     val omega_3: ElementModQ = group.randomElementModQ(minimum = 1)
-    val t_3 = group.gPowP(omega_3) * group.prodPow(generators, bold_omega_tilde)
+    val t_3 = group.gPowP(omega_3) * group.prodPow(prep.generators, bold_omega_tilde)
 
     // t_41 = pk^-ω4 * Prod(ãi^ω̃i')
     // var t_41 = ZZPlus_p.multiply(ZZPlus_p.invert(ZZPlus_p.pow(pk, omega_4)),
@@ -170,7 +174,7 @@ fun shuffleProof(
         val s_tilde_i = bold_omega_tilde[i] - c * prep.pu[i]
         bold_s_tilde.add(s_tilde_i)
     }
-    val proof = ShuffleProof(prep.pcommit, prep.cchallenges,
+    val proof = ShuffleProof(U, seed, prep.pcommit, prep.cchallenges,
         c, s1, s2, s3, s4, bold_s_hat, bold_s_tilde,
         bold_omega_hat, bold_omega_tilde, listOf(omega_1, omega_2, omega_3, omega_4))
 
@@ -230,6 +234,8 @@ private fun computeS4(group: GroupContext, width:Int, rnonces: List<ElementModQ>
 }
 
 data class ShuffleProof(
+    val U: String,
+    val seed: ElementModQ,
     val pcommit: List<ElementModP>,     // permutation committment = cbold
     val cchallenges: List<ElementModP>, // chained challenges = cbold_hat
 

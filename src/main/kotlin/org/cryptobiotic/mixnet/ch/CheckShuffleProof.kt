@@ -6,16 +6,17 @@ private val debug = false
 
 fun checkShuffleProof(
     group: GroupContext,
+    U: String,
+    seed: ElementModQ,
     pk: ElGamalPublicKey,
-    h: ElementModP,
-    bold_h: List<ElementModP>, // generators
-    proof: ShuffleProof,
     ballots: List<MultiText>, // ciphertexts
     shuffledBallots: List<MultiText>, // shuffled
+    proof: ShuffleProof,
 ): Boolean {
-
     val N = ballots.size
-    // TODO check set membership
+
+    // create independent, deterministic group generators, from a seed and a string.
+    val (h, generators) = getGenerators(group, N, U, seed) // List<ElementModP> = bold_h
 
     val ciphertexts = ballots.flatMap { it.ciphertexts }
     val shuffled = shuffledBallots.flatMap { it.ciphertexts }
@@ -23,7 +24,7 @@ fun checkShuffleProof(
     val u = group.prod(bold_u)
 
     // val c_bar = ZZPlus_p.divide(ZZPlus_p.prod(bold_c), ZZPlus_p.prod(bold_h))
-    val c_bar = group.prod(proof.pcommit) / group.prod(bold_h)
+    val c_bar = group.prod(proof.pcommit) / group.prod(generators)
     // var c_hat = ZZPlus_p.divide(N == 0 ? c_hat_0 : bold_c_hat.getValue(N), ZZPlus_p.pow(h, u));
     val c_hat = proof.cchallenges [N - 1] / (h powP u)
 
@@ -39,7 +40,7 @@ fun checkShuffleProof(
     }
     val t_1 = (c_bar powP proof.c) * group.gPowP(proof.s1)
     val t_2 = (c_hat powP proof.c) * group.gPowP(proof.s2)
-    val t_3 = (c_tilde powP proof.c) * (group.gPowP(proof.s3) * group.prodPow(bold_h, proof.bold_s_tilde))
+    val t_3 = (c_tilde powP proof.c) * (group.gPowP(proof.s3) * group.prodPow(generators, proof.bold_s_tilde))
     val t_41 = (a_tilde powP proof.c) * group.prodPowA(shuffledBallots, proof.bold_s_tilde) / (pk powP proof.s4)
     val t_42 = (b_tilde powP proof.c) * group.prodPowB(shuffledBallots, proof.bold_s_tilde) / group.gPowP(proof.s4)
 

@@ -1,10 +1,20 @@
 # egk mixnet maths
 
-Preliminary explorations of mixnet implementations to be used with the electionguard-kotlin library.
+Preliminary explorations of mixnet implementations to be used with the ElectionGuard Kotlin library.
 
-#### ElectionGuard Group
+We use the the ElectionGuard Kotlin library [7] for all the cryptography primitives. This library closely follows the ElectionGuard 2.0 specification [1].
 
-see [1]
+Some of the prototype code in egk-mixlib is a port of code found in the OpenCHVote repository [8], and the appropriate license has been added. Please use any of this work in any way consistent with that.
+
+The math here mostly recapitulates the work of Rolf Haenni et. al. [2], [3] in explaining the Terelius / Wikström mixnet algorithm [4], [5]. 
+
+Ive tried to avoid notation that is hard to read, preferring for example, multiple character symbols like $pr$ instead of  r̃ or r̂ , since the glyphs can get too small to read when they are used in exponents or subscripts, and can be hard to replicate in places other than high quality Tex or PDF renderers.
+
+**Table of Contents**
+
+[TOC]
+
+#### 1. The ElectionGuard Group
 
 - $ \Z = \{. . . , −3, −2, −1, 0, 1, 2, 3, . . . \} $ is the set of integers.
 
@@ -12,33 +22,103 @@ see [1]
 - $ \Z_n^* $ is the multiplicative subgroup of $ \Z_n$ that consists of all invertible elements modulo n. When p is a prime,  $ \Z_p^* = \{1, 2, 3, . . . , p − 1\} $
 -  $ \Z_p^r $ is the set of r-th-residues in $\Z_p^* $ . Formally, $ \Z_p^r = \{y \in \Z_p^* $ for which there exists $x \in \Z_p^*$ where $y = x^r$ mod p}. When p is a prime for which p − 1 = q * r with q a prime that is not a divisor of the integer r, then  $\Z_p^r$ is an order-q cyclic subgroup of $\Z_p^*$ , and for any $y \in \Z_p^* $ , $y \in \Z_p^r $ if and only if $y^q$ mod p = 1.
 
+We use the ElectionGuard Kotlin library [7] and ElectionGuard 2.0 specification [1] for all the cryptography primitives, in particular the parameters for $ \Z_p^r $, the variant of ElGamal encryption described next, and the use of HMAC-SHA-256 for hashing. 
 
-####  ElGamal exponential Encryption and Reencryption
+
+
+
+#### 2. Permutations
+
+A *permutation* is a bijective map $\psi: {1..N} \to {1..N}$​. We use **px** to mean the permutation of a vector **x**, **px** = $\psi(\textbf x)$, so that $x_i$ = $px_j$, where $i={\psi(j)}$ and $j={\psi^{-1}(i)}$. 
+
+A *permutation* $\psi$ has a *permutation matrix* $B_\psi$ , where $b_{ij}$ = 1 if $\psi(i)$ = j, otherwise 0. 
+
+If $B_\psi$ = ($b_{ij}$) is an N -by-N matrix over $\Z_q$ and **x** = $(x_1 , ..., x_N)$  a vector of N independent variables, then $B_\psi$ is a permutation matrix if and only
+$$
+\sum_{i=1}^n b_{ij} = 1\ \ \ \ (Condition\ 1) \\
+\sum_{i=1}^n \sum_{j=1}^n b_{ij} x_i = \sum_{i=1}^n x_i \ \ \ \ (Condition\ 2) \\
+$$
+
+
+
+#### 3. Pedersen Commitments
+
+For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Pedersen committment* to $\textbf m$ is
+$$
+\begin{align}
+Commit(\textbf m, cr) = g^{cr} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n} 
+= g^{r} * \prod_{i=1}^n h_i^{m_i}
+\end{align}
+$$
+where ($ g, \textbf h $) are generators of  $ \Z_p^r $ with randomization nonce $ cr \in Z_q $.
+
+
+
+If $\textbf b_i$ is the $i^{th}$ column of $B_\psi$, then the *permutation commitment to $\psi$* is defined as the vector of committments to its columns:
+$$
+Commit(\psi, \textbf {cr}) = (Commit(\textbf b_1, cr_1), Commit(\textbf b_2, cr_2),..Commit(\textbf b_N, cr_N)) =
+$$
+where
+$$
+\begin{align}
+c_j = Commit(\textbf b_j, cr_j) = g^{cr_j} * \prod_{i=1}^n h_i^{b_{ij}} = g^{cr_j} * h_i ,\ for\ i=ψ^{-1}(j)
+\end{align}
+$$
+
+
+
+#### 4. Proof of permutation (TW offline?)
+
+Let **c** = $Commit(\psi, \textbf r)$ = $(c_1, c_2, .. c_N)$, with randomization vector **cr** = $(cr_1, cr_2, .. cr_N)$, and $crbar = \sum_{i=1}^n cr_i$. 
+
+$Condition$ 1 implies that
+$$
+\prod_{j=1}^n c_j = \prod_{j=1}^n g^{cr_j} \prod_{i=1}^n h_i^{b_{ij}} = g^{crbar} \prod_{i=1}^n h_i\ = Commit(\textbf 1, crbar).\ \ \ (5.2)
+$$
+
+Let $\textbf u = (u_1 .. u_n)$ be arbitrary values  $\in \Zeta_q, \textbf {pu}$ its permutation by $\psi$, and  $cru=\sum_{j=1}^N {cr_j u_j}$.
+
+ $Condition$ 2 implies that:
+$$
+\prod_{i=1}^n u_i = \prod_{j=1}^n pu_j\ \ \ (5.3)
+$$
+
+$$
+\prod_{j=1}^n c_j^{u_j} = \prod_{j=1}^n (g^{cr_j} \prod_{i=1}^n h_i^{b_{ij}})^{u_j} = g^{cru} \prod_{i=1}^n h_i^{pu_i}\ = Commit(\textbf {pu}, cru)\ \ \ (5.4)
+$$
+
+Which constitutes proof that condition 1 and 2 are true, so c is a commitment to a permutation matrix.
+
+
+
+
+
+####  5. ElGamal Encryption and Reencryption
 
 $$
 \begin{align}
-(1) \\
+(2a) \\
     Encr(m, \xi) = (g^{\xi}, K^{m+\xi}) = (a, b) \\
     Encr(0, \xi') = (g^{\xi'}, K^{\xi'}) \\
     \\
-(2)    \\
+(2b)    \\
     (a, b)*(a',b') = (a*a', b*b') \\
     Encr(m, \xi) * Encr(m', \xi') = (g^{\xi+\xi'}, K^{m+m'+\xi+\xi'}) = Encr(m+m', \xi+\xi')\\
     \\
-(3)    \\
+(2c)    \\
     (a, b)^k = (a^k, b^k) \\
     Encr(m, \xi)^k = (g^{\xi*k}, K^{(m*k+\xi*k)}) = Encr(m*k, \xi*k) \\
     \\
-(4)   \\
+(2d)   \\
     \prod_{j=1}^n Encr(m_j, \xi_j) = (g^{\sum_{j=1}^n \xi_j}, K^{\sum_{j=1}^n m_j+ \sum_{j=1}^n \xi_j})
     = Encr(\sum_{j=1}^n m_j,\sum_{j=1}^n \xi_j) \\
     \prod_{j=1}^n Encr(m_j, \xi_j)^{k_j} = Encr(\sum_{j=1}^n (m_j*k_j),\sum_{j=1}^n (\xi_j*k_j)) \\
     \\
-(5)     \\
+(2e)     \\
     ReEncr(m, r) = (g^{\xi+r}, K^{m+\xi+r}) = Encr(0, r) * Encr(m, \xi) \\
     ReEncr(m, r)^k = Encr(0, r*k) * Encr(m*k, \xi*k) \\
     \\
-(6)    \\
+(2f)    \\
     \prod_{j=1}^n ReEncr(m_j, r_j)^{k_j} = \prod_{j=1}^n Encr(0, r_j*k_j) * \prod_{j=1}^n Encr(m_j*k_j, \xi_j*k_j) \\
     = Encr(0,\sum_{j=1}^n (r_j*k_j)) * \prod_{j=1}^n Encr(m_j, \xi_j)^{k_j} \\
 \end{align}
@@ -46,39 +126,56 @@ $$
 
 Let 
 
-- ​	$e_j = Encr(m_j, \xi_j)$ 
-- ​	$mix_j = ReEncr(m_j,r_j) = ReEncr(e_j,r_j)$
-- ​	$sumrk = \sum_{j=1}^n (r_j*k_j)$
+1. ​	$e_j = Encr(m_j, \xi_j)$ 
+2. ​	$re_j = ReEncr(m_j,r_j) = ReEncr(e_j,r_j) = Encr(0,r_j) * e_j$
 
 Then
 $$
-\prod_{j=1}^n mix_j^{k_j} = Encr(0,sumrk) * \prod_{j=1}^n e_j^{k_j} \\
+\begin{align}
+re_j &= Encr(0,r_j) * e_j \\
+\prod_{j=1}^n re_j^{k_j} &= \prod_{j=1}^n Encr(0,r_j)^{k_j} * \prod_{j=1}^n e_j^{k_j} \\
+&= Encr(0,\sum_{j=1}^n (r_j*k_j)) * \prod_{j=1}^n e_j^{k_j},\ \ \ \ (Equation\ 1) \\
+\end{align}
 $$
 
 
 
-#### TW Algorithm
+#### 6. TW Algorithm, proof of equal exponents (online?)
 
-Generally we will use **px** to mean the permutation of a vector **x**, **px** = $\psi(\textbf x)$, so that $x_i$ = $px_j$, where $i={\psi(j)}$ and $j={\psi^{-1}(i)}$. 
+Let $\textbf m$ be a vector of messages, $\textbf e$ their encryptions **e** = Encr($\textbf m$), and **re(e, r)** their reenryptions with nonces **r**.  A shuffle operation both reencrypts and permutes, so $shuffle(\textbf{e}, \textbf{r}) \to (\textbf{pre}, \textbf{pr})$, where **pre** is the permutation of **re ** by $\psi$, and **pr** the permutation of **r ** by $\psi$.
+$$
+re_i = ReEncr(e_i, r_i) =  Encr(0, r_i) * e_i \\
+$$
 
-Let $\textbf m$ be a set of messages and $\textbf e$ be their encryptions **e** = Encr($\textbf m$). Let shuffle(**e**) be the mixing of $\textbf e$, consisting of a permutation $\psi$ and reencryptions ReEncr($\textbf e, \textbf r$), , where $\textbf r$ are the reencryption nonces. After the shuffle, we have **e, pe, r, pr** and $\psi$, where **pe** is the permutation of **e** and **pr** the permutation of **r**. 
+$$
+pre_j = ReEncr(pe_j, pr_j) =  Encr(0,pr_j) * e_j \\
+$$
 
-Let **u** be arbitrary $\in \Z_q$ (to be specified later) and **pu** its permutation.
 
-If the mixing is valid, then we know from above that
+Let **u** be arbitrary values $\in \Z_q$ (to be specified later) and **pu** its permutation.
+
+If the shuffle is valid, then it follows from $Equation\ 1$ above that
 
 
 $$
-\prod_{j=1}^n (pe_j)^{pu_j} = Encr(0,sumru) * \prod_{j=1}^n e_j^{pu_j} \\
+\begin{align}
+\prod_{j=1}^n pre_j^{pu_j} &= \prod_{j=1}^n (Encr(0,pr_j) * e_j)^{pu_j} \\
+&= Encr(0,\sum_{j=1}^n (pr_j*pu_j)) * \prod_{j=1}^n e_j^{pu_j} \ \ \ \ (Equation\ 1)\\
+&= Encr(0,sumru) * \prod_{j=1}^n e_j^{pu_j} \\
+\end{align}
 $$
 where $sumru = \sum_{j=1}^n (pr_j*pu_j)$.
 
-However, $e_j^{pu_j} = e_i^{u_i}$ for some i, so $\prod_{j=1}^n e_j^{pu_j} = \prod_{i=1}^n e_i^{u_j}$, so we have **condition 4**:
+
+
+However, $e_j^{pu_j} = e_i^{u_i}$ for some i, so $\prod_{j=1}^n e_j^{pu_j} = \prod_{i=1}^n e_i^{u_j}$, and we have:
 $$
-\prod_{j=1}^n (pe_j)^{pu_j} = Encr(0,sumru) * \prod_{i=1}^n e_i^{u_i} \\
+\prod_{j=1}^n pre_j^{pu_j} = Encr(0,sumru) * \prod_{i=1}^n e_i^{u_i}\ \ \ (5.5)
 $$
 
-Note that (5.5) and line 141 of the code in *GenShuffleProof*() in [2] has
+
+
+**Note** that (5.5) from [2] and line 141 of the code in *GenShuffleProof* in [8] has
 $$
 Encr(1,\tilde r),\ where\ \tilde r  = \sum_{j=1}^n pr_j * u_j
 $$
@@ -87,71 +184,20 @@ $$
 Encr(0,\tilde r),\ where\ \tilde r  = \sum_{j=1}^n pr_j * pu_j
 $$
 
-The $Encr(0, ..)$ is because we use exponential ElGamal, so is fine. The use of $u_j$ instead of $pu_j$ appears to be a mistake.
+The $Encr(0, ..)$ is because we use exponential ElGamal, so is fine. Their use of $u_j$ instead of $pu_j$ appears to be a mistake. Its also possible there is a difference in notation that I didnt catch.
 
 
 
 
 
-
-
-
-
-##### extra stuff not needed
-
-$$
-\begin{align}
-\prod_{j=1}^n ({pe}_j)^{{pu}_j} = 
-\prod_{j=1}^n {ReEncr(e_j,{pr}_j)^{pu_j}} \\
-= \prod_{j=1}^n {ReEncr(e_j^{pu_j},{pr}_j*pu_j}) \\
-= ReEncr(\prod_{j=1}^n {e_j^{pu_j},\sum_{j=1}^n {pr}_j*pu_j}\ ) \\
-= Encr(0, ru) * \prod_{j=1}^n {e_j^{pu_j}} \\
-for\ ru = \sum_{j=1}^n {pr}_j*pu_j
-\\
-\\
-
-
-\\
-= ReEncr(m, \xi') = Encr(0, \xi') * Encr(m, \xi) \\
-= Encr(\prod_{j=1}^n {e_j^{u_j},\sum_{j=1}^n {pr}_j*u_j}\ ) \\
-where \\
- ru = \sum_{j=1}^n {pr}_j*u_j
-\end{align}
-$$
-
-
-#### Pedersen Commitments
-For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Pedersen committment* to $\textbf m$ is
-$$
-\begin{align}
-Commit(\textbf m, r) = g^{r} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n} 
-= g^{r} * \prod_{i=1}^n h_i^{m_i}
-\end{align}
-$$
-where ($ g, \textbf h $) are generators of  $ \Z_p^r $ with randomization nonce $ r \in Z_q $.
-
-A *permutation* $\psi : \{1, . . . , n\} \to \{1, . . . , n\} $ has a *permutation matrix* $B_\psi$ , where $b_{ij}$ = 1 if $\psi(i)$ = j, otherwise 0. If $\textbf b_i$ is the $i^{th}$ column of $B_\psi$, then the *permutation commitment* to $\psi$ is
-$$
-\begin{align}
-    Commit(\psi, \textbf r) & = (Commit(\textbf b_1, r_1), Commit(\textbf b_2, r_2),..Commit(\textbf b_N, r_N)) \\
-    where\ Commit(\textbf b_j, r_j) & = g^{r_j} * h_i ,\ for\ i=ψ^{-1}(j)
-\end{align}
-$$
-*   Note: this differs from Verificatum implementation which seems to have
-$$
-\begin{align}
-	Commit(\textbf b_j, r_j) & = g^{r_j} * h_j 
-\end{align}
-$$
-
-
-
-#### Multitext mixing
-Most of the literature assumes that each row to be mixed consists of a single ElGamalCiphertext. In our application we need the possibility that each row consists of ***width*** number of ElGamalCiphertexts:
+#### 7. Multitext mixing
+Most of the literature assumes that each row to be mixed consists of a single ElGamalCiphertext. In our application we need the possibility that each row consists of ***width*** number of ElGamalCiphertexts. So for each row, we use:
 ```
-data class MultiText(val ciphertexts: List<ElGamalCiphertext>)
+	data class MultiText(val ciphertexts: List<ElGamalCiphertext>)
 ```
-The changes needed to the standard algorithms are modest:
+and it is the rows that are permuted, not the flat list of ciphertexts.
+
+The changes to the standard algorithms needed for this are modest:
 
 1) In algorithms 8.4, 8.5 of [2], the challenge includes a list of all the ciphertexts and their reencryptions in their hash function:
 
@@ -160,41 +206,38 @@ $$
 $$
 ​	Here we just flatten the list of lists of ciphertexts for $\textbf e, \textbf {pe}$. This is used in both the proof construction and the proof verification.
 
-2. In condition 4, we have $sumru = \sum_{j=1}^n (pr_j*pu_j)$. We need to modify this to 
+2. In eq (2), we have $sumru = \sum_{j=1}^n (pr_j*pu_j)$. We need to modify this to 
    $$
    sumru = \sum_{j=1}^n width * (pr_j*pu_j)
    $$
    since each $e_j$ has *width* ciphertexts, and all have $pu_j$ applied. 
 
-Further research is needed to see if the restriction that all MultiText must have same width could be relaxed, or if unique $pu_j$ could be used within a MultText.
+
+
+Further research is needed to see if the restriction that all rows must have the same width could be relaxed, and if different $pu_j$ could be used for different ciphertexts within a row.
 
 
 
-#### Timing
+#### 8. Timings (preliminary)
 
-nrows = number of rows, eg ballots
-
-N = nrows * width = number of ciphertexts to be mixed
-
-|                  | proof              | verify                |
-| ---------------- | ------------------ | --------------------- |
-| regular exps     | 4*nrows + 2 * N    | 4 * nrows + 4 * N + 6 |
-| accelerated exps | 3*nrows + 2 *N + 6 | 8                     |
+- *nrows* = number of rows, eg ballots or contests
+- *width* = number of ciphertexts per row
+- *N* = nrows * width = total number of ciphertexts to be mixed
 
 
+
+**operation counts**
+
+|                  | proof               | verify                |
+| ---------------- | ------------------- | --------------------- |
+| regular exps     | 4*nrows + 2 * N     | 4 * nrows + 4 * N + 6 |
+| accelerated exps | 3*nrows + 2 * N + 6 | 8                     |
+
+
+
+**wallclock time (single threaded, fast CPU)**
 
 ```
-nballots=100, nciphertext= 100 per ballot
-  after shuffleProof: countPowP,AccPowP= 20400, 20306 total= 40706  expect (20400, 20306)
-  after checkShuffleProof: countPowP,AccPowP= 40406, 105 total= 40511  expect (40406, 8)
-```
-
-```
-             shuffle: took 238 msecs = 2.38 msecs/text (100 texts) = 238.0 msecs/shuffle for 1 shuffles
-        shuffleProof: took 710 msecs = 7.1 msecs/text (100 texts) = 710.0 msecs/shuffle for 1 shuffles
-   checkShuffleProof: took 1141 msecs = 11.41 msecs/text (100 texts) = 1141.0 msecs/shuffle for 1 shuffles
-               total: took 2089 msecs = 20.89 msecs/text (100 texts) = 2089.0 msecs/shuffle for 1 shuffles
-               
              shuffle: took 15910 msecs = 1.591 msecs/text (10000 texts) = 15910 msecs/shuffle for 1 shuffles
         shuffleProof: took 48261 msecs = 4.826 msecs/text (10000 texts) = 48261 msecs/shuffle for 1 shuffles
    checkShuffleProof: took 94875 msecs = 9.487 msecs/text (10000 texts) = 94875 msecs/shuffle for 1 shuffles
@@ -209,7 +252,7 @@ Break into batches of 100 ballots each and do in parallel. Each batch would have
 
 
 
-##### Time Verificatum vs egk-mixnet
+**Verificatum vs egk-mixnet**
 
 Vmn in pure Java mode, using BigInteger, shuffle twice:
 
@@ -225,19 +268,20 @@ sys	2m17.177s
 
 TODO: is vmn parellel, what is user time?
 
-egk-mixnet, shuffle once:
+egk-mixnet, shuffle trice:
 
 ```
-nrows=100, width= 34 per row, N=3400
-             shuffle: took 5504 msecs = 1.618 msecs/text (3400 texts) = 5504.0 msecs/shuffle for 1 shuffles
-        shuffleProof: took 17497 msecs = 5.146 msecs/text (3400 texts) = 17497 msecs/shuffle for 1 shuffles
-   checkShuffleProof: took 33874 msecs = 9.962 msecs/text (3400 texts) = 33874 msecs/shuffle for 1 shuffles
-               total: took 56875 msecs = 16.72 msecs/text (3400 texts) = 56875 msecs/shuffle for 1 shuffles
+testShuffleVerifyJson: nrows=100, width=34 N=3400
+  shuffle1 took 29750
+  verify1 took 33980
+  shuffle2 took 24460
+  verify1 took 33712
+after 2 shuffles: 121903 msecs, N=3400 perN=35 msecs
 ```
 
 
 
-### References
+#### References
 
 1. Josh Benaloh and Michael Naehrig, *ElectionGuard Design Specification, Version 2.0.0*, Microsoft Research, August 18, 2023, https://github.com/microsoft/electionguard/releases/download/v2.0/EG_Spec_2_0.pdf 
 2. Rolf Haenni, Reto E. Koenig, Philipp Locher, Eric Dubuis. *CHVote Protocol Specification Version 3.5*, Bern University of Applied Sciences, February 28th, 2023, https://eprint.iacr.org/2017/325.pdf
@@ -245,3 +289,6 @@ nrows=100, width= 34 per row, N=3400
 4. B. Terelius and D. Wikström. *Proofs of restricted shuffles*, In D. J. Bernstein and T. Lange, editors, AFRICACRYPT’10, 3rd International Conference on Cryptology inAfrica, LNCS 6055, pages 100–113, Stellenbosch, South Africa, 2010.
 5. D. Wikström. *A commitment-consistent proof of a shuffle.* In C. Boyd and J. González Nieto, editors, ACISP’09, 14th Australasian Conference on Information Security and Privacy, LNCS 5594, pages 407–421, Brisbane, Australia, 2009.
 6. D. Wikström. *How to Implement a Stand-alone Verifier for the Verificatum Mix-Net VMN Version 3.1.0*, 2022-09-10, https://www.verificatum.org/files/vmnv-3.1.0.pdf
+7. John Caron, Dan Wallach, *ElectionGuard Kotlin library*, https://github.com/votingworks/electionguard-kotlin-multiplatform
+8. E-Voting Group, Institute for Cybersecurity and Engineering, Bern University of Applied Sciences, *OpenCHVote*, https://gitlab.com/openchvote/cryptographic-protocol
+
