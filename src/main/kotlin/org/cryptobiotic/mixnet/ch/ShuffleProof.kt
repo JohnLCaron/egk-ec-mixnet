@@ -51,12 +51,13 @@ fun shuffleProof(
     seed: ElementModQ,
     publicKey: ElGamalPublicKey, // public key = pk
     psi: Permutation, // permutation = psi
-    ballots: List<MultiText>, // ciphertexts = bold_e
+    rows: List<MultiText>, // ciphertexts = bold_e
     shuffledBallots: List<MultiText>, // shuffled ciphertexts = bold_e_tilde
     rnonces: List<ElementModQ>, // re-encryption nonces = pr
+    nthreads: Int = 10,
 ): ShuffleProof{
-    val N = ballots.size
-    val ciphertexts = ballots.flatMap { it.ciphertexts }
+    val nrows = rows.size
+    val ciphertexts = rows.flatMap { it.ciphertexts }
     val shuffled = shuffledBallots.flatMap { it.ciphertexts }
 
     val prep = shufflePrep(group, U, seed, publicKey, psi, ciphertexts, shuffled)
@@ -70,7 +71,7 @@ fun shuffleProof(
     //// loop1
     var R_i_minus_1 = group.ZERO_MOD_Q
     var U_i_minus_1 = group.ONE_MOD_Q
-    repeat (N) { i ->
+    repeat (nrows) { i ->
         val omega_hat_i: ElementModQ = group.randomElementModQ(minimum = 1)
         val omega_tilde_i: ElementModQ = group.randomElementModQ(minimum = 1)
 
@@ -115,35 +116,28 @@ fun shuffleProof(
     val omega_3: ElementModQ = group.randomElementModQ(minimum = 1)
     val t_3 = group.gPowP(omega_3) * group.prodPow(prep.generators, bold_omega_tilde)
 
-    // t_41 = pk^-ω4 * Prod(ãi^ω̃i')
-    // var t_41 = ZZPlus_p.multiply(ZZPlus_p.invert(ZZPlus_p.pow(pk, omega_4)),
-    //          ZZPlus_p.prodPow(bold_e_tilde.map(Encryption::get_a), bold_omega_tilde)); // a = pk^eps term
-    val omega_4 : ElementModQ = group.randomElementModQ(minimum = 1)
-    val t_41 = group.prodPowA( shuffledBallots, bold_omega_tilde) / (publicKey powP omega_4)
-    if (debug1) {
-        println("ShuffleProof t_41")
-        println(" bold_omega_tilde = ${bold_omega_tilde}")
-        println(" prodPowA = ${group.prodPowA( shuffledBallots, bold_omega_tilde, true).toStringShort()}")
-        println(" omega_4= ${omega_4}")
-        println(" pk^omega4 = ${(publicKey powP omega_4)}")
+    val omega_4: ElementModQ = group.randomElementModQ(minimum = 1)
+
+    val (t41, t42) = if (nthreads == 1) {
+        // t_41 = pk^-ω4 * Prod(ãi^ω̃i')
+        // var t_41 = ZZPlus_p.multiply(ZZPlus_p.invert(ZZPlus_p.pow(pk, omega_4)),
+        //          ZZPlus_p.prodPow(bold_e_tilde.map(Encryption::get_a), bold_omega_tilde)); // a = pk^eps term
+        val t_41 = group.prodPowA( shuffledBallots, bold_omega_tilde) / (publicKey powP omega_4)
+
+        // t_42 = g^-ω4 * Prod(bti^ω̃i'), bt = btilde
+        // var t_42 = ZZPlus_p.multiply(ZZPlus_p.invert(ZZPlus_p.pow(g, omega_4)),
+        //          ZZPlus_p.prodPow(bold_e_tilde.map(Encryption::get_b), bold_omega_tilde)); // b = g^eps term
+        val t_42 = group.prodPowB(shuffledBallots, bold_omega_tilde) / group.gPowP(omega_4)
+        Pair(t_41, t_42)
+    } else {
+        // parellel calculation here
+        val (t1sum, t2sum) = PcalcProdPow(group, nthreads).calcProdPow(shuffledBallots, bold_omega_tilde)
+        val t_41 = t1sum / (publicKey powP omega_4)
+        val t_42 = t2sum / group.gPowP(omega_4)
+        Pair(t_41, t_42)
     }
 
-    // t_42 = g^-ω4 * Prod(bti^ω̃i'), bt = btilde
-    // var t_42 = ZZPlus_p.multiply(ZZPlus_p.invert(ZZPlus_p.pow(g, omega_4)),
-    //          ZZPlus_p.prodPow(bold_e_tilde.map(Encryption::get_b), bold_omega_tilde)); // b = g^eps term
-    val t_42 = group.prodPowB(shuffledBallots, bold_omega_tilde) / group.gPowP(omega_4)
-
-    val t = listOf(t_1, t_2, t_3, t_41, t_42, bold_t_hat)
-    if (debug2) {
-        println("ShuffleProof")
-        println(" t_1 = ${t_1.toStringShort()}")
-        println(" t_2 = ${t_2.toStringShort()}")
-        println(" t_3 = ${t_3.toStringShort()}")
-        println(" t_41= ${t_41.toStringShort()}")
-        println(" t_42= ${t_42.toStringShort()}")
-        bold_t_hat.forEachIndexed { idx, it -> println(" bt_${idx} = ${it.toStringShort()}") }
-    }
-
+    val t = listOf(t_1, t_2, t_3, t41, t42, bold_t_hat)
     val y = listOf(ciphertexts, shuffled, prep.pcommit, prep.cchallenges, publicKey)
     val c = getChallenge(group, y, t)
 
@@ -153,20 +147,20 @@ fun shuffleProof(
 
     //  var r_hat = ZZ_q.sumProd(bold_r_hat, bold_v);
     //  var s_2 = ZZ_q.subtract(omega_2, ZZ_q.multiply(c, r_hat));
-    val s2 = computeS2(group, N, prep, omega_2, c)
+    val s2 = computeS2(group, nrows, prep, omega_2, c)
 
     //  var r = ZZ_q.sumProd(bold_r, bold_u);
     //  var s_3 = ZZ_q.subtract(omega_3, ZZ_q.multiply(c, r));
     val s3 = omega_3 - c * group.sumProd(prep.u, prep.pnonces)
 
     //  var s_4 = ZZ_q.subtract(omega_4, ZZ_q.multiply(c, r_tilde));
-    val width = ballots[0].ciphertexts.size
+    val width = rows[0].ciphertexts.size
     val s4 = computeS4(group, width, rnonces, prep.pu, omega_4, c)
 
     //// loop2
     val bold_s_hat = mutableListOf<ElementModQ>()
     val bold_s_tilde = mutableListOf<ElementModQ>()
-    repeat (N) { i ->
+    repeat (nrows) { i ->
         // var s_hat_i = ZZ_q.subtract(bold_omega_hat.getValue(i), ZZ_q.multiply(c, bold_r_hat.getValue(i)));
         val s_hat_i = bold_omega_hat[i] - c * prep.ccnonces[i]
         bold_s_hat.add(s_hat_i)
@@ -174,28 +168,10 @@ fun shuffleProof(
         val s_tilde_i = bold_omega_tilde[i] - c * prep.pu[i]
         bold_s_tilde.add(s_tilde_i)
     }
+
     val proof = ShuffleProof(U, seed, prep.pcommit, prep.cchallenges,
         c, s1, s2, s3, s4, bold_s_hat, bold_s_tilde,
         bold_omega_hat, bold_omega_tilde, listOf(omega_1, omega_2, omega_3, omega_4))
-
-    if (debug2) {
-        val a_tilde : ElementModP = group.prodPowA(ballots, prep.u)
-        val t_41p = (a_tilde powP c) * group.prodPowA(shuffledBallots, bold_s_tilde) / (publicKey powP s4)
-        println("ShuffleProof t_41p= ${t_41p.toStringShort()}")
-
-        val apPowUp = group.prodPowA( shuffledBallots, prep.pu)
-        val aPowU = group.prodPowA( ballots, prep.u)
-        //val encr0 = publicKey powP prep.rtilde_u
-        //require(apPowUp == aPowU * encr0)
-
-        println(" a_tilde = ${a_tilde.toStringShort()}")
-        println(" a_tilde^c= ${(a_tilde powP proof.c).toStringShort()}")
-        println(" bold_s_tilde = ${proof.bold_s_tilde}")
-        println(" prodPowA = ${group.prodPowA(shuffledBallots, proof.bold_s_tilde).toStringShort()}")
-        println(" proof.s4= ${proof.s4}")
-        println(" pk^s4 = ${(publicKey powP omega_4).toStringShort()}")
-        // require(t_41 == t_41p)
-    }
 
     return proof
 }

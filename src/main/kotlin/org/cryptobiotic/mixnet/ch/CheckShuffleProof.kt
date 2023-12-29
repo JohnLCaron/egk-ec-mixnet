@@ -12,28 +12,32 @@ fun checkShuffleProof(
     ballots: List<MultiText>, // ciphertexts
     shuffledBallots: List<MultiText>, // shuffled
     proof: ShuffleProof,
+    nthreads: Int = 10,
 ): Boolean {
-    val N = ballots.size
+    val nrows = ballots.size
 
     // create independent, deterministic group generators, from a seed and a string.
-    val (h, generators) = getGenerators(group, N, U, seed) // List<ElementModP> = bold_h
+    val (h, generators) = getGenerators(group, nrows, U, seed) // List<ElementModP> = bold_h
 
     val ciphertexts = ballots.flatMap { it.ciphertexts }
     val shuffled = shuffledBallots.flatMap { it.ciphertexts }
-    val bold_u = getChallenges(group, N, listOf(ciphertexts, shuffled, proof.pcommit, pk))
+    val bold_u = getChallenges(group, nrows, listOf(ciphertexts, shuffled, proof.pcommit, pk))
     val u = group.prod(bold_u)
 
     // val c_bar = ZZPlus_p.divide(ZZPlus_p.prod(bold_c), ZZPlus_p.prod(bold_h))
     val c_bar = group.prod(proof.pcommit) / group.prod(generators)
     // var c_hat = ZZPlus_p.divide(N == 0 ? c_hat_0 : bold_c_hat.getValue(N), ZZPlus_p.pow(h, u));
-    val c_hat = proof.cchallenges [N - 1] / (h powP u)
+    val c_hat = proof.cchallenges [nrows - 1] / (h powP u)
 
     val c_tilde = group.prodPow(proof.pcommit, bold_u)
-    val a_tilde : ElementModP = group.prodPowA(ballots, bold_u)
-    val b_tilde = group.prodPowB(ballots, bold_u)
+    val (a_tilde, b_tilde) = if (nthreads == 1) {
+        Pair(group.prodPowA(ballots, bold_u), group.prodPowB(ballots, bold_u))
+    } else {
+        PcalcProdPow(group, nthreads).calcProdPow(ballots, bold_u)
+    }
 
     val bold_t_hat = mutableListOf<ElementModP>()
-    repeat(N) { i ->
+    repeat(nrows) { i ->
         val chatMinusOne = if (i == 0) h else proof.cchallenges[i - 1]
         bold_t_hat.add((proof.cchallenges[i] powP proof.c) * group.gPowP(proof.bold_s_hat[i]) *
                 (chatMinusOne powP proof.bold_s_tilde[i]))
@@ -41,25 +45,20 @@ fun checkShuffleProof(
     val t_1 = (c_bar powP proof.c) * group.gPowP(proof.s1)
     val t_2 = (c_hat powP proof.c) * group.gPowP(proof.s2)
     val t_3 = (c_tilde powP proof.c) * (group.gPowP(proof.s3) * group.prodPow(generators, proof.bold_s_tilde))
-    val t_41 = (a_tilde powP proof.c) * group.prodPowA(shuffledBallots, proof.bold_s_tilde) / (pk powP proof.s4)
-    val t_42 = (b_tilde powP proof.c) * group.prodPowB(shuffledBallots, proof.bold_s_tilde) / group.gPowP(proof.s4)
 
-    val t = listOf(t_1, t_2, t_3, t_41, t_42, bold_t_hat)
-    if (debug) {
-        println("ShuffleProof")
-        println("   a_tilde= ${a_tilde}")
-        println("   bold_s_tilde= ${proof.bold_s_tilde}")
-        println("   s4= ${proof.s4}")
-
-        println("CheckShuffleProof")
-        println(" t_1 = ${t_1.toStringShort()}")
-        println(" t_2 = ${t_2.toStringShort()}")
-        println(" t_3 = ${t_3.toStringShort()}")
-        println(" t_41= ${t_41.toStringShort()}")
-        println(" t_42= ${t_42.toStringShort()}")
-        bold_t_hat.forEachIndexed { idx, it -> println(" bt_${idx} = ${it.toStringShort()}") }
+    val (t41, t42) = if (nthreads == 1) {
+        val t_41 = (a_tilde powP proof.c) * group.prodPowA(shuffledBallots, proof.bold_s_tilde) / (pk powP proof.s4)
+        val t_42 = (b_tilde powP proof.c) * group.prodPowB(shuffledBallots, proof.bold_s_tilde) / group.gPowP(proof.s4)
+        Pair(t_41, t_42)
+    } else {
+        // parellel calculation here
+        val (t1sum, t2sum) = PcalcProdPow(group, nthreads).calcProdPow(shuffledBallots, proof.bold_s_tilde)
+        val t_41 = (a_tilde powP proof.c) * t1sum / (pk powP proof.s4)
+        val t_42 = (b_tilde powP proof.c) * t2sum / group.gPowP(proof.s4)
+        Pair(t_41, t_42)
     }
 
+    val t = listOf(t_1, t_2, t_3, t41, t42, bold_t_hat)
     val y = listOf(ciphertexts, shuffled, proof.pcommit, proof.cchallenges, pk)
     val challenge_prime = getChallenge(group, y, t)
 
