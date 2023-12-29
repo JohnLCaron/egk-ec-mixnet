@@ -55,6 +55,7 @@ class WorkflowTest {
     fun runShuffleProofVerify(group: GroupContext, publicKey: ElGamalPublicKey, rows: List<MultiText>, proofno: Int): Pair<ShuffleProof, List<MultiText>> {
 
         val (mixedBallots, rnonces, permutation) = shuffleMultiText(rows, publicKey)
+        // val (mixedBallots, rnonces, permutation) = PShuffleMultiText(group, rows, publicKey).shuffle()
 
         val U = "shuffleProof$proofno"
         val seed = group.randomElementModQ()
@@ -85,14 +86,18 @@ class WorkflowTest {
 
     @Test
     // run through the workflow and write serializations and read back and verify
-    fun testShuffleVerifyJson() {
-        val startingAll = getSystemTimeInMillis()
-        var startingTime = getSystemTimeInMillis()
+    fun testShuffleAndVerifyJson() {
+        runShuffleAndVerifyJson(100, 34, 20)
+        runShuffleAndVerifyJson(100, 34, 10)
+        runShuffleAndVerifyJson(100, 34, 5)
+        runShuffleAndVerifyJson(100, 34, 1)
+    }
 
-        val nrows = 100
-        val width = 34
+    // run through the workflow and write serializations and read back and verify
+    fun runShuffleAndVerifyJson(nrows: Int, width: Int, nthreads: Int) {
+        val startingAll = getSystemTimeInMillis()
         val N = nrows * width
-        println("testShuffleVerifyJson: nrows=$nrows, width=$width N=$N")
+        println("testShuffleVerifyJson: nthreads = $nthreads nrows=$nrows, width=$width N=$N")
 
         val keypair = elGamalKeyPairFromRandom(group)
         val ballots: List<MultiText> = List(nrows) {
@@ -101,13 +106,10 @@ class WorkflowTest {
         }
 
         // shuffle 1
-        val (shuffleProof1, shuffle1) = runShuffleProof(group, keypair.publicKey, ballots, 1)
+        val (shuffleProof1, shuffle1) = runShuffle(group, keypair.publicKey, ballots, 1, nthreads)
         writeShuffleProofToFile(filenameProof1, shuffleProof1)
         writeMultiTextToFile(filenameBallots, ballots)
         writeMultiTextToFile(filenameShuffle1, shuffle1)
-        var endingTime = getSystemTimeInMillis()
-        println("  shuffle1 took ${endingTime - startingTime}")
-        startingTime = endingTime
 
         // verify 1
         val input1 = readMultiTextFromFile(group, filenameBallots).unwrap()
@@ -119,18 +121,15 @@ class WorkflowTest {
             input1,
             shuffled1,
             proof1,
+            1,
+            nthreads,
         ))
-        endingTime = getSystemTimeInMillis()
-        println("  verify1 took ${endingTime - startingTime}")
-        startingTime = endingTime
+
 
         // shuffle 2
-        val (shuffleProof2, shuffle2) = runShuffleProof(group, keypair.publicKey, shuffled1, 2)
+        val (shuffleProof2, shuffle2) = runShuffle(group, keypair.publicKey, shuffled1, 2, nthreads)
         writeShuffleProofToFile(filenameProof2, shuffleProof2)
         writeMultiTextToFile(filenameShuffle2, shuffle2)
-        endingTime = getSystemTimeInMillis()
-        println("  shuffle2 took ${endingTime - startingTime}")
-        startingTime = endingTime
 
         // verify 2
         val input2 = readMultiTextFromFile(group, filenameShuffle1).unwrap()
@@ -142,18 +141,25 @@ class WorkflowTest {
             input2,
             shuffled2,
             proof2,
+            1,
+            nthreads,
         ))
-        endingTime = getSystemTimeInMillis()
-        println("  verify1 took ${endingTime - startingTime}")
 
         val ending = getSystemTimeInMillis() - startingAll
         val perN = ending / N
         println("  after 2 shuffles: $ending msecs, N=$N perN=$perN msecs")
     }
 
-    fun runShuffleProof(group: GroupContext, publicKey: ElGamalPublicKey, rows: List<MultiText>, proofno: Int): Pair<ShuffleProof, List<MultiText>> {
+    fun runShuffle(group: GroupContext, publicKey: ElGamalPublicKey, rows: List<MultiText>, proofno: Int, nthreads: Int): Pair<ShuffleProof, List<MultiText>> {
+        var startingTime = getSystemTimeInMillis()
+        var endingTime: Long
 
-        val (shuffled, rnonces, permutation) = shuffleMultiText(rows, publicKey)
+        // val (shuffled, rnonces, permutation) = shuffleMultiText(rows, publicKey)
+        val (shuffled, rnonces, permutation) = PShuffleMultiText(group, rows, publicKey).shuffle()
+
+        endingTime = getSystemTimeInMillis()
+        println("  shuffle$proofno took ${endingTime - startingTime}")
+        startingTime = endingTime
 
         val U = "shuffleProof$proofno"
         val seed = group.randomElementModQ()
@@ -166,7 +172,10 @@ class WorkflowTest {
             rows,
             shuffled,
             rnonces,
+            nthreads,
         )
+        endingTime = getSystemTimeInMillis()
+        println("  shuffleProof$proofno took ${endingTime - startingTime}")
 
         return Pair(proof, shuffled)
     }
@@ -175,9 +184,12 @@ class WorkflowTest {
                          publicKey: ElGamalPublicKey,
                          rows: List<MultiText>,
                          shuffled: List<MultiText>,
-                         proof: ShuffleProof): Boolean{
+                         proof: ShuffleProof,
+                         proofno:Int, nthreads: Int): Boolean{
 
-        return checkShuffleProof(
+        val startingTime = getSystemTimeInMillis()
+
+        val result =  checkShuffleProof(
             group,
             proof.U,
             proof.seed,
@@ -185,7 +197,12 @@ class WorkflowTest {
             rows,
             shuffled,
             proof,
+            nthreads,
         )
+        val endingTime = getSystemTimeInMillis()
+        println("  shuffleVerify$proofno took ${endingTime - startingTime}")
+
+        return result
     }
 
 }

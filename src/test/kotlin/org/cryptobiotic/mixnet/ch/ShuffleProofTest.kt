@@ -26,12 +26,12 @@ class ShuffleProofTest {
         val group = productionGroup()
 
         runShuffleProof(3, 1, group, true, false)
+        runShuffleProof(3, 3, group, true, false)
         runShuffleProof(11, 1, group, true, false)
-        runShuffleProof(3, 2, group, true, false)
-        runShuffleProof(3, 20, group, true, false)
+        runShuffleProof(10, 10, group, true, false)
         //runShuffleProof(3, 100, group, true, false)
         //runShuffleProof(30, 100, group, true, false)
-        //runShuffleProof(100, 100, group, true, false)
+        runShuffleProof(100, 34, group, true, false)
     }
 
     @Test
@@ -51,14 +51,14 @@ class ShuffleProofTest {
         }
 
         val N = nrows*width
-        group.showAndClearCountPowP()
         println("=========================================")
         println("nrows=$nrows, width= $width per row, N=$N")
 
         var starting = getSystemTimeInMillis()
+        group.showAndClearCountPowP()
         val (mixedBallots, rnonces, permutation) = shuffleMultiText(ballots, keypair.publicKey)
         stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
-         // if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
+        if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
 
         val U = "shuffleProof2"
         val seed = group.randomElementModQ()
@@ -73,7 +73,7 @@ class ShuffleProofTest {
             mixedBallots,
             rnonces,
         )
-        stats.of("shuffleProof", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
+        stats.of("proof", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after shuffleProof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
 
         starting = getSystemTimeInMillis()
@@ -86,7 +86,7 @@ class ShuffleProofTest {
             mixedBallots,
             proof,
         )
-        stats.of("checkShuffleProof", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
+        stats.of("verify", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after checkShuffleProof: ${group.showAndClearCountPowP()} ${expectCheck(nrows, width)}")
         assertTrue(valid)
 

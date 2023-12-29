@@ -44,7 +44,7 @@ fun permutationCommitment(group: GroupContext,
         val jdx = psi.of(idx)
         val rj = group.randomElementModQ(minimum = 1)
         // val c_j_i: Unit = ZZPlus_p.multiply(ZZPlus_p.pow(g, r_j_i), bold_h.getValue(i))
-        val cj = group.gPowP(rj) * generators[idx] // LOOK using idx, not jdx
+        val cj = group.gPowP(rj) * generators[idx]
 
         pnonces[jdx] = rj
         pcommitments[jdx] = cj
