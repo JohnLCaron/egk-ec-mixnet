@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.ch
+package org.cryptobiotic.mixnet.core
 
 import electionguard.core.*
 
@@ -7,8 +7,6 @@ fun getGenerators(group: GroupContext, n: Int, U: String, seed: ElementModQ = gr
     // not sure if this is good enough, except for testing
     val nonces = Nonces(seed, U).take(n+1)
     val h = group.gPowP(nonces[0])
-    val generators = List(n) {
-        h powP nonces[it+1]
-    }
+    val generators = List(n) { h powP nonces[it+1] }
     return Pair(h, generators)
 }

@@ -6,7 +6,7 @@ We use the the ElectionGuard Kotlin library [7] for all the cryptography primiti
 
 Some of the prototype code in egk-mixlib is a port of code found in the OpenCHVote repository [8], and the appropriate license has been added. Please use any of this work in any way consistent with that.
 
-The math here mostly recapitulates the work of Rolf Haenni et. al. [2], [3] in explaining the Terelius / Wikström mixnet algorithm [4], [5]. 
+The math here mostly recapitulates the work of Haenni et. al. [2], [3] in explaining the Terelius / Wikström (TW) mixnet algorithm [4], [5], and the work of Haines [9] that gives a formal proof of security of TW when the shuffle involves vectors of ciphertexts.
 
 Ive tried to avoid notation that is hard to read, preferring for example, multiple character symbols like $pr$ instead of  r̃ or r̂ , since the glyphs can get too small to read when they are used in exponents or subscripts, and can be hard to replicate in places other than high quality Tex or PDF renderers.
 
@@ -29,9 +29,9 @@ We use the ElectionGuard Kotlin library [7] and ElectionGuard 2.0 specification 
 
 #### 2. Permutations
 
-A *permutation* is a bijective map $\psi: {1..N} \to {1..N}$​. We use **px** to mean the permutation of a vector **x**, **px** = $\psi(\textbf x)$, so that $x_i$ = $px_j$, where $i={\psi(j)}$ and $j={\psi^{-1}(i)}$. 
+A *permutation* is a bijective map $\psi: {1..N} \to {1..N}$. We use **px** to mean the permutation of a vector **x**, **px** = $\psi(\textbf x)$, so that $x_i$ = $px_j$, where $i={\psi(j)}$ and $j={\psi^{-1}(i)}$.   $x_i = px_{\psi^{-1}(i)}$,   $px_j = x_{\psi(j)}$, 
 
-A *permutation* $\psi$ has a *permutation matrix* $B_\psi$ , where $b_{ij}$ = 1 if $\psi(i)$ = j, otherwise 0. 
+A *permutation* $\psi$ has a *permutation matrix* $B_\psi$ , where $b_{ij}$ = 1 if $\psi(i)$ = j, otherwise 0. Note that **px** = B**x** (matrix multiply).
 
 If $B_\psi$ = ($b_{ij}$) is an N -by-N matrix over $\Z_q$ and **x** = $(x_1 , ..., x_N)$  a vector of N independent variables, then $B_\psi$ is a permutation matrix if and only
 $$
@@ -43,11 +43,11 @@ $$
 
 #### 3. Pedersen Commitments
 
-For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Pedersen committment* to $\textbf m$ is
+For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Extended Pedersen committment* to $\textbf m$ is
 $$
 \begin{align}
 Commit(\textbf m, cr) = g^{cr} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n} 
-= g^{r} * \prod_{i=1}^n h_i^{m_i}
+= g^{cr} * \prod_{i=1}^n h_i^{m_i}
 \end{align}
 $$
 where ($ g, \textbf h $) are generators of  $ \Z_p^r $ with randomization nonce $ cr \in Z_q $.
@@ -67,7 +67,7 @@ $$
 
 
 
-#### 4. Proof of permutation (TW offline?)
+#### 4. Proof of permutation
 
 Let **c** = $Commit(\psi, \textbf r)$ = $(c_1, c_2, .. c_N)$, with randomization vector **cr** = $(cr_1, cr_2, .. cr_N)$, and $crbar = \sum_{i=1}^n cr_i$. 
 
@@ -119,6 +119,9 @@ $$
     ReEncr(m, r)^k = Encr(0, r*k) * Encr(m*k, \xi*k) \\
     \\
 (2f)    \\
+    \prod_{j=1}^n ReEncr(e_j, r_j)= (g^{\sum_{j=1}^n (\xi_j+r_j)}, K^{\sum_{j=1}^n (m_j+\xi_j+r_j)}) \\
+    =  ReEncr(\prod_{j=1}^n e_j, \sum_{j=1}^n r_j) \\
+(2e)    \\
     \prod_{j=1}^n ReEncr(m_j, r_j)^{k_j} = \prod_{j=1}^n Encr(0, r_j*k_j) * \prod_{j=1}^n Encr(m_j*k_j, \xi_j*k_j) \\
     = Encr(0,\sum_{j=1}^n (r_j*k_j)) * \prod_{j=1}^n Encr(m_j, \xi_j)^{k_j} \\
 \end{align}
@@ -140,7 +143,7 @@ $$
 
 
 
-#### 6. TW Algorithm, proof of equal exponents (online?)
+#### 6. Proof of equal exponents
 
 Let $\textbf m$ be a vector of messages, $\textbf e$ their encryptions **e** = Encr($\textbf m$), and **re(e, r)** their reenryptions with nonces **r**.  A shuffle operation both reencrypts and permutes, so $shuffle(\textbf{e}, \textbf{r}) \to (\textbf{pre}, \textbf{pr})$, where **pre** is the permutation of **re ** by $\psi$, and **pr** the permutation of **r ** by $\psi$.
 $$
@@ -188,35 +191,109 @@ The $Encr(0, ..)$ is because we use exponential ElGamal, so is fine. Their use o
 
 
 
+#### 7. Shuffling vectors
 
+Much of the literature assumes that each row to be mixed consists of a single ciphertext. In our application we need the possibility that each row consists of a vector of ciphertexts. So for each row i, we now have a vector of *w = width* ciphertexts:
+$$
+\textbf {e}_i = (e_{i,1},.. e_{i,w}) = \{e_{i,k}\},\ k=1..w
+$$
+The main work is to modify the proof of equal exponents for this case.
 
-#### 7. Multitext mixing
-Most of the literature assumes that each row to be mixed consists of a single ElGamalCiphertext. In our application we need the possibility that each row consists of ***width*** number of ElGamalCiphertexts. So for each row, we use:
-```
-	data class MultiText(val ciphertexts: List<ElGamalCiphertext>)
-```
-and it is the rows that are permuted, not the flat list of ciphertexts.
+Suppose we are looking for the simplest generalization of 5.5:
+$$
+\prod_{j=1}^n pre_j^{pu_j} = Encr(0,sumru) \cdot \prod_{i=1}^n e_i^{u_i}\ \ \ (5.5)
+$$
+one could use the same nonce for all the ciphertexts in each row when reencrypting:
+$$
+\textbf r = \{r_j\}, j=1..n \\
+re_{j,k} = ReEncr(e_{j,k}, r_j) =  Encr(0,r_j) \cdot e_{j,k}\ \ \ (case 1) \\
+$$
+or generate N = nrows * width nonces, one for each ciphertext:
+$$
+\textbf r = \{r_{j,k}\},\ j=1..n,\ k=1..w \\
+re_{j,k} = ReEncr(e_{j,k}, r_{j,k}) =  Encr(0,r_{j,k}) \cdot e_{j,k}\ \ \ (case 2)
+$$
 
-The changes to the standard algorithms needed for this are modest:
+Then eq 5.5 is changed to
+$$
+\prod_{j=1}^n \prod_{k=1}^w pre_{j,k}^{pu_j} = Encr(0,sumru') * \prod_{i=1}^n \prod_{k=1}^w e_{i,k}^{u_i}
+$$
+where, now 
+$$
+sumru' &= \sum_{j=1}^n width * (pr_j*pu_j)\ \ \ (case 1) \\
+&= \sum_{j=1}^n \sum_{k=1}^n (pr_{j,k}*pu_j)\ \ \ (case 2).
+$$
 
-1) In algorithms 8.4, 8.5 of [2], the challenge includes a list of all the ciphertexts and their reencryptions in their hash function:
-
+In algorithms 8.4, 8.5 of [2], the challenge includes a list of all the ciphertexts and their reencryptions in their hash function:
 $$
 \textbf u = Hash(..., \textbf e, \textbf {pe}, pcommit, pkq, i, ...)
 $$
-​	Here we just flatten the list of lists of ciphertexts for $\textbf e, \textbf {pe}$. This is used in both the proof construction and the proof verification.
-
-2. In eq (2), we have $sumru = \sum_{j=1}^n (pr_j*pu_j)$. We need to modify this to 
-   $$
-   sumru = \sum_{j=1}^n width * (pr_j*pu_j)
-   $$
-   since each $e_j$ has *width* ciphertexts, and all have $pu_j$ applied. 
+​	Here we just flatten the list of lists of ciphertexts for $\textbf e, \textbf {pe}$, so that all are included in the hash. Since the hash is dependent on the ordering of the hash elements, this should preclude an attack that switches ciphertexts within a row.
 
 
 
-Further research is needed to see if the restriction that all rows must have the same width could be relaxed, and if different $pu_j$ could be used for different ciphertexts within a row.
 
 
+#### 8. Proof of vector shuffling
+
+Haines [9]  gives a formal proof of security of TW when the shuffle involves vectors of ciphertexts.
+
+We will use the notation above for case 2, using a separate nonce for each ciphertext:
+$$
+\textbf r = \{r_{j,k}\},\ j=1..n,\ k=1..w \\
+re_{j,k} = ReEncr(e_{j,k}, r_{j,k}) =  Encr(0,r_{j,k}) \cdot e_{j,k}\ \ \ (case 2)
+$$
+
+This gives an nrows x width matrix R of reencryption nonces. The vector notation is a shorthand for component-wise operations:
+$$
+R = (\textbf r_1,..\textbf r_n) \\
+Encr(\textbf e_i) = (Encr(e_{i,1}),..Encr(e_{i,w})) \\
+ReEncr(\textbf e_i, \textbf r_i) = (ReEncr(e_{i,1}, r_{i,1}),..ReEncr(e_{i,1}, r_{i,w}))
+$$
+so now we have vector equations for rencryption:
+$$
+\textbf {re}_i = ReEncr(\textbf e_i, \textbf r_i) =  Encr(0, \textbf r_i) * \textbf e_i \\
+$$
+and the permuted form, as is returned by the shuffle:
+$$
+\textbf {pre}_j = ReEncr(\textbf {pe}_j, \textbf{pr}_j) =  Encr(0, \textbf {pr}_j) * \textbf e_j \\
+$$
+
+which corresponds to ntnu equation (p 3) of [9]:
+$$
+\textbf e^\prime_i = ReEnc(\textbf e_{π(i)}, R_{π(i)} ), π = π_M
+$$
+
+Let **ω** be width random nonces, **ω'** = permuted **ω**, and $\textbf {pe}_i$ = permuted $\textbf e_i = \textbf e^\prime_i$ as before. Then the $t_4$ equation (p 3, paragraph 2 of [9])  is a vector of  width components:
+
+$$
+\textbf t_4 &= ReEnc(\prod_i^n \textbf {pe}_i^{\textbf ω^\prime_i}, − \textbf {ω}_4 ) \\
+ &= (ReEnc(\prod_i^n \textbf {pe}_i^{\textbf ω^\prime_i}, − \textbf {ω}_{4,1} ),..
+ (ReEnc(\prod_i^n \textbf {pe}_i^{\textbf ω^\prime_i}, − \textbf {ω}_{4,w} )) \\
+$$
+
+where
+$$
+\prod_i^n \textbf {pe}_i^{\textbf ω^\prime_i}
+$$
+must be the product over  rows of the $k_{th}$ ciphertext in each row:
+$$
+(\prod_i^n \textbf {pe}_{i,1}^{\textbf ω^\prime_i},.. \prod_i^n \textbf {pe}_{i,w}^{\textbf ω^\prime_i}) \\
+= \{\prod_i^n \textbf {pe}_{i,k}^{\textbf ω^\prime_i}\}, k = 1.. width \\
+\textbf t_4 = \{ Rencr( \prod_i^n \textbf {pe}_{i,k}^{\textbf ω^\prime_i}, − \textbf {ω}_4 ) \}, k = 1.. width
+$$
+
+(quite a bit more complicated than "our simplest thing to do" above)
+
+
+
+**extra**
+
+to go back to (2f) and unravel this:
+$$
+\prod_{j=1}^n ReEncr(e_j, r_j) =  ReEncr(\prod_{j=1}^n e_j, \sum_{j=1}^n r_j)\ \ \ (2f) \\
+\prod_{j=1}^n ReEncr(\textbf {pe}_i^{\textbf ω^\prime_i}, r_j) =  ReEncr(\prod_{j=1}^n \textbf {pe}_i^{\textbf ω^\prime_i}, \sum_{j=1}^n r_j)
+$$
 
 #### 8. Timings (preliminary)
 
@@ -228,56 +305,62 @@ Further research is needed to see if the restriction that all rows must have the
 
 **operation counts**
 
-|                  | proof               | verify                |
-| ---------------- | ------------------- | --------------------- |
-| regular exps     | 4*nrows + 2 * N     | 4 * nrows + 4 * N + 6 |
-| accelerated exps | 3*nrows + 2 * N + 6 | 8                     |
+|                  | shuffle | proof           | verify                |
+| ---------------- | ------- | --------------- | --------------------- |
+| regular exps     | 0       | 4*nrows + 2 * N | 4 * nrows + 4 * N + 6 |
+| accelerated exps | 2 * N   | 3*nrows + 6     | 8                     |
 
 
 
-**wallclock time (single threaded, fast CPU)**
+**wallclock time**
 
-```
-             shuffle: took 15910 msecs = 1.591 msecs/text (10000 texts) = 15910 msecs/shuffle for 1 shuffles
-        shuffleProof: took 48261 msecs = 4.826 msecs/text (10000 texts) = 48261 msecs/shuffle for 1 shuffles
-   checkShuffleProof: took 94875 msecs = 9.487 msecs/text (10000 texts) = 94875 msecs/shuffle for 1 shuffles
-               total: took 159046 msecs = 15.90 msecs/text (10000 texts) = 159046 msecs/shuffle for 1 shuffles
-```
-
-Total time is 160 secs = 2.5 minutes to shuffle 100 ballots of 100 ciphertexts. = 56.5 * nrows + 15.24 * N msecs.
-
-Not counting i/o or serialization.
-
-Break into batches of 100 ballots each and do in parallel. Each batch would have 2 * 100 * 100 texts (input and shuffled). A ciphertext = 1K bytes. so 20 Mbytes.  The proofs are small (4 * nrows ElementQ = 4 * 100 * 32 = 12K bytes).
-
-
-
-**Verificatum vs egk-mixnet**
-
-Vmn in pure Java mode, using BigInteger, shuffle twice:
-
-100 rows, width = 34.
+nrows = 100, width = 34, N=3400
 
 ```
-time ./scripts/runMixnetWorkflow.sh
-...
-real	1m30.294s
-user	20m41.260s
-sys	2m17.177s
+Time verificatum as used by rave
+
+RunMixnet elapsed time = 27831 msecs
+RunMixnet elapsed time = 26464 msecs)
+RunMixnetVerifier elapsed time = 12123 msecs
+RunMixnetVerifier elapsed time = 12893 msecs
+
+total = 79.311 secs
 ```
 
-TODO: is vmn parellel, what is user time?
-
-egk-mixnet, shuffle trice:
-
 ```
-testShuffleVerifyJson: nrows=100, width=34 N=3400
-  shuffle1 took 29750
-  verify1 took 33980
-  shuffle2 took 24460
-  verify1 took 33712
-after 2 shuffles: 121903 msecs, N=3400 perN=35 msecs
+Time egk-mixnet
+
+  shuffle1 took 5505
+  shuffleProof1 took 17592
+  shuffleVerify1 took 33355
+  shuffle2 took 5400
+  shuffleProof2 took 17213
+  shuffleVerify1 took 33446
+  
+  total: 119.711 secs, N=3400 perN=35 msecs
 ```
+
+Vmn has verifier 33355/12123 = 2.75 faster, TODO: investigate if theres an algorithm improvement there.
+
+Vmn in pure Java mode, using BigInteger. TODO: Find out how much speedup using VMGJ gets.
+
+
+
+**Parallelize egk-mixnet**
+
+After parallelizing all sections of egk-mixnet that are O(N)  (time is in msecs):
+
+| N    | shuffle1 | proof1 | verify1 | shuffle2 | proof2 | verify2 | total  |
+| ---- | -------- | ------ | ------- | -------- | ------ | ------- | ------ |
+| 1    | 5490     | 17315  | 33348   | 5501     | 17260  | 33277   | 118576 |
+| 2    | 2872     | 9756   | 17932   | 2928     | 9725   | 17804   | 67640  |
+| 4    | 1625     | 5746   | 10192   | 1546     | 5869   | 10282   | 41948  |
+| 8    | 883      | 3774   | 6300    | 862      | 3867   | 6264    | 28592  |
+| 16   | 693      | 2951   | 3993    | 659      | 2615   | 4119    | 22143  |
+
+Could parallelize over the rows also. 
+
+Could break into batches of 100 ballots each and do each batch in parallel. The advantage here is that there would be complete parallelization.
 
 
 
@@ -291,4 +374,6 @@ after 2 shuffles: 121903 msecs, N=3400 perN=35 msecs
 6. D. Wikström. *How to Implement a Stand-alone Verifier for the Verificatum Mix-Net VMN Version 3.1.0*, 2022-09-10, https://www.verificatum.org/files/vmnv-3.1.0.pdf
 7. John Caron, Dan Wallach, *ElectionGuard Kotlin library*, https://github.com/votingworks/electionguard-kotlin-multiplatform
 8. E-Voting Group, Institute for Cybersecurity and Engineering, Bern University of Applied Sciences, *OpenCHVote*, https://gitlab.com/openchvote/cryptographic-protocol
+9. Thomas Haines, *A Description and Proof of a Generalised and Optimised Variant of Wikström’s Mixnet*, arXiv:1901.08371v1 [cs.CR], 24 Jan 2019
+   
 

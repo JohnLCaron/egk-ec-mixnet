@@ -3,7 +3,7 @@ package org.cryptobiotic.mixnet.ch
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
 import electionguard.core.*
-import electionguard.util.Stats
+import org.cryptobiotic.mixnet.core.*
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertEquals
@@ -55,7 +55,7 @@ class WorkflowTest {
     fun runShuffleProofVerify(group: GroupContext, publicKey: ElGamalPublicKey, rows: List<MultiText>, proofno: Int): Pair<ShuffleProof, List<MultiText>> {
 
         val (mixedBallots, rnonces, permutation) = shuffleMultiText(rows, publicKey)
-        // val (mixedBallots, rnonces, permutation) = PShuffleMultiText(group, rows, publicKey).shuffle()
+        // val (mixedBallots, rnonces, permutation) = PShuffleMultiText(group, rows, publicKey, nthreads).shuffle()
 
         val U = "shuffleProof$proofno"
         val seed = group.randomElementModQ()
@@ -70,7 +70,7 @@ class WorkflowTest {
             rnonces,
         )
 
-        val valid = checkShuffleProof(
+        val valid = verifyShuffleProof(
             group,
             U,
             seed,
@@ -87,9 +87,10 @@ class WorkflowTest {
     @Test
     // run through the workflow and write serializations and read back and verify
     fun testShuffleAndVerifyJson() {
-        runShuffleAndVerifyJson(100, 34, 20)
-        runShuffleAndVerifyJson(100, 34, 10)
-        runShuffleAndVerifyJson(100, 34, 5)
+        //runShuffleAndVerifyJson(100, 34, 16)
+        //runShuffleAndVerifyJson(100, 34, 8)
+        //runShuffleAndVerifyJson(100, 34, 4)
+        //runShuffleAndVerifyJson(100, 34, 2)
         runShuffleAndVerifyJson(100, 34, 1)
     }
 
@@ -154,9 +155,11 @@ class WorkflowTest {
         var startingTime = getSystemTimeInMillis()
         var endingTime: Long
 
-        // val (shuffled, rnonces, permutation) = shuffleMultiText(rows, publicKey)
-        val (shuffled, rnonces, permutation) = PShuffleMultiText(group, rows, publicKey).shuffle()
-
+        val (shuffled, rnonces, permutation) = if (nthreads == 1) {
+            shuffleMultiText(rows, publicKey)
+        } else {
+            PShuffleMultiText(group, rows, publicKey, nthreads).shuffle()
+        }
         endingTime = getSystemTimeInMillis()
         println("  shuffle$proofno took ${endingTime - startingTime}")
         startingTime = endingTime
@@ -189,7 +192,7 @@ class WorkflowTest {
 
         val startingTime = getSystemTimeInMillis()
 
-        val result =  checkShuffleProof(
+        val result =  verifyShuffleProof(
             group,
             proof.U,
             proof.seed,

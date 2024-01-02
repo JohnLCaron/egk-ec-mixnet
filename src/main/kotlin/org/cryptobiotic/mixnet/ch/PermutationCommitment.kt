@@ -1,9 +1,7 @@
 package org.cryptobiotic.mixnet.ch
 
-import electionguard.core.ElementModP
-import electionguard.core.ElementModQ
-import electionguard.core.GroupContext
-import electionguard.core.randomElementModQ
+import electionguard.core.*
+import org.cryptobiotic.mixnet.core.Permutation
 
 // 1. Com(m, r) = g^r * h1^m1 * h2^m2 *.. * hn^mn = g^r * Prod( hi^mi )
 // where
@@ -71,7 +69,16 @@ fun permutationCommitmentVmn(group: GroupContext,
         pnonces[jdx] = rj
         pcommitments[jdx] = cj
     }
+    return Pair(pcommitments, pnonces)
 
+}
+
+/*
+fun permutationCommitmentVmn2(group: GroupContext,
+    psi: Permutation,
+    generators: List<ElementModP>) : Pair<List<ElementModP>, List<ElementModQ>> {
+
+    // check that this is the same as
     // PoSBasicTW
     // Prover computes a permutation commitment.
     //
@@ -92,3 +99,5 @@ fun permutationCommitmentVmn(group: GroupContext,
 
     return Pair(u, pnonces)
 }
+
+ */

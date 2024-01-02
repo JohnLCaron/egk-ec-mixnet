@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalSerializationApi::class)
 
-package org.cryptobiotic.mixnet.ch
+package org.cryptobiotic.mixnet.core
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok

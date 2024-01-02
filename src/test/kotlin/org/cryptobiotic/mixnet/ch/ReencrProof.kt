@@ -1,6 +1,7 @@
 package org.cryptobiotic.mixnet.ch
 
 import electionguard.core.*
+import org.cryptobiotic.mixnet.core.*
 
 /* The second fundamental idea of Wikström’s proof.
 
@@ -45,7 +46,7 @@ fun reencrProof(
 
     val left = prodPow(shuffled, bold_u_tilde)
 
-    val r_tilde = group.sumProd(nonces, bold_u_tilde)
+    val r_tilde = innerProduct(nonces, bold_u_tilde)
     val rightTerm1 = 0.encrypt(publicKey, r_tilde) // doc has Reencrypt(1) because its non-exponential form.
     val rightTerm2 = prodPow(ciphertexts, bold_u)
     val right = rightTerm1.plus(rightTerm2)
@@ -81,7 +82,7 @@ fun permuteProof(
 
     // 5.4
     val left = group.prodPow(bold_c, bold_u)
-    val sumRprod = group.sumProd(bold_r, bold_u)
+    val sumRprod = innerProduct(bold_r, bold_u)
     val right1 = group.gPowP(sumRprod)
     val right2 = group.prodPow(generators, bold_u_tilde)
     require( left == right1 * right2)

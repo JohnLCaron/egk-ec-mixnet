@@ -1,6 +1,7 @@
 package org.cryptobiotic.mixnet.ch
 
 import electionguard.core.*
+import org.cryptobiotic.mixnet.core.Permutation
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertEquals
@@ -114,7 +115,7 @@ fun shuffleCheck(
     keypair: ElGamalKeypair, // public key = pk
 ) {
     ciphertexts.forEachIndexed { idx, it ->
-        val other = shuffled[psi.inverse.of(idx)]
+        val other = shuffled[psi.inverse().of(idx)]
         val ratio = makeCiphertextRatio(it, other)
         val M = ratio.pad powP keypair.secretKey.key // M = A ^ s, spec 2.0.0, eq 66
         val bOverM = ratio.data / M

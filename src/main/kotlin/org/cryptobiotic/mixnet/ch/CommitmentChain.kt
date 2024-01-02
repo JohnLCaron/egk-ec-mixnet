@@ -11,13 +11,13 @@ fun committmentChain(group: GroupContext,
                      bold_u_tilde: List<ElementModQ> // Permuted public challenges
 ): Pair<List<ElementModP>, List<ElementModQ>> {
 
-    val N = bold_u_tilde.size
+    val nrows = bold_u_tilde.size
     val bold_c_hat = mutableListOf<ElementModP>()
     val bold_r_hat = mutableListOf<ElementModQ>()
 
     var R_i_minus_1 = group.ZERO_MOD_Q
     var U_i_minus_1 = group.ONE_MOD_Q
-    repeat(N) { i ->
+    repeat(nrows) { i ->
         val r_hat_i: ElementModQ = group.randomElementModQ(minimum = 1)
         bold_r_hat.add(r_hat_i)
 

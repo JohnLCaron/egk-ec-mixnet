@@ -1,12 +1,11 @@
-package org.cryptobiotic.mixnet.ch
+package org.cryptobiotic.mixnet.core
 
 import electionguard.core.*
 
-// Sum ( term1 * term2)
-fun GroupContext.sumProd(term1: List<ElementModQ>, term2: List<ElementModQ>) : ElementModQ {
+// Sum ( term1 * term2 )
+fun innerProduct(term1: List<ElementModQ>, term2: List<ElementModQ>) : ElementModQ {
     require(term1.size == term2.size)
-    val products = term1.mapIndexed { idx, it -> it * term2[idx] }
-    return with (this) { products.addQ()}
+    return term1.mapIndexed { idx, it -> it * term2[idx] }.sumQ()
 }
 
 // Prod ( term1 ^ exp )
@@ -22,12 +21,20 @@ fun prodPow(term1: List<ElGamalCiphertext>, exp: List<ElementModQ>) : ElGamalCip
     return products.encryptedSum()!!
 }
 
-// Prod (terms)
+fun multiply(term1: ElGamalCiphertext, term2: ElGamalCiphertext) : ElGamalCiphertext {
+    return term1 + term2
+}
+
+fun ElGamalCiphertext.powerOf(exp: ElementModQ): ElGamalCiphertext {
+    return ElGamalCiphertext(pad powP exp,data powP exp)
+}
+
+// Product of (terms)
 fun GroupContext.prod(terms: List<ElementModP>) : ElementModP {
     return with (this) { terms.multP()}
 }
 
-// Prod ( terms)
+// Product of (terms)
 fun GroupContext.prod(terms: List<ElementModQ>) : ElementModQ {
     var result = this.ONE_MOD_Q
     terms.forEach { result *= it }
