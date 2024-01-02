@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.ch
+package org.cryptobiotic.mixnet.core
 
 import electionguard.core.*
 import kotlinx.coroutines.*

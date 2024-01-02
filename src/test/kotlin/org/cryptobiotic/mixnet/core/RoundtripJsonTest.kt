@@ -1,8 +1,9 @@
-package org.cryptobiotic.mixnet.ch
+package org.cryptobiotic.mixnet.core
 
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
 import electionguard.core.*
+import org.cryptobiotic.mixnet.ch.*
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertEquals

@@ -1,10 +1,11 @@
 package org.cryptobiotic.mixnet.ch
 
 import electionguard.core.*
+import org.cryptobiotic.mixnet.core.*
 
 private val debug = false
 
-fun checkShuffleProof(
+fun verifyShuffleProof2(
     group: GroupContext,
     U: String,
     seed: ElementModQ,
@@ -28,8 +29,8 @@ fun checkShuffleProof(
     val c_bar = group.prod(proof.pcommit) / group.prod(generators)
     // var c_hat = ZZPlus_p.divide(N == 0 ? c_hat_0 : bold_c_hat.getValue(N), ZZPlus_p.pow(h, u));
     val c_hat = proof.cchallenges [nrows - 1] / (h powP u)
-
     val c_tilde = group.prodPow(proof.pcommit, bold_u)
+
     val (a_tilde, b_tilde) = if (nthreads == 1) {
         Pair(group.prodPowA(ballots, bold_u), group.prodPowB(ballots, bold_u))
     } else {

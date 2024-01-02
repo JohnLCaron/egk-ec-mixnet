@@ -1,8 +1,9 @@
-package org.cryptobiotic.mixnet.ch
+package org.cryptobiotic.mixnet.vmn
 
 import electionguard.core.*
 import electionguard.util.Stats
-import org.cryptobiotic.mixnet.core.MultiText
+import org.cryptobiotic.mixnet.ch.shuffle
+import org.cryptobiotic.mixnet.core.getGenerators
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertTrue
@@ -23,22 +24,9 @@ fun expectCheck(nballots:Int, width: Int): String {
 
 class ShuffleProofTest {
     @Test
-    fun testShuffleExpCounts() {
+    fun testShuffleVmn() {
         val group = productionGroup()
-
-        runShuffleProof(3, 1, group, true, false)
-        runShuffleProof(3, 3, group, true, false)
-        runShuffleProof(11, 1, group, true, false)
-        runShuffleProof(10, 10, group, true, false)
-        //runShuffleProof(3, 100, group, true, false)
-        //runShuffleProof(30, 100, group, true, false)
-        runShuffleProof(100, 34, group, true, false)
-    }
-
-    @Test
-    fun testShuffleTiming() {
-        val group = productionGroup()
-        runShuffleProof(10, 10, group, false, true)
+        runShuffleProof(33, 1, group, false, false)
         //runShuffleProof(100, 34, group, false, true)
     }
 
@@ -46,10 +34,7 @@ class ShuffleProofTest {
         val stats = Stats()
         val keypair = elGamalKeyPairFromRandom(group)
 
-        val ballots: List<MultiText> = List(nrows) {
-            val ciphertexts = List(width) { Random.nextInt(11).encrypt(keypair) }
-            MultiText(ciphertexts)
-        }
+        val ballots: List<ElGamalCiphertext> = List(nrows)  {Random.nextInt(11).encrypt(keypair) }
 
         val N = nrows*width
         println("=========================================")
@@ -57,36 +42,42 @@ class ShuffleProofTest {
 
         var starting = getSystemTimeInMillis()
         group.showAndClearCountPowP()
-        val (mixedBallots, rnonces, permutation) = shuffleMultiText(ballots, keypair.publicKey)
+
+        val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey)
+        println("psi = $psi")
         stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
 
-        val U = "shuffleProof2"
+        val U = "PosBasicTW"
         val seed = group.randomElementModQ()
+        val (h, generators) = getGenerators(group, psi.n, U, seed) // List<ElementModP> = bold_h
+
         starting = getSystemTimeInMillis()
-        val proof = shuffleProof(
+        val prover =  Prover(
             group,
-            U,
-            seed,
             keypair.publicKey,
-            permutation,
-            ballots,
-            mixedBallots,
-            rnonces,
-        )
+            h,
+            generators, // generators
+            ballots, // ciphertexts
+            mixedBallots, // permuted ciphertexts
+            rnonces, // unpermuted Reencryption nonces
+            // psi.invert(rnonces), // unpermuted Reencryption nonces
+            psi,
+            )
+        val (pos: ProofOfShuffle, challenge: ElementModQ, reply: Reply) = prover.prove()
         stats.of("proof", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after shuffleProof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
 
         starting = getSystemTimeInMillis()
-        val valid = verifyShuffleProof(
+        val verifier =  Verifier(
             group,
-            U,
-            seed,
             keypair.publicKey,
-            ballots,
-            mixedBallots,
-            proof,
+            h,
+            generators, // generators
+            ballots, // ciphertexts
+            mixedBallots, // permuted ciphertexts
         )
+        val valid = verifier.verify(pos, reply, challenge)
         stats.of("verify", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after checkShuffleProof: ${group.showAndClearCountPowP()} ${expectCheck(nrows, width)}")
         assertTrue(valid)

@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.cryptobiotic.mixnet.core.*
 
 /**
  * Shuffle and reencrypt a list of ElGamalCiphertext.
@@ -67,7 +68,7 @@ fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey, nonce: ElementModQ)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// parellel shuffle
+// parallel shuffle
 class PShuffleMultiText(val group: GroupContext,  val rows: List<MultiText>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
     val n = rows.size
     var mixed = MutableList(n) { MultiText(emptyList()) }
