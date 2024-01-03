@@ -2,7 +2,6 @@ package org.cryptobiotic.mixnet.vmn
 
 import electionguard.core.*
 import electionguard.util.Stats
-import org.cryptobiotic.mixnet.ch.shuffle
 import org.cryptobiotic.mixnet.core.getGenerators
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
@@ -22,11 +21,12 @@ fun expectCheck(nballots:Int, width: Int): String {
     return " expect ($nexps, $nacc)"
 }
 
-class ShuffleProofTest {
+class PosBasicTWTest {
     @Test
     fun testShuffleVmn() {
         val group = productionGroup()
-        runShuffleProof(33, 1, group, false, false)
+        runShuffleProof(100, 1, group, true, true)
+        runShuffleProof(200, 1, group, true, true)
         //runShuffleProof(100, 34, group, false, true)
     }
 
@@ -44,7 +44,7 @@ class ShuffleProofTest {
         group.showAndClearCountPowP()
 
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey)
-        println("psi = $psi")
+        // println("psi = $psi")
         stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
 
@@ -69,7 +69,7 @@ class ShuffleProofTest {
         if (showExps) println("  after shuffleProof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
 
         starting = getSystemTimeInMillis()
-        val verifier =  Verifier(
+        val verifier = Verifier(
             group,
             keypair.publicKey,
             h,
@@ -81,7 +81,7 @@ class ShuffleProofTest {
         stats.of("verify", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after checkShuffleProof: ${group.showAndClearCountPowP()} ${expectCheck(nrows, width)}")
         assertTrue(valid)
-
+        println()
         if (showTiming) stats.show()
     }
 

@@ -149,7 +149,7 @@ fun shuffleProof(
     val s3 = omega_3 - c * innerProduct(prep.pnonces, prep.u)
 
     //  s4 = ω3 + c · R · u
-    val s4 = computeS4(Matrix(group, rnonces), prep.pu, omega_4, c)
+    val s4 = computeS4(MatrixQ(rnonces), prep.pu, omega_4, c)
 
     // ŝ = ω̂ + c · r̂,  r̂ = ccnonces ?
     // s′ = ω′ + c · u′
@@ -176,7 +176,7 @@ private fun computeS2(group: GroupContext, nrows: Int, prep: ShufflePrep, omega_
 }
 
 // no exps
-private fun computeS4(rnonces: Matrix, pu: List<ElementModQ>, omega_4: List<ElementModQ>, c:ElementModQ): List<ElementModQ> {
+private fun computeS4(rnonces: MatrixQ, pu: List<ElementModQ>, omega_4: List<ElementModQ>, c:ElementModQ): List<ElementModQ> {
     //  c · R ⋆ u
     val cRu = rnonces.rmultiply(pu).map { c * it }
 
