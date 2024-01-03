@@ -295,7 +295,7 @@ $$
 \prod_{j=1}^n ReEncr(\textbf {pe}_i^{\textbf ω^\prime_i}, r_j) =  ReEncr(\prod_{j=1}^n \textbf {pe}_i^{\textbf ω^\prime_i}, \sum_{j=1}^n r_j)
 $$
 
-#### 8. Timings (preliminary)
+#### 9. Timings (preliminary)
 
 - *nrows* = number of rows, eg ballots or contests
 - *width* = number of ciphertexts per row
@@ -307,8 +307,8 @@ $$
 
 |                  | shuffle | proof           | verify                |
 | ---------------- | ------- | --------------- | --------------------- |
-| regular exps     | 0       | 4*nrows + 2 * N | 4 * nrows + 4 * N + 6 |
-| accelerated exps | 2 * N   | 3*nrows + 6     | 8                     |
+| regular exps     | 0       | 5*nrows + 2 * N | 4 * nrows + 4 * N + 6 |
+| accelerated exps | 2 * N   | 3*nrows + 2 * N | 8                     |
 
 
 
@@ -361,6 +361,57 @@ After parallelizing all sections of egk-mixnet that are O(N)  (time is in msecs)
 Could parallelize over the rows also. 
 
 Could break into batches of 100 ballots each and do each batch in parallel. The advantage here is that there would be complete parallelization.
+
+
+
+
+
+### Vmn port
+
+#### ShuffleProof
+
+$\vec{w}$ = ()
+
+$\vec{pw}$ = Rencr(w)
+
+$\alpha, \vec{\epsilon}$ random elements in $\Z_q$
+
+
+
+**Create Committment:**
+$$
+\begin{align}
+B &= \\
+A^\prime &= g^\alpha \prod_{i=0}^{n-1} h_i^{eps_i} \\
+F^\prime &= Encr(0, -\phi) \prod_{i=0}^{n-1} pw_i^{\epsilon_i} \\
+\end{align}
+$$
+**Send challenge v and get Reply:**
+$$
+\begin{align}
+k_A &= (r \cdot e) * v + \alpha \\
+\vec{k_{E}} &= \vec{e^\prime} \cdot v + \vec{\epsilon} \\
+k_E &= (rnonces \cdot e^{\prime}) * v + \alpha \\
+\end{align}
+$$
+
+
+
+**Verify**
+$$
+\begin{align}
+A^v \cdot A^\prime &= g^{k_A} \prod_{i=0}^{n-1} h_i^{k_{E,i}} \\
+\end{align}
+$$
+
+
+**operation counts**
+
+|                  | shuffle | proof           | verify                |
+| ---------------- | ------- | --------------- | --------------------- |
+| regular exps     | 0       | 4*nrows + 2*N   | 6*nrows + 4*N + 4     |
+| accelerated exps | 2 * N   | 3*nrows+2*N+6   | 2*nrows + 24                     |
+
 
 
 

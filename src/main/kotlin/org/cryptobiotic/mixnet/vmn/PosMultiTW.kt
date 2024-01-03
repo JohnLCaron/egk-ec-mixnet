@@ -12,18 +12,19 @@ import org.cryptobiotic.mixnet.core.*
 private val debugA = false
 
 // Algo 19?
-class Prover(
+class ProverMulti(
     val group: GroupContext,
     val publicKey: ElGamalPublicKey, // Public key used to re-encrypt.
     val h: ElementModP,
     val generators: List<ElementModP>, // generators
-    val w: List<ElGamalCiphertext>, // ciphertexts
-    val wp: List<ElGamalCiphertext>, // permuted ciphertexts
-    val rnonces: List<ElementModQ>, // permuted Reencryption nonces
+    val w: List<MultiText>, // ciphertexts
+    val wp: List<MultiText>, // permuted ciphertexts
+    val rnonces: MatrixQ, // reencryption nonces
     val psi: Permutation,
 ) {
     /** Size of the set that is permuted. */
-    val size: Int = w.size
+    val rows: Int = w.size
+    val width: Int = w[0].ciphertexts.size
 
     /** Random exponents used to form the permutation commitment. */
     val r: List<ElementModQ> // pnonces
@@ -58,7 +59,7 @@ class Prover(
     val delta: ElementModQ
 
     /** Randomizer for f. */
-    val phi: ElementModQ
+    var phi: List<ElementModQ> // width
 
     // ################## Message 3 (Verifier) ##################
 
@@ -72,18 +73,18 @@ class Prover(
         this.r = pnonces
 
         alpha = group.randomElementModQ()
-        beta = getRandomExponents(group, size)
+        beta = getRandomExponents(group, rows)
         gamma = group.randomElementModQ()
         delta = group.randomElementModQ()
-        phi = group.randomElementModQ()
-        epsilon = getRandomExponents(group, size)
+        phi = getRandomExponents(group, width)
+        epsilon = getRandomExponents(group, rows)
 
-        b = getRandomExponents(group, size)
-        e = getRandomExponents(group, size)
+        b = getRandomExponents(group, rows)
+        e = getRandomExponents(group, rows)
         this.ipe = psi.permute(e)
     }
 
-    fun prove(): Triple<ProofOfShuffle, ElementModQ, Reply> {
+    fun prove(): Triple<ProofOfShuffleM, ElementModQ, ReplyM> {
         val pos = commit()
 
         // Generate a challenge. For the moment let it be a random value
@@ -94,44 +95,11 @@ class Prover(
         return Triple(pos, challenge, reply)
     }
 
-    fun commit(): ProofOfShuffle {
+    fun commit(): ProofOfShuffleM {
 
         // A' = g^{\alpha} * \prod h_i^{\epsilon_i}
         // val Ap = g.exp(alpha).mul(h.expProd(epsilon))
         val Ap = group.gPowP(alpha) * group.prodPow(generators, epsilon)
-
-        if (debugA) {
-            repeat(size) { j ->
-                val test = u[j] == group.gPowP(r[j]) * generators[j]
-                if (!test)
-                    println("fails on $j")
-            }
-            val pu = psi.invert(u)
-            val pgen = psi.invert(generators)
-
-            val testp1 = group.prodPow(pu, ipe) == group.prodPow(u, e)
-            if (!testp1)
-                println("fails on testp1")
-
-            // innerr, innere, generators, genexp
-            val rinv = psi.invert(r)
-            println("r, ipe, gen, e = ${testA(r, ipe, generators, e)}")
-            println("r, ipe, gen, ipe = ${testA(r, ipe, generators, ipe)}")
-            println("r, ipe, pgen, ipe = ${testA(r, ipe, pgen, ipe)}")
-            println("r, ipe, pgen, ipe = ${testA(r, ipe, pgen, ipe)}")
-            println("r, e, gen, e = ${testA(r, e, generators, e)}")
-            println("r, e, gen, ipe = ${testA(r, e, generators, ipe)}")
-            println("r, e, pgen, ipe = ${testA(r, e, pgen, ipe)}")
-            println("r, e, pgen, ipe = ${testA(r, e, pgen, ipe)}")
-            println("rinv, ipe, gen, e = ${testA(rinv, ipe, generators, e)}")
-            println("rinv, ipe, gen, ipe = ${testA(rinv, ipe, generators, ipe)}")
-            println("rinv, ipe, pgen, ipe = ${testA(rinv, ipe, pgen, ipe)}")
-            println("rinv, ipe, pgen, ipe = ${testA(rinv, ipe, pgen, ipe)}")
-            println("rinv, e, gen, e = ${testA(rinv, e, generators, e)}")
-            println("rinv, e, gen, ipe = ${testA(rinv, e, generators, ipe)}")
-            println("rinv, e, pgen, ipe = ${testA(rinv, e, pgen, ipe)}")
-            println("rinv, e, pgen, ipe = ${testA(rinv, e, pgen, ipe)}")
-        }
 
         // The array of bridging commitments is of the form:
         //
@@ -154,13 +122,17 @@ class Prover(
 
         // We must show that we can open F = \prod w_i^{e_i} as
         // F = Enc_pk(1,-f)\prod (w_i')^{e_i'}
-        // where f=<s,e>. TODO random ??
+        // where f=<s,e>.2
+        // phi = ciphPRing.randomElement(randomSource, rbitlen)
         // val Fp = pkey.exp(phi.neg()).mul(wp.expProd(epsilon))
-        val enc0 = 0.encrypt(publicKey, -phi)
-        val wp_eps = prodPow(wp, epsilon) // TODO O(N)
-        val Fp = multiply(enc0, wp_eps) // Enc(0, nonce) * Prod (wp^epsilon)
+        // wp.expProd(epsilon) is width
+        // pkey.exp(phi.neg()) is width
+        // TODO O(N)
+        val enc0 = phi.map { 0.encrypt(publicKey, -it) } // width
+        val wp_eps = prodColumnPow(wp, epsilon)  // product of columns raised to eps power; pretend its one value width wide
+        val Fp = enc0.mapIndexed { idx, it -> multiply(it, wp_eps[idx]) } // component-wise; pretend its one value width wide
 
-        return ProofOfShuffle(u, d, e, epsilon, B, Ap, Bp, Cp, Dp, Fp)
+        return ProofOfShuffleM(u, d, e, epsilon, B, Ap, Bp, Cp, Dp, Fp)
     }
 
     fun computeBp(ipe: List<ElementModQ>): Triple<List<ElementModP>, List<ElementModP>, ElementModQ> {
@@ -185,7 +157,7 @@ class Prover(
         // val x: PRingElementArray = p.first
         // d = p.second
         val x = recLin(b, ipe)
-        val d = x[size - 1]
+        val d = x[rows - 1]
 
         // Compute aggregated products:
         //   e_0', e_0'*e_1', e_0'*e_1'*e_2', ...
@@ -247,14 +219,14 @@ class Prover(
         return Triple(B, Bp, d)
     }
 
-    fun reply(pos: ProofOfShuffle, v: ElementModQ): Reply {
+    fun reply(pos: ProofOfShuffleM, v: ElementModQ): ReplyM {
         // Initialize the special exponents.
         //        final PRingElement a = r.innerProduct(ipe); TODO CHANGED to  innerProduct(r, e)
         //        final PRingElement c = r.sum();
-        //        final PRingElement f = s.innerProduct(e); TODO CHANGED to  innerProduct(r, ipe)
+        //        final PRingElement f = s.innerProduct(e); TODO CHANGED to  innerProduct(s, ipe), s == rnonces
         val a: ElementModQ = innerProduct(r, e)
         val c: ElementModQ = r.sumQ() // = pr.sumQ()
-        val f: ElementModQ = innerProduct(rnonces, ipe)
+        val f: List<ElementModQ> = innerProductColumn(rnonces, ipe) // width
         val d = pos.d
 
         // Compute the replies as:
@@ -276,41 +248,14 @@ class Prover(
         val k_D = d * v + delta
         val k_E = ipe.mapIndexed { idx, it -> it * v + epsilon[idx] } // changed to e for Ap to work
         val k_EA = e.mapIndexed { idx, it -> it * v + epsilon[idx] } // changed to e for Ap to work
-        val k_F = f * v + phi
+        val k_F: List<ElementModQ> = phi.mapIndexed { idx, it -> f[idx] * v + it } // width
 
-        return Reply(k_A, k_B, k_C, k_D, k_EA, k_E, k_F)
+        return ReplyM(k_A, k_B, k_C, k_D, k_EA, k_E, k_F)
     }
-
-    // debug Prod (ui^ei) =? g^(<innerr, innere>) * Prod( generators^genexp )
-    // winner is r, e, gen, e = true
-    fun testA(
-        innerr: List<ElementModQ>,
-        innere: List<ElementModQ>,
-        generators: List<ElementModP>,
-        genexp: List<ElementModQ>
-    ): Boolean {
-        var gexp = innerProduct(innerr, innere)
-        var term1 = group.prodPow(generators, genexp) * group.gPowP(gexp)
-        val term2 = group.prodPow(u, e)
-        return (term1 == term2)
-    }
-}
-
-// debug Fp
-fun testF(
-    publicKey: ElGamalPublicKey,
-    left: ElGamalCiphertext,
-    right1: ElGamalCiphertext,
-    rnonces: List<ElementModQ>,
-    e: List<ElementModQ>,
-): Boolean {
-    val inner = innerProduct(rnonces, e)
-    val right2 = 0.encrypt(publicKey, inner)
-    return left == multiply(right1, right2)
 }
 
 // τ^pos = Commitment of the Fiat-Shamir proof.
-data class ProofOfShuffle(
+data class ProofOfShuffleM(
     val u: List<ElementModP>, // permutation commitment = pcommit
     val d: ElementModQ, // x[n-1]
     val e: List<ElementModQ>,
@@ -321,37 +266,32 @@ data class ProofOfShuffle(
     val Bp: List<ElementModP>, // Proof commitments for the bridging commitments
     val Cp: ElementModP, // Proof commitment for proving sum of random components
     val Dp: ElementModP, // Proof commitment for proving product of random components.
-    val Fp: ElGamalCiphertext, // ??
+    val Fp: List<ElGamalCiphertext>, // vmn acts like its a single width ElGamalCiphertext
 )
 
 // σ^pos = Reply of the Fiat-Shamir proof.
-data class Reply(
+data class ReplyM(
     val k_A: ElementModQ,
     val k_B: List<ElementModQ>,
     val k_C: ElementModQ,
     val k_D: ElementModQ,
     val k_EA: List<ElementModQ>,
     val k_E: List<ElementModQ>,
-    val k_F: ElementModQ,
+    val k_F: List<ElementModQ>, // vmn acts like its a single width ElementModQ
 )
 
-//  Create vector of random exponents. org setBatchVector
-fun getRandomExponents(group: GroupContext, size: Int): List<ElementModQ> {
-    return List(size) { group.randomElementModQ() }
-}
-
 /////////////////////////////////////////////////////////////////////////////////////////////////
-class Verifier(
+class VerifierMulti(
     val group: GroupContext,
     val publicKey: ElGamalPublicKey,
     val h: ElementModP, // temp
     val generators: List<ElementModP>, // temp
-    val w: List<ElGamalCiphertext>, // org ciphertexts
-    val wp: List<ElGamalCiphertext>, // permuted ciphertexts
+    val w: List<MultiText>, // org ciphertexts
+    val wp: List<MultiText>, // permuted ciphertexts
 ) {
     val size = w.size
 
-    fun verify(proof: ProofOfShuffle, reply: Reply, v: ElementModQ): Boolean {
+    fun verify(proof: ProofOfShuffleM, reply: ReplyM, v: ElementModQ): Boolean {
 
         // Verify that prover knows a=<r,e'> and e' such that:
         //  A = \prod u_i^{e_i} = g^a * \prod h_i^{e_i'} LOOK wrong
@@ -437,16 +377,19 @@ class Verifier(
         // Verify that the prover knows f = <s,e> such that
         // F = \prod w_i^{e_i} = Enc_pk(-f)\prod (w_i')^{e_i'}
         // verdictF =  F.expMul(v, Fp).equals(pkey.exp(k_F.neg()).mul(wp.expProd(k_E)));
-        //
+        // verdictF = this.F.expMul(this.v, this.Fp).equals(this.pkey.exp(this.k_F.neg()).mul(this.wp.expProd(this.k_E)));
+        // this.F^v * this.Fp
+        //  width is just compoonent-wise
         //  F = Prod(w^e)                               (8.3 point 3)
         //  F^v*Fp == Enc(0, -k_F) * Prod (wp^k_E)      (8.3 point 5)
 
-        val ev = proof.e.map { it * v }
-        val Fv: ElGamalCiphertext = prodPow(w, ev)
+        val ev : List<ElementModQ> = proof.e.map { it * v }
+        val Fv: List<ElGamalCiphertext> = prodColumnPow(w, ev)  // F^v = Prod(w^e)^v
 
-        val leftF: ElGamalCiphertext = multiply(Fv, proof.Fp)               // F^v*Fp
-        val enc: ElGamalCiphertext = 0.encrypt(publicKey, -reply.k_F)
-        val rightF: ElGamalCiphertext = multiply(enc, prodPow(wp, reply.k_E))
+        val leftF: List<ElGamalCiphertext> = Fv.mapIndexed { idx, it -> multiply(it, proof.Fp[idx]) }
+        val right1: List<ElGamalCiphertext> = reply.k_F.mapIndexed { idx, it -> 0.encrypt(publicKey, -it) }
+        val right2: List<ElGamalCiphertext> = prodColumnPow(wp, reply.k_E)
+        val rightF: List<ElGamalCiphertext> = right1.mapIndexed { idx, it -> multiply(it, right2[idx]) }
         val verdictF = (leftF == rightF)
         //println(" verdictF = $verdictF")
 
@@ -455,39 +398,29 @@ class Verifier(
 
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-fun <T> List<T>.shiftPush(elem0: T): List<T> {
-    return List(this.size) { if (it == 0) elem0 else this[it - 1] }
+// TODO O(n)
+fun prodPow(rows: List<MultiText>, exps: List<ElementModQ>) : ElGamalCiphertext {
+    val colProducts = prodColumnPow(rows, exps)
+    return colProducts.encryptedSum()!!
 }
 
-// Compute aggregated products:
-// e_0', e_0'*e_1', e_0'*e_1'*e_2', ...
-fun List<ElementModQ>.aggProd(group: GroupContext): List<ElementModQ> {
-    var accum = group.ONE_MOD_Q
-    val agge: List<ElementModQ> = this.map {
-        accum = accum * it
-        accum
+// TODO O(n)
+fun prodColumnPow(rows: List<MultiText>, exps: List<ElementModQ>) : List<ElGamalCiphertext> {
+    val nrows = rows.size
+    require(exps.size == nrows)
+    val width = rows[0].width
+    val result = List(width) { col ->
+        val column = List(nrows) { row -> rows[row].ciphertexts[col] }
+        prodPow(column, exps)
     }
-    return agge
+    return result
 }
 
-// ElementModQ[] bs = b.elements();
-// ElementModQ[] ipes = ipe.elements();
-// ElementModQ[] xs = new ElementModQ[size];
-// xs[0] = bs[0];
-// for (int i = 1; i < size; i++) {
-//   xs[i] = xs[i - 1].mul(ipes[i]).add(bs[i]);
-// }
-// List<ElementModQ> x = pRing.toElementArray(xs);
-// d = xs[size-1];
-fun recLin(b: List<ElementModQ>, ipe: List<ElementModQ>): List<ElementModQ> {
-    val size = b.size
-    val xs = mutableListOf<ElementModQ>()
-    xs.add(b[0])
-    for (idx in 1..size - 1) {
-        xs.add(xs[idx - 1] * ipe[idx] + b[idx])
+fun innerProductColumn(matrixq: MatrixQ, exps: List<ElementModQ>) : List<ElementModQ> {
+    require(exps.size == matrixq.nrows)
+    val result = List(matrixq.ncols) { col ->
+        val column = List(matrixq.nrows) { row -> matrixq.elems[row][col] }
+        innerProduct(column, exps)
     }
-    return xs
+    return result
 }

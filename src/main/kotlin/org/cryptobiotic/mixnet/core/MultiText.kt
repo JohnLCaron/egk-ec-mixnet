@@ -7,7 +7,9 @@ import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-data class MultiText(val ciphertexts: List<ElGamalCiphertext>)
+data class MultiText(val ciphertexts: List<ElGamalCiphertext>) {
+    val width = ciphertexts.size
+}
 
 //val t_41 = group.prodPowA( shuffledBallots, bold_omega_tilde) / (publicKey powP omega_4)
 //val t_42 = group.prodPowB( shuffledBallots, bold_omega_tilde) / group.gPowP(omega_4)
