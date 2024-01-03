@@ -1,7 +1,6 @@
 package org.cryptobiotic.mixnet.vmn
 
 import electionguard.core.*
-import org.cryptobiotic.mixnet.ch.permutationCommitmentVmn
 import org.cryptobiotic.mixnet.core.*
 
 /**
@@ -11,7 +10,7 @@ import org.cryptobiotic.mixnet.core.*
 
 private val debugA = false
 
-// Algo 19?
+
 class ProverMulti(
     val group: GroupContext,
     val publicKey: ElGamalPublicKey, // Public key used to re-encrypt.
@@ -277,7 +276,7 @@ data class ReplyM(
     val k_D: ElementModQ,
     val k_EA: List<ElementModQ>,
     val k_E: List<ElementModQ>,
-    val k_F: List<ElementModQ>, // vmn acts like its a single width ElementModQ
+    val k_F: List<ElementModQ>, // width
 )
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -291,7 +290,12 @@ class VerifierMulti(
 ) {
     val size = w.size
 
+    // Algorithm 19
     fun verify(proof: ProofOfShuffleM, reply: ReplyM, v: ElementModQ): Boolean {
+        val uV = VectorP(group, proof.u)
+        val eV = VectorQ(group, proof.e)
+        val kEAV = VectorQ(group, reply.k_EA)
+        val hV = VectorP(group, generators)
 
         // Verify that prover knows a=<r,e'> and e' such that:
         //  A = \prod u_i^{e_i} = g^a * \prod h_i^{e_i'} LOOK wrong
@@ -299,32 +303,40 @@ class VerifierMulti(
         //
         // A = Prod(u^e)                            (8.3 point 3)
         // A^v * Ap == g^k_A * Prod(h^K_E)          (8.3 point 5)
-        val A = group.prodPow(proof.u, proof.e)
-        val leftA = (A powP v) * proof.Ap
-        val rightA = group.gPowP(reply.k_A) * group.prodPow(generators, reply.k_EA)
+        //         val A = group.prodPow(proof.u, proof.e)
+        val A: ElementModP = Prod(uV powP eV) // CE n exps
+        val leftA = (A powP v) * proof.Ap // CE 1 exp
+        //         val rightA = group.gPowP(reply.k_A) * group.prodPow(generators, reply.k_EA)
+        val rightA = group.gPowP(reply.k_A) * Prod(hV powP kEAV) // CE 1 exp, 1 acc
         val verdictA = (leftA == rightA)
-        //println(" verdictA = $verdictA")
 
-        // Original
+        /* Original
         // Verify that prover knows b and e' such that:
         // B_0 = g^{b_0} * h0^{e_0'}
         // B_i = g^{b_i} * B_{i-1}^{e_i'}
         //
         // Bi^v * Bpi == g^k_Bi * Bminus1^(K_Ei), for i=0..N-1, B-1 = h0        (8.3 point 5)
         //        final PGroupElementArray B_exp_v = B.exp(v);
-        val B_exp_v = proof.B.map { it powP v }
+        //val B_exp_v = proof.B.map { it powP v }
+        val B_exp_v = VectorP(group, proof.B) powP v  // CE n exp
         //        final PGroupElementArray leftSide = B_exp_v.mul(Bp);
-        val leftSide = B_exp_v.mapIndexed { idx, it -> it * proof.Bp[idx] }
+        // val leftSide = B_exp_v.mapIndexed { idx, it -> it * proof.Bp[idx] }
+        val leftSide = B_exp_v * VectorP(group, proof.Bp)
         //        final PGroupElementArray g_exp_k_B = g.exp(k_B);
-        val g_exp_k_B = reply.k_B.map { group.gPowP(it) }
+        // val g_exp_k_B = reply.k_B.map { group.gPowP(it) }
+        val g_exp_k_B = gPowP( VectorQ(group, reply.k_B) ) // CE n acc
         //        final PGroupElementArray B_shift = B.shiftPush(h0);
-        val B_shift = proof.B.shiftPush(h)
+        val B_shift = VectorP(group, proof.B.shiftPush(h))
         //        final PGroupElementArray B_shift_exp_k_E = B_shift.exp(k_E);
-        val B_shift_exp_k_E = B_shift.mapIndexed { idx, it -> it powP reply.k_E[idx] }
+        // val B_shift_exp_k_E = B_shift.mapIndexed { idx, it -> it powP reply.k_E[idx] }
+        val B_shift_exp_k_E = B_shift powP VectorQ(group, reply.k_E) // CE n exp
         //        final PGroupElementArray rightSide = g_exp_k_B.mul(B_shift_exp_k_E);
-        val rightSide = g_exp_k_B.mapIndexed { idx, it -> it * B_shift_exp_k_E[idx] }
+        // val rightSide = g_exp_k_B.mapIndexed { idx, it -> it * B_shift_exp_k_E[idx] }
+        val rightSide = g_exp_k_B * B_shift_exp_k_E
         //        final boolean verdictB = leftSide.equals(rightSide);
         val verdictBp = leftSide.equals(rightSide)
+
+         */
 
         // Port from just the equation
         // Verify that prover knows b and e' such that:
@@ -335,18 +347,14 @@ class VerifierMulti(
         var verdictB = true
         var Bminus1 = h
         repeat(size) { i ->
-            val leftB = (proof.B[i] powP v) * proof.Bp[i]
-            val rightB = group.gPowP(reply.k_B[i]) * (Bminus1 powP reply.k_E[i])
-
-            val testleft = leftB == leftSide[i]
-            val testright = rightB == rightSide[i]
-            val testOne = leftB == rightB
-            // println("  $i $testleft $testright $testOne")
-
+            val leftB = (proof.B[i] powP v) * proof.Bp[i] // CE n exp
+            val rightB = group.gPowP(reply.k_B[i]) * (Bminus1 powP reply.k_E[i]) // CE n exp, n acc
             verdictB = verdictB && (leftB == rightB)
             Bminus1 = proof.B[i]
         }
-        //println(" verdictB = $verdictB")
+        //if (verdictB != verdictBp) {
+        //    println("*** HEY verdictB = $verdictB verdictBp = $verdictBp")
+        //}
 
         // Verify that prover knows c=\sum r_i such that:
         // C = \prod u_i / \prod h_i = g^c LOOK wrong
@@ -355,8 +363,8 @@ class VerifierMulti(
         // C = Prod(u) / Prod(h).   (8.3 point 5)
         // C^v*Cp == g^K_C          (8.3 point 5)
         val C = group.prod(proof.u) / group.prod(generators)
-        val leftC = (C powP v) * proof.Cp
-        val rightC = group.gPowP(reply.k_C)
+        val leftC = (C powP v) * proof.Cp // CE 1 exp
+        val rightC = group.gPowP(reply.k_C) // CE 1 acc
         val verdictC = (leftC == rightC)
         //println(" verdictC = $verdictC")
 
@@ -368,8 +376,8 @@ class VerifierMulti(
         // D^v*Dp == g^K_D                      (8.3 point 5)
         val prode = group.prod(proof.e)
         val D = proof.B[size - 1] / (h powP prode)
-        val leftD = (D powP v) * proof.Dp
-        val rightD = group.gPowP(reply.k_D)
+        val leftD = (D powP v) * proof.Dp // CE 1 exp
+        val rightD = group.gPowP(reply.k_D) // CE 1 acc
         val verdictD = (leftD == rightD)
         //println(" verdictD= $verdictD")
 
@@ -384,11 +392,11 @@ class VerifierMulti(
         //  F^v*Fp == Enc(0, -k_F) * Prod (wp^k_E)      (8.3 point 5)
 
         val ev : List<ElementModQ> = proof.e.map { it * v }
-        val Fv: List<ElGamalCiphertext> = prodColumnPow(w, ev)  // F^v = Prod(w^e)^v
+        val Fv: List<ElGamalCiphertext> = prodColumnPow(w, ev)  // F^v = Prod(w^e)^v  CE (2 exp) N
 
         val leftF: List<ElGamalCiphertext> = Fv.mapIndexed { idx, it -> multiply(it, proof.Fp[idx]) }
-        val right1: List<ElGamalCiphertext> = reply.k_F.mapIndexed { idx, it -> 0.encrypt(publicKey, -it) }
-        val right2: List<ElGamalCiphertext> = prodColumnPow(wp, reply.k_E)
+        val right1: List<ElGamalCiphertext> = reply.k_F.mapIndexed { idx, it -> 0.encrypt(publicKey, -it) } // CE width (acc, exp)
+        val right2: List<ElGamalCiphertext> = prodColumnPow(wp, reply.k_E) // CE (2 exp) N
         val rightF: List<ElGamalCiphertext> = right1.mapIndexed { idx, it -> multiply(it, right2[idx]) }
         val verdictF = (leftF == rightF)
         //println(" verdictF = $verdictF")
@@ -398,28 +406,22 @@ class VerifierMulti(
 
 }
 
-// TODO O(n)
-fun prodPow(rows: List<MultiText>, exps: List<ElementModQ>) : ElGamalCiphertext {
-    val colProducts = prodColumnPow(rows, exps)
-    return colProducts.encryptedSum()!!
-}
-
-// TODO O(n)
+// (2 exp) N
 fun prodColumnPow(rows: List<MultiText>, exps: List<ElementModQ>) : List<ElGamalCiphertext> {
     val nrows = rows.size
     require(exps.size == nrows)
     val width = rows[0].width
     val result = List(width) { col ->
         val column = List(nrows) { row -> rows[row].ciphertexts[col] }
-        prodPow(column, exps)
+        prodPow(column, exps)// (2 exp) width
     }
     return result
 }
 
 fun innerProductColumn(matrixq: MatrixQ, exps: List<ElementModQ>) : List<ElementModQ> {
     require(exps.size == matrixq.nrows)
-    val result = List(matrixq.ncols) { col ->
-        val column = List(matrixq.nrows) { row -> matrixq.elems[row][col] }
+    val result = List(matrixq.width) { col ->
+        val column = List(matrixq.nrows) { row -> matrixq.elems[row].elems[col] }
         innerProduct(column, exps)
     }
     return result

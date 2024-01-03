@@ -31,10 +31,30 @@ fun GroupContext.prodPowA(ballots: List<MultiText>, exp: List<ElementModQ>) : El
     return with (this) { products.multP()}
 }
 
+fun GroupContext.prodPowA(ballots: List<MultiText>, exp: VectorQ) : ElementModP {
+    require(ballots.size == exp.nelems)
+    val products = ballots.mapIndexed { idx, ballot ->
+        val expi = exp.elems[idx]
+        val exps = ballot.ciphertexts.map { it.data powP expi }
+        with (this) { exps.multP()}
+    }
+    return with (this) { products.multP()}
+}
+
 fun GroupContext.prodPowB(ballots: List<MultiText>, exp: List<ElementModQ>) : ElementModP {
     require(ballots.size == exp.size)
     val products = ballots.mapIndexed { idx, ballot ->
         val expi = exp[idx]
+        val exps = ballot.ciphertexts.map { it.pad powP expi }
+        with (this) { exps.multP()}
+    }
+    return with (this) { products.multP()}
+}
+
+fun GroupContext.prodPowB(ballots: List<MultiText>, exp: VectorQ) : ElementModP {
+    require(ballots.size == exp.nelems)
+    val products = ballots.mapIndexed { idx, ballot ->
+        val expi = exp.elems[idx]
         val exps = ballot.ciphertexts.map { it.pad powP expi }
         with (this) { exps.multP()}
     }
@@ -61,10 +81,10 @@ class PcalcProdPow(val group: GroupContext, val nthreads: Int = 10) {
 
     fun calcProdPow(
         rows: List<MultiText>,
-        exps: List<ElementModQ>,
+        exps: VectorQ,
     ): Pair<ElementModP, ElementModP> {
-        require(rows.size == exps.size)
-        val pairs: List<Pair<MultiText, ElementModQ>> = rows.zip(exps)
+        require(rows.size == exps.nelems)
+        val pairs: List<Pair<MultiText, ElementModQ>> = rows.zip(exps.elems)
 
         runBlocking {
             val jobs = mutableListOf<Job>()

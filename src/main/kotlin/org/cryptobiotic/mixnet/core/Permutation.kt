@@ -25,6 +25,7 @@ data class Permutation(private val psi: IntArray) {
 
     fun <T> permute(list: List<T>): List<T> = List(list.size) { idx -> list[psi[idx]] }
     fun <T> invert(list: List<T>): List<T> = List(list.size) { idx -> list[inverse.of(idx)] }
+
     fun inverse() = inverse
 
     // Let Bψ be the permutation matrix of ψ, which consists of bij = 1 if ψ(i) == j, else 0

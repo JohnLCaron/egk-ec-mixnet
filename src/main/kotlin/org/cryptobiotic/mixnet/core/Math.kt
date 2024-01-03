@@ -15,6 +15,7 @@ fun GroupContext.prodPow(term1: List<ElementModP>, exp: List<ElementModQ>) : Ele
     return with (this) { products.multP()}
 }
 
+// (2 exp) * size vector
 fun prodPow(term1: List<ElGamalCiphertext>, exp: List<ElementModQ>) : ElGamalCiphertext {
     require(term1.size == exp.size)
     val products = term1.mapIndexed { idx, it -> ElGamalCiphertext(it.pad powP exp[idx], it.data powP exp[idx]) }

@@ -1,16 +1,13 @@
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.mixnet.multi
 
 import electionguard.core.*
 import electionguard.util.Stats
-import org.cryptobiotic.mixnet.core.LinEq
-import org.cryptobiotic.mixnet.core.LinSolver
-import org.cryptobiotic.mixnet.core.MultiText
-import org.cryptobiotic.mixnet.core.getGenerators
+import org.cryptobiotic.mixnet.core.*
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertTrue
 
-class PosMultiTWTest {
+class ShuffleProofTest {
     fun expectProof(n:Int, width: Int): String {
         val N = n*width
         val nexps = 2*N +5*n
@@ -26,7 +23,6 @@ class PosMultiTWTest {
     }
 
     @Test
-
     fun testShuffleVmn() {
         val group = productionGroup()
         val linsys = LinSolver()
@@ -98,10 +94,10 @@ class PosMultiTWTest {
 
         val U = "PosBasicTW"
         val seed = group.randomElementModQ()
-        val (h, generators) = getGenerators(group, psi.n, U, seed) // List<ElementModP> = bold_h
+        val (h, generators) = getGeneratorsV(group, psi.n, U, seed) // List<ElementModP> = bold_h
 
         starting = getSystemTimeInMillis()
-        val prover = ProverMulti(
+        val prover = ProverV(
             group,
             keypair.publicKey,
             h,
@@ -112,14 +108,14 @@ class PosMultiTWTest {
             // psi.invert(rnonces), // unpermuted Reencryption nonces
             psi,
             )
-        val (pos: ProofOfShuffleM, challenge: ElementModQ, reply: ReplyM) = prover.prove()
+        val (pos: ProofOfShuffleV, challenge: ElementModQ, reply: ReplyV) = prover.prove()
         stats.of("proof", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  proof: ${group.showAndClearCountPowP(countExp)} ${expectProof(nrows, width)}")
         linsys.proofExp.add(LinEq(nrows, N, countExp.exp))
         linsys.proofAcc.add(LinEq(nrows, N, countExp.acc))
 
         starting = getSystemTimeInMillis()
-        val verifier = VerifierMulti(
+        val verifier = VerifierV(
             group,
             keypair.publicKey,
             h,
