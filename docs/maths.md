@@ -2,7 +2,7 @@
 
 Preliminary explorations of mixnet implementations to be used with the ElectionGuard Kotlin library.
 
-We use the the ElectionGuard Kotlin library [7] for all the cryptography primitives. This library closely follows the ElectionGuard 2.0 specification [1].
+We use the ElectionGuard Kotlin library [7] for all the cryptography primitives. This library closely follows the ElectionGuard 2.0 specification [1].
 
 Some of the prototype code in egk-mixlib is a port of code found in the OpenCHVote repository [8], and the appropriate license has been added. Please use any of this work in any way consistent with that.
 
@@ -13,6 +13,8 @@ Ive tried to avoid notation that is hard to read, preferring for example, multip
 **Table of Contents**
 
 [TOC]
+
+### Definitions
 
 #### 1. The ElectionGuard Group
 
@@ -31,7 +33,7 @@ We use the ElectionGuard Kotlin library [7] and ElectionGuard 2.0 specification 
 
 A *permutation* is a bijective map $\psi: {1..N} \to {1..N}$. We use **px** to mean the permutation of a vector **x**, **px** = $\psi(\textbf x)$, so that $x_i$ = $px_j$, where $i={\psi(j)}$ and $j={\psi^{-1}(i)}$.   $x_i = px_{\psi^{-1}(i)}$,   $px_j = x_{\psi(j)}$, 
 
-A *permutation* $\psi$ has a *permutation matrix* $B_\psi$ , where $b_{ij}$ = 1 if $\psi(i)$ = j, otherwise 0. Note that **px** = B**x** (matrix multiply).
+A *permutation* $\psi$ has a *permutation matrix* $B_\psi$ , where $b_{ij}$ = 1 if $\psi(i)$ = j, otherwise 0. Note that $\psi(\textbf x)$ = **px** = B**x** (matrix multiply).
 
 If $B_\psi$ = ($b_{ij}$) is an N -by-N matrix over $\Z_q$ and **x** = $(x_1 , ..., x_N)$  a vector of N independent variables, then $B_\psi$ is a permutation matrix if and only
 $$
@@ -67,33 +69,7 @@ $$
 
 
 
-#### 4. Proof of permutation
-
-Let **c** = $Commit(\psi, \textbf r)$ = $(c_1, c_2, .. c_N)$, with randomization vector **cr** = $(cr_1, cr_2, .. cr_N)$, and $crbar = \sum_{i=1}^n cr_i$. 
-
-$Condition$ 1 implies that
-$$
-\prod_{j=1}^n c_j = \prod_{j=1}^n g^{cr_j} \prod_{i=1}^n h_i^{b_{ij}} = g^{crbar} \prod_{i=1}^n h_i\ = Commit(\textbf 1, crbar).\ \ \ (5.2)
-$$
-
-Let $\textbf u = (u_1 .. u_n)$ be arbitrary values  $\in \Zeta_q, \textbf {pu}$ its permutation by $\psi$, and  $cru=\sum_{j=1}^N {cr_j u_j}$.
-
- $Condition$ 2 implies that:
-$$
-\prod_{i=1}^n u_i = \prod_{j=1}^n pu_j\ \ \ (5.3)
-$$
-
-$$
-\prod_{j=1}^n c_j^{u_j} = \prod_{j=1}^n (g^{cr_j} \prod_{i=1}^n h_i^{b_{ij}})^{u_j} = g^{cru} \prod_{i=1}^n h_i^{pu_i}\ = Commit(\textbf {pu}, cru)\ \ \ (5.4)
-$$
-
-Which constitutes proof that condition 1 and 2 are true, so c is a commitment to a permutation matrix.
-
-
-
-
-
-####  5. ElGamal Encryption and Reencryption
+####  4. ElGamal Encryption and Reencryption
 
 $$
 \begin{align}
@@ -141,9 +117,35 @@ re_j &= Encr(0,r_j) * e_j \\
 \end{align}
 $$
 
+### ChVote
+
+This follows Haenni et. al. [2], which has a good explanation of TW, sans vectors.
+
+#### 1. Proof of permutation
+
+Let **c** = $Commit(\psi, \textbf r)$ = $(c_1, c_2, .. c_N)$, with randomization vector **cr** = $(cr_1, cr_2, .. cr_N)$, and $crbar = \sum_{i=1}^n cr_i$. 
+
+$Condition$ 1 implies that
+$$
+\prod_{j=1}^n c_j = \prod_{j=1}^n g^{cr_j} \prod_{i=1}^n h_i^{b_{ij}} = g^{crbar} \prod_{i=1}^n h_i\ = Commit(\textbf 1, crbar).\ \ \ (5.2)
+$$
+
+Let $\textbf u = (u_1 .. u_n)$ be arbitrary values  $\in \Zeta_q, \textbf {pu}$ its permutation by $\psi$, and  $cru=\sum_{j=1}^N {cr_j u_j}$.
+
+ $Condition$ 2 implies that:
+$$
+\prod_{i=1}^n u_i = \prod_{j=1}^n pu_j\ \ \ (5.3)
+$$
+
+$$
+\prod_{j=1}^n c_j^{u_j} = \prod_{j=1}^n (g^{cr_j} \prod_{i=1}^n h_i^{b_{ij}})^{u_j} = g^{cru} \prod_{i=1}^n h_i^{pu_i}\ = Commit(\textbf {pu}, cru)\ \ \ (5.4)
+$$
+
+Which constitutes proof that condition 1 and 2 are true, so that c is a commitment to a permutation matrix.
 
 
-#### 6. Proof of equal exponents
+
+#### 2. Proof of equal exponents
 
 Let $\textbf m$ be a vector of messages, $\textbf e$ their encryptions **e** = Encr($\textbf m$), and **re(e, r)** their reenryptions with nonces **r**.  A shuffle operation both reencrypts and permutes, so $shuffle(\textbf{e}, \textbf{r}) \to (\textbf{pre}, \textbf{pr})$, where **pre** is the permutation of **re ** by $\psi$, and **pr** the permutation of **r ** by $\psi$.
 $$
@@ -189,9 +191,47 @@ $$
 
 The $Encr(0, ..)$ is because we use exponential ElGamal, so is fine. Their use of $u_j$ instead of $pu_j$ appears to be a mistake. Its also possible there is a difference in notation that I didnt catch.
 
+### Verificatum
+
+#### ShuffleProof
+
+$\vec{w}$ = ()
+
+$\vec{pw}$ = Rencr(w)
+
+$\alpha, \vec{\epsilon}$ random elements in $\Z_q$
 
 
-#### 7. Shuffling vectors
+
+**Create Committment:**
+$$
+\begin{align}
+B &= \\
+A^\prime &= g^\alpha \prod_{i=0}^{n-1} h_i^{eps_i} \\
+F^\prime &= Encr(0, -\phi) \prod_{i=0}^{n-1} pw_i^{\epsilon_i} \\
+\end{align}
+$$
+**Send challenge v and get Reply:**
+$$
+\begin{align}
+k_A &= (r \cdot e) * v + \alpha \\
+\vec{k_{E}} &= \vec{e^\prime} \cdot v + \vec{\epsilon} \\
+k_E &= (rnonces \cdot e^{\prime}) * v + \alpha \\
+\end{align}
+$$
+
+
+
+**Verify**
+$$
+\begin{align}
+A^v \cdot A^\prime &= g^{k_A} \prod_{i=0}^{n-1} h_i^{k_{E,i}} \\
+\end{align}
+$$
+
+### Shuffling vectors
+
+#### Simple
 
 Much of the literature assumes that each row to be mixed consists of a single ciphertext. In our application we need the possibility that each row consists of a vector of ciphertexts. So for each row i, we now have a vector of *w = width* ciphertexts:
 $$
@@ -230,11 +270,9 @@ $$
 $$
 ​	Here we just flatten the list of lists of ciphertexts for $\textbf e, \textbf {pe}$, so that all are included in the hash. Since the hash is dependent on the ordering of the hash elements, this should preclude an attack that switches ciphertexts within a row.
 
+#### Verificatum
 
-
-
-
-#### 8. Proof of vector shuffling
+####  Haines Proof of vector shuffling
 
 Haines [9]  gives a formal proof of security of TW when the shuffle involves vectors of ciphertexts.
 
@@ -295,24 +333,30 @@ $$
 \prod_{j=1}^n ReEncr(\textbf {pe}_i^{\textbf ω^\prime_i}, r_j) =  ReEncr(\prod_{j=1}^n \textbf {pe}_i^{\textbf ω^\prime_i}, \sum_{j=1}^n r_j)
 $$
 
-#### 9. Timings (preliminary)
+### Timings (preliminary)
 
-- *nrows* = number of rows, eg ballots or contests
+#### 1. Operation counts
+
+- *n* = number of rows, eg ballots or contests
 - *width* = number of ciphertexts per row
 - *N* = nrows * width = total number of ciphertexts to be mixed
 
+**ChVote**
+
+|                  | shuffle | proof       | verify          |
+| ---------------- | ------- | ----------- | --------------- |
+| regular exps     | 0       | 2*N + 5*n   | 4*N + 4*n + 6   |
+| accelerated exps | 2 * N   | 2*N + 3*n   | 8               |
+
+**vmn**
+
+|                  | shuffle | proof         | verify                |
+| ---------------- | ------- | ------------- | --------------------- |
+| regular exps     | 0       | 2*N + 5*n     | 4*N + 3*n + width + 4 |
+| accelerated exps | 2 * N   | 3*n+2*width+6 | n + 2*width + 3       |
 
 
-**operation counts**
-
-|                  | shuffle | proof           | verify                |
-| ---------------- | ------- | --------------- | --------------------- |
-| regular exps     | 0       | 5*nrows + 2 * N | 4 * nrows + 4 * N + 6 |
-| accelerated exps | 2 * N   | 3*nrows + 2 * N | 8                     |
-
-
-
-**wallclock time**
+#### 2. wallclock times
 
 nrows = 100, width = 34, N=3400
 
@@ -364,58 +408,7 @@ Could break into batches of 100 ballots each and do each batch in parallel. The 
 
 
 
-
-
-### Vmn port
-
-#### ShuffleProof
-
-$\vec{w}$ = ()
-
-$\vec{pw}$ = Rencr(w)
-
-$\alpha, \vec{\epsilon}$ random elements in $\Z_q$
-
-
-
-**Create Committment:**
-$$
-\begin{align}
-B &= \\
-A^\prime &= g^\alpha \prod_{i=0}^{n-1} h_i^{eps_i} \\
-F^\prime &= Encr(0, -\phi) \prod_{i=0}^{n-1} pw_i^{\epsilon_i} \\
-\end{align}
-$$
-**Send challenge v and get Reply:**
-$$
-\begin{align}
-k_A &= (r \cdot e) * v + \alpha \\
-\vec{k_{E}} &= \vec{e^\prime} \cdot v + \vec{\epsilon} \\
-k_E &= (rnonces \cdot e^{\prime}) * v + \alpha \\
-\end{align}
-$$
-
-
-
-**Verify**
-$$
-\begin{align}
-A^v \cdot A^\prime &= g^{k_A} \prod_{i=0}^{n-1} h_i^{k_{E,i}} \\
-\end{align}
-$$
-
-
-**operation counts**
-
-|                  | shuffle | proof           | verify                |
-| ---------------- | ------- | --------------- | --------------------- |
-| regular exps     | 0       | 4*nrows + 2*N   | 6*nrows + 4*N + 4     |
-| accelerated exps | 2 * N   | 3*nrows+2*N+6   | 2*nrows + 24                     |
-
-
-
-
-#### References
+### References
 
 1. Josh Benaloh and Michael Naehrig, *ElectionGuard Design Specification, Version 2.0.0*, Microsoft Research, August 18, 2023, https://github.com/microsoft/electionguard/releases/download/v2.0/EG_Spec_2_0.pdf 
 2. Rolf Haenni, Reto E. Koenig, Philipp Locher, Eric Dubuis. *CHVote Protocol Specification Version 3.5*, Bern University of Applied Sciences, February 28th, 2023, https://eprint.iacr.org/2017/325.pdf

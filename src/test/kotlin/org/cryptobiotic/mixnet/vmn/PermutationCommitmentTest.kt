@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.ch
+package org.cryptobiotic.mixnet.vmn
 
 import electionguard.core.productionGroup
 import org.cryptobiotic.mixnet.core.*
@@ -8,19 +8,17 @@ import kotlin.test.assertEquals
 class PermutationCommitmentTest {
 
     @Test
-    fun testPermutationCommitment() {
+    fun testPermutationCommitmentVmn() {
         val group = productionGroup()
         val nballots = 31
         val psi = Permutation.random(nballots)
 
         val (h, generators) = getGenerators(group, nballots, "shuffleProof2")
-        val (pcommitments, pnonces) = permutationCommitment(group, psi, generators)
+        val (pcommitments, pnonces) = permutationCommitmentVmn(group, psi, generators)
 
-        // is it true that u_j = g^{cr_j} * h_i , where i=ψ^{-1}(j)
+        // is it true that u_j = g^{cr_j} * h_j ?
         repeat(nballots) { j ->
-            val gidx = psi.inv(j)
-            assertEquals( pcommitments[j], group.gPowP(pnonces[j]) * generators[gidx] )
+            assertEquals( pcommitments[j], group.gPowP(pnonces[j]) * generators[j] )
         }
     }
-
 }

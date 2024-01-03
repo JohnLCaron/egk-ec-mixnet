@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.ch
+package org.cryptobiotic.mixnet.multi
 
 import electionguard.core.*
 import org.cryptobiotic.mixnet.core.Permutation
@@ -27,34 +27,6 @@ import org.cryptobiotic.mixnet.core.VectorQ
  */
 fun permutationCommitment(group: GroupContext,
                           psi: Permutation,
-                          generators: List<ElementModP>) : Pair<List<ElementModP>, List<ElementModQ>> {
-    // ALGORITHM 8.46
-    //         Parallel.forLoop(1, N, i -> {
-    //            var j_i = psi.getValue(i);
-    //            var r_j_i = GenRandomInteger.run(q);
-    //            var c_j_i = ZZPlus_p.multiply(ZZPlus_p.pow(g, r_j_i), bold_h.getValue(i));
-    //            builder_bold_r.setValue(j_i, r_j_i);
-    //            builder_bold_c.setValue(j_i, c_j_i);
-    //        });
-
-    //  Com(ψ, r) = { g^rj * h_ψ-1(j) }, j=1..N
-    val pcommitments = MutableList(psi.n) { group.ZERO_MOD_P }
-    val pnonces = MutableList(psi.n) { group.ZERO_MOD_Q }
-    repeat(psi.n) { idx ->
-        val jdx = psi.of(idx)
-        val rj = group.randomElementModQ(minimum = 1)
-        // val c_j_i: Unit = ZZPlus_p.multiply(ZZPlus_p.pow(g, r_j_i), bold_h.getValue(i))
-        val cj = group.gPowP(rj) * generators[idx]
-
-        pnonces[jdx] = rj
-        pcommitments[jdx] = cj
-    }
-
-    return Pair(pcommitments, pnonces)
-}
-
-fun permutationCommitmentV(group: GroupContext,
-                          psi: Permutation,
                           generators: VectorP
 ) : Pair<VectorP, VectorQ> {
 
@@ -70,5 +42,26 @@ fun permutationCommitmentV(group: GroupContext,
         pcommitments[jdx] = cj
     }
 
+    return Pair(VectorP(group, pcommitments), VectorQ(group, pnonces))
+}
+
+fun permutationCommitmentVmn(group: GroupContext,
+                             psi: Permutation,
+                             generators: VectorP) : Pair<VectorP, VectorQ> {
+
+    //  Com(ψ, r) = { g^rj * h_j }, j=1..N
+    //  Com(ψ, r) = { g^rj * h_ψ-1(j) }, j=1..N
+    val pcommitments = MutableList(psi.n) { group.ZERO_MOD_P }
+    val pnonces = MutableList(psi.n) { group.ZERO_MOD_Q }
+    // ALGORITHM
+    repeat(psi.n) { idx ->
+        val jdx = psi.of(idx)
+        val rj = group.randomElementModQ(minimum = 1)
+        // val c_j_i: Unit = ZZPlus_p.multiply(ZZPlus_p.pow(g, r_j_i), bold_h.getValue(i))
+        val cj = group.gPowP(rj) * generators.elems[jdx]
+
+        pnonces[jdx] = rj
+        pcommitments[jdx] = cj
+    }
     return Pair(VectorP(group, pcommitments), VectorQ(group, pnonces))
 }
