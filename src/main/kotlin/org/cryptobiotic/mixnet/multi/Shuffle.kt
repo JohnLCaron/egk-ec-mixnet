@@ -10,46 +10,32 @@ import org.cryptobiotic.mixnet.core.*
 
 
 fun shuffleMultiText(
-    ballots: List<MultiText>,
+    rows: List<VectorCiphertext>,
     publicKey: ElGamalPublicKey,
-): Triple<List<MultiText>, MatrixQ, Permutation> {
+): Triple<List<VectorCiphertext>, MatrixQ, Permutation> {
 
-    val mixed = mutableListOf<MultiText>()
+    val mixed = mutableListOf<VectorCiphertext>()
     val rnonces = mutableListOf<VectorQ>()
 
-    val n = ballots.size
+    val n = rows.size
     val psi = Permutation.random(n)
     repeat(n) { jdx ->
         val idx = psi.of(jdx) //  pe[jdx] = e[ps.of(jdx)]; you have an element in pe, and need to get the corresponding element from e
-        val (reencrypt, nonceV) = ballots[idx].reencrypt(publicKey)
+        val (reencrypt, nonceV) = rows[idx].reencrypt(publicKey)
         mixed.add(reencrypt)
         rnonces.add(nonceV)
     }
     return Triple(mixed, MatrixQ(rnonces), psi)
 }
 
-fun MultiText.reencrypt(publicKey: ElGamalPublicKey): Pair<MultiText, VectorQ> {
+fun VectorCiphertext.reencrypt(publicKey: ElGamalPublicKey): Pair<VectorCiphertext, VectorQ> {
     val group = publicKey.context
-    val nonces = List(this.width) { group.randomElementModQ(minimum = 1) }
-    val reencrypt = this.ciphertexts.mapIndexed { idx, text ->
+    val nonces = List(this.nelems) { group.randomElementModQ(minimum = 1) }
+    val reencrypt = this.elems.mapIndexed { idx, text ->
         text.reencrypt(publicKey, nonces[idx])
     }
-    return Pair(MultiText(reencrypt), VectorQ(group, nonces))
+    return Pair(VectorCiphertext(group, reencrypt), VectorQ(group, nonces))
 }
-
-/*
-fun MultiText.reencrypt(publicKey: ElGamalPublicKey): Pair<MultiText, List<ElementModQ>> {
-    val group = publicKey.context
-    val nonces = mutableListOf<ElementModQ>()
-    val reencrypt = this.ciphertexts.map { text ->
-        val nonce: ElementModQ = group.randomElementModQ(minimum = 1)
-        nonces.add(nonce)
-        text.reencrypt(publicKey, nonce)
-    }
-    return Pair(MultiText(reencrypt), nonces)
-}
-
- */
 
 fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey): Pair<ElGamalCiphertext, ElementModQ> {
     // Encr(m) = (g^ξ, K^(m+ξ)) = (a, b)
@@ -63,18 +49,6 @@ fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey): Pair<ElGamalCipher
     val rencr = ElGamalCiphertext(this.pad * ap, this.data * bp)
     return Pair(rencr, nonce)
 }
-
-/*
-fun MultiText.reencrypt(publicKey: ElGamalPublicKey): Pair<MultiText, ElementModQ> {
-    val group = publicKey.context
-    val nonce: ElementModQ = group.randomElementModQ(minimum = 1)
-    val reencrypt = this.ciphertexts.map { text ->
-        text.reencrypt(publicKey, nonce)
-    }
-    return Pair(MultiText(reencrypt), nonce)
-}
-
- */
 
 fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey, nonce: ElementModQ): ElGamalCiphertext {
     // Encr(m) = (g^ξ, K^(m+ξ)) = (a, b)
@@ -90,13 +64,13 @@ fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey, nonce: ElementModQ)
 ////////////////////////////////////////////////////////////////////////////////
 
 // parallel shuffle
-class PShuffleMultiText(val group: GroupContext,  val rows: List<MultiText>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
+class PShuffleMultiText(val group: GroupContext,  val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
     val n = rows.size
-    var mixed = MutableList(n) { MultiText(emptyList()) }
+    var mixed = MutableList(n) { VectorCiphertext.empty(group) }
     var rnonces = MutableList(n) { VectorQ.empty(group) }
     val psi = Permutation.random(n)
 
-    fun shuffle(): Triple<List<MultiText>, MatrixQ, Permutation> {
+    fun shuffle(): Triple<List<VectorCiphertext>, MatrixQ, Permutation> {
 
         runBlocking {
             val jobs = mutableListOf<Job>()
@@ -111,7 +85,7 @@ class PShuffleMultiText(val group: GroupContext,  val rows: List<MultiText>, val
         return Triple(mixed, MatrixQ(rnonces), psi)
     }
 
-    private fun CoroutineScope.producer(rows: List<MultiText>, psi: Permutation): ReceiveChannel<Pair<MultiText, Int>> =
+    private fun CoroutineScope.producer(rows: List<VectorCiphertext>, psi: Permutation): ReceiveChannel<Pair<VectorCiphertext, Int>> =
         produce {
             rows.forEachIndexed { idx, row ->
                 send(Pair(row, psi.inv(idx)))
@@ -123,8 +97,8 @@ class PShuffleMultiText(val group: GroupContext,  val rows: List<MultiText>, val
     private val mutex = Mutex()
 
     private fun CoroutineScope.launchCalculator(
-        input: ReceiveChannel<Pair<MultiText, Int>>,
-        calculate: (MultiText) -> Pair<MultiText, VectorQ>
+        input: ReceiveChannel<Pair<VectorCiphertext, Int>>,
+        calculate: (VectorCiphertext) -> Pair<VectorCiphertext, VectorQ>
     ) = launch(Dispatchers.Default) {
 
         for (pair in input) {

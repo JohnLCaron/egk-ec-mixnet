@@ -25,7 +25,7 @@ import org.cryptobiotic.mixnet.core.VectorQ
  * Create commitments to the given permutation.
  * return (pcommitments, pnonces)
  */
-fun permutationCommitment(group: GroupContext,
+fun permutationCommitmentV(group: GroupContext,
                           psi: Permutation,
                           generators: VectorP
 ) : Pair<VectorP, VectorQ> {
@@ -45,7 +45,8 @@ fun permutationCommitment(group: GroupContext,
     return Pair(VectorP(group, pcommitments), VectorQ(group, pnonces))
 }
 
-fun permutationCommitmentVmn(group: GroupContext,
+// CE n acc
+fun permutationCommitmentVmnV(group: GroupContext,
                              psi: Permutation,
                              generators: VectorP) : Pair<VectorP, VectorQ> {
 

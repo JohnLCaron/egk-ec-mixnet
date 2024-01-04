@@ -8,6 +8,12 @@ import kotlin.test.assertEquals
 class MathTest {
 
     @Test
+    fun tesRuntime() {
+        println("nproc = ${Runtime.getRuntime().availableProcessors()}")
+        println("version = ${Runtime.version()}")
+    }
+
+    @Test
     fun testMath() {
         val group = productionGroup()
         val exp = group.randomElementModQ(minimum = 1)

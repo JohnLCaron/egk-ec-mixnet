@@ -3,42 +3,42 @@ package org.cryptobiotic.mixnet.multi
 import electionguard.core.*
 import org.cryptobiotic.mixnet.core.*
 
-
-// start with PosMultiTW. use vectors
+// Could split into ProofOfShuffle and ProofOfExponents
 class ProverV(
     val group: GroupContext,
     val publicKey: ElGamalPublicKey, // Public key used to re-encrypt.
     val h: ElementModP,
-    val generators: VectorP, // generators
-    val w: List<MultiText>, // ciphertexts
-    val wp: List<MultiText>, // permuted ciphertexts
-    val rnonces: MatrixQ, // reencryption nonces
-    val psi: Permutation,
+    val generators: VectorP, // n generators
+    val w: List<VectorCiphertext>, // n rows x width
+    val wp: List<VectorCiphertext>, // n shuffled x width
+    val rnonces: MatrixQ, // v reencryption nonces x width, corresponding to wp
+    val psi: Permutation, // n
 ) {
     /** Size of the set that is permuted. */
-    val rows: Int = w.size
-    val width: Int = w[0].ciphertexts.size
+    val nrows: Int = w.size
+    val width: Int = w[0].nelems
 
-    /** Random exponents used to form the permutation commitment. */
-    val r: VectorQ // pnonces
+    //////// Public values
 
     /** Commitment of a permutation. */
     val u: VectorP // pcommit
 
-    // ################# Message 1 (verifier) #####################
     /** Vector of random exponents. */
     val e: VectorQ
-
-    // ########### Secret values for bridging commitment #######
-    val ipe: VectorQ // permuted e
 
     /** Randomizer for inverse permuted batching vector. */
     val epsilon: VectorQ
 
+    //////// Secret values
+
+    val ipe: VectorQ // permuted e
+
+    /** Random exponents used to form the permutation commitment. */
+    val r: VectorQ // pnonces
+
     /** Randomness to form the bridging commitments. */
     val b: VectorQ
 
-    // ######### Randomizers and blinders of the prover ########
     /** Randomizer for inner product of r and ipe. */
     val alpha: ElementModQ
 
@@ -52,12 +52,12 @@ class ProverV(
     val delta: ElementModQ
 
     /** Randomizer for f. */
-    var phi: VectorQ // width
+    val phi: VectorQ // width
 
     // ################## Message 3 (Verifier) ##################
 
     init {
-        val (pcommit, pnonces) = permutationCommitmentVmn(
+        val (pcommit, pnonces) = permutationCommitmentVmnV(
             group,
             psi,
             generators
@@ -66,14 +66,14 @@ class ProverV(
         this.r = pnonces
 
         alpha = group.randomElementModQ()
-        beta = VectorQ.randomQ(group, rows)
+        beta = VectorQ.randomQ(group, nrows)
         gamma = group.randomElementModQ()
         delta = group.randomElementModQ()
         phi = VectorQ.randomQ(group, width)
-        epsilon =VectorQ.randomQ(group, rows)
+        epsilon =VectorQ.randomQ(group, nrows)
 
-        b = VectorQ.randomQ(group, rows)
-        e = VectorQ.randomQ(group, rows)
+        b = VectorQ.randomQ(group, nrows)
+        e = VectorQ.randomQ(group, nrows)
         this.ipe = e.permute(psi)
     }
 
@@ -83,49 +83,45 @@ class ProverV(
         // Generate a challenge. For the moment let it be a random value
         val challenge = group.randomElementModQ()
 
-        // Compute and publish reply.
         val reply = reply(pos, challenge)
+
         return Triple(pos, challenge, reply)
     }
 
-    fun commit(): ProofOfShuffleV{
-
+    fun commit(): ProofOfShuffleV {
         // A' = g^{\alpha} * \prod h_i^{\epsilon_i}
         // val Ap = g.exp(alpha).mul(h.expProd(epsilon))
         // val Ap = group.gPowP(alpha) * group.prodPow(generators, epsilon)
-        val Ap = group.gPowP(alpha) * Prod(generators powP epsilon)
+        val Ap = group.gPowP(alpha) * Prod(generators powP epsilon)  // CE n exp, 1 acc
 
         // The array of bridging commitments is of the form:
         //
         // B_0 = g^{b_0} * h0^{e_0'} (1)
         // B_i = g^{b_i} * B_{i-1}^{e_i'} (2)
         //
-        val (B, Bp, d) = computeBp(ipe)
+        val (B, Bp, d) = computeBp(ipe) // CE 2n exp, 2n acc
 
         // The verifier also requires that the prover knows c=\sum r_i such that
         // \prod u_i / \prod h_i = g^c
         // so we generate a randomizer \gamma and blinder as follows.
         // C' = g^{\gamma}
-        val Cp = group.gPowP(gamma)
+        val Cp = group.gPowP(gamma)   // CE 1 acc
 
         // Finally, the verifier requires that
         // B_{N-1} / g^{\prod e_i} = g^{d}
         // so we generate a randomizer \delta and blinder as follows.
         // D' = g^{\delta}
-        val Dp = group.gPowP(delta)
+        val Dp = group.gPowP(delta)  // CE 1 acc
 
         // We must show that we can open F = \prod w_i^{e_i} as
-        // F = Enc_pk(1,-f)\prod (w_i')^{e_i'}
-        // where f=<s,e>.2
+        // F = Enc_pk(1,-f)\prod (w_i')^{e_i'}, where f=<s,e>.2
         // phi = ciphPRing.randomElement(randomSource, rbitlen)
-        // val Fp = pkey.exp(phi.neg()).mul(wp.expProd(epsilon))
-        // wp.expProd(epsilon) is width
-        // pkey.exp(phi.neg()) is width
-        // TODO O(N)
         // val enc0 = phi.map { 0.encrypt(publicKey, -it) } // width
-        val enc0: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, phi)  // width
+        val enc0: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, phi)  // CE 2 * width acc
 
-        val wp_eps: VectorCiphertext = prodColumnPow(wp, epsilon)  // product of columns raised to eps power; pretend its one value width wide
+        // product of columns raised to eps power; size width
+        val wp_eps: VectorCiphertext = prodColumnPow(wp, epsilon) // CE 2 * width * n exp
+        // val Fp = pkey.exp(phi.neg()).mul(wp.expProd(epsilon))
         val Fp = enc0 * wp_eps// component-wise; width wide
 
         return ProofOfShuffleV(u, d, e, epsilon, B, Ap, Bp, Cp, Dp, Fp)
@@ -135,60 +131,22 @@ class ProverV(
         // Thus, we form the committed product of the inverse permuted random exponents.
         // To be able to use fixed-base exponentiation, this is, however, computed as:
         //   B_i = g^{x_i} * h0^{y_i}
-        // where x_i and y_i are computed as follows.
-
-        // x is computed using a method call that is equivalent to the
-        // recursive code in the following comment:
-        //
-        // PRingElement[] bs = b.elements();
-        // PRingElement[] ipes = ipe.elements();
-        // PRingElement[] xs = new PRingElement[size];
-        // xs[0] = bs[0];
-        // for (int i = 1; i < size; i++) {
-        //   xs[i] = xs[i - 1].mul(ipes[i]).add(bs[i]);
-        // }
-        // PRingElementArray x = pRing.toElementArray(xs);
-        // d = xs[size-1];
-        // val p: Pair<PRingElementArray, PRingElement> = recLin(b, ipe)
-        // val x: PRingElementArray = p.first
-        // d = p.second
         val x: VectorQ = recLin(b, ipe)
-        val d = x.elems[rows - 1]
+        val d = x.elems[nrows - 1]
 
         // Compute aggregated products:
         //   e_0', e_0'*e_1', e_0'*e_1'*e_2', ...
         //   final PRingElementArray y = ipe.prods();
-        val y: VectorQ = ipe.aggProd(group)
+        val y: VectorQ = ipe.aggProd()
 
         //  final PGroupElementArray g_exp_x = g.exp(x);
-        val g_exp_x: VectorP = x.gPowP()
+        val g_exp_x: VectorP = x.gPowP() // CE n acc
 
         //  final PGroupElementArray h0_exp_y = h0.exp(y);
-        val h0_exp_y: VectorP = y.powScalar(h)
+        val h0_exp_y: VectorP = y.powScalar(h) // CE n exp
 
         //  B = g_exp_x.mul(h0_exp_y);
         val B = g_exp_x * h0_exp_y  // g.exp(x) *  h0.exp(y)
-
-        //  ################# Proof Commitments ####################
-        /* ################# Pass 1 commented out
-        //  During verification, the verifier also requires that (1)
-        //  and (2) holds. Thus, we choose new randomizers,
-        //    beta = pRing.randomElementArray(size, randomSource, rbitlen);
-        //  and form corresponding blinders.
-        //    B_0' = g^{\beta_0'} * h0^{\epsilon_0}
-        //    B_i' = g^{\beta_i'} * B_{i-1}^{\epsilon_i}
-        //
-        //   PGroupElementArray B_shift = B.shiftPush(h0);
-        val B_shift = B.shiftPush(h)
-        //   PGroupElementArray g_exp_beta = g.exp(beta);
-        val g_exp_beta = beta.gPowP()
-        //    PGroupElementArray B_shift_exp_epsilon = B_shift.exp(epsilon);
-        val B_shift_exp_epsilon = B_shift powP epsilon
-        //    Bp = g_exp_beta.mul(B_shift_exp_epsilon);
-        val Bp1 = g_exp_beta * B_shift_exp_epsilon
-        //  end Pass1 #####################################
-         */
-
 
         //    final PRingElementArray xp = x.shiftPush(x.getPRing().getZERO());
         val xp = x.shiftPush(group.ZERO_MOD_Q)
@@ -203,19 +161,49 @@ class ProverV(
         val beta_add_prod = beta + xp_mul_epsilon
 
         //        final PGroupElementArray g_exp_beta_add_prod = g.exp(beta_add_prod);
-        val g_exp_beta_add_prod = beta_add_prod.gPowP()
+        val g_exp_beta_add_prod = beta_add_prod.gPowP() // CE n acc
 
         //        final PRingElementArray yp_mul_epsilon = yp.mul(epsilon);
         val yp_mul_epsilon = yp * epsilon // todo??
 
         //        final PGroupElementArray h0_exp_yp_mul_epsilon = h0.exp(yp_mul_epsilon);
-        val h0_exp_yp_mul_epsilon = yp_mul_epsilon.powScalar(h)
+        val h0_exp_yp_mul_epsilon = yp_mul_epsilon.powScalar(h) // CE n exp
 
         //        Bp = g_exp_beta_add_prod.mul(h0_exp_yp_mul_epsilon);
         val Bp = g_exp_beta_add_prod * h0_exp_yp_mul_epsilon
 
         return Triple(B, Bp, d)
     }
+
+    // Compute aggregated products:
+    // e_0', e_0'*e_1', e_0'*e_1'*e_2', ...
+    fun VectorQ.aggProd(): VectorQ {
+        var accum = group.ONE_MOD_Q
+        val agge: List<ElementModQ> = this.elems.map {
+            accum = accum * it
+            accum
+        }
+        return VectorQ(group, agge)
+    }
+
+    // ElementModQ[] bs = b.elements();
+    // ElementModQ[] ipes = ipe.elements();
+    // ElementModQ[] xs = new ElementModQ[size];
+    // xs[0] = bs[0];
+    // for (int i = 1; i < size; i++) {
+    //   xs[i] = xs[i - 1].mul(ipes[i]).add(bs[i]);
+    // }
+    // List<ElementModQ> x = pRing.toElementArray(xs);
+    // d = xs[size-1];
+    fun recLin(b: VectorQ, ipe: VectorQ): VectorQ {
+        val xs = mutableListOf<ElementModQ>()
+        xs.add(b.elems[0])
+        for (idx in 1..b.nelems - 1) {
+            xs.add(xs[idx - 1] * ipe.elems[idx] + b.elems[idx])
+        }
+        return VectorQ(b.group, xs)
+    }
+
 
     fun reply(pos: ProofOfShuffleV, v: ElementModQ): ReplyV {
         // Initialize the special exponents.
@@ -285,8 +273,8 @@ class VerifierV(
     val publicKey: ElGamalPublicKey,
     val h: ElementModP, // temp
     val generators: VectorP, // temp
-    val w: List<MultiText>, // org ciphertexts
-    val wp: List<MultiText>, // permuted ciphertexts
+    val w: List<VectorCiphertext>, // org ciphertexts
+    val wp: List<VectorCiphertext>, // permuted ciphertexts
 ) {
     val size = w.size
 
@@ -300,38 +288,10 @@ class VerifierV(
         // A^v * Ap == g^k_A * Prod(h^K_E)          (8.3 point 5)
         //         val A = group.prodPow(proof.u, proof.e)
         val A: ElementModP = Prod(proof.u powP proof.e) // CE n exps
-        val leftA = (A powP v) * proof.Ap // CE 1 exp
+        val leftA = (A powP v) * proof.Ap                  // CE 1 exp
         //         val rightA = group.gPowP(reply.k_A) * group.prodPow(generators, reply.k_EA)
-        val rightA = group.gPowP(reply.k_A) * Prod(generators powP reply.k_EA) // CE 1 exp, 1 acc
+        val rightA = group.gPowP(reply.k_A) * Prod(generators powP reply.k_EA) // CE n exp, 1 acc
         val verdictA = (leftA == rightA)
-
-        /* Original
-        // Verify that prover knows b and e' such that:
-        // B_0 = g^{b_0} * h0^{e_0'}
-        // B_i = g^{b_i} * B_{i-1}^{e_i'}
-        //
-        // Bi^v * Bpi == g^k_Bi * Bminus1^(K_Ei), for i=0..N-1, B-1 = h0        (8.3 point 5)
-        //        final PGroupElementArray B_exp_v = B.exp(v);
-        //val B_exp_v = proof.B.map { it powP v }
-        val B_exp_v = VectorP(group, proof.B) powP v  // CE n exp
-        //        final PGroupElementArray leftSide = B_exp_v.mul(Bp);
-        // val leftSide = B_exp_v.mapIndexed { idx, it -> it * proof.Bp[idx] }
-        val leftSide = B_exp_v * VectorP(group, proof.Bp)
-        //        final PGroupElementArray g_exp_k_B = g.exp(k_B);
-        // val g_exp_k_B = reply.k_B.map { group.gPowP(it) }
-        val g_exp_k_B = gPowP( VectorQ(group, reply.k_B) ) // CE n acc
-        //        final PGroupElementArray B_shift = B.shiftPush(h0);
-        val B_shift = VectorP(group, proof.B.shiftPush(h))
-        //        final PGroupElementArray B_shift_exp_k_E = B_shift.exp(k_E);
-        // val B_shift_exp_k_E = B_shift.mapIndexed { idx, it -> it powP reply.k_E[idx] }
-        val B_shift_exp_k_E = B_shift powP VectorQ(group, reply.k_E) // CE n exp
-        //        final PGroupElementArray rightSide = g_exp_k_B.mul(B_shift_exp_k_E);
-        // val rightSide = g_exp_k_B.mapIndexed { idx, it -> it * B_shift_exp_k_E[idx] }
-        val rightSide = g_exp_k_B * B_shift_exp_k_E
-        //        final boolean verdictB = leftSide.equals(rightSide);
-        val verdictBp = leftSide.equals(rightSide)
-
-         */
 
         // Port from just the equation
         // Verify that prover knows b and e' such that:
@@ -342,14 +302,12 @@ class VerifierV(
         var verdictB = true
         var Bminus1 = h
         repeat(size) { i ->
-            val leftB = (proof.B.elems[i] powP v) * proof.Bp.elems[i] // CE n exp
+            val leftB = (proof.B.elems[i] powP v) * proof.Bp.elems[i]       // CE n exp
             val rightB = group.gPowP(reply.k_B.elems[i]) * (Bminus1 powP reply.k_E.elems[i]) // CE n exp, n acc
             verdictB = verdictB && (leftB == rightB)
             Bminus1 = proof.B.elems[i]
         }
-        //if (verdictB != verdictBp) {
-        //    println("*** HEY verdictB = $verdictB verdictBp = $verdictBp")
-        //}
+
 
         // Verify that prover knows c=\sum r_i such that:
         // C = \prod u_i / \prod h_i = g^c LOOK wrong
@@ -370,7 +328,7 @@ class VerifierV(
         // D = B[N-1] * h0^(-Prod(e))           (8.3 point 5)
         // D^v*Dp == g^K_D                      (8.3 point 5)
         val prode = Prod(proof.e)
-        val D = proof.B.elems[size - 1] / (h powP prode) // TODO is it better to avoid divide ??
+        val D = proof.B.elems[size - 1] / (h powP prode) // TODO is it better to avoid divide ?? // CE 1 exp
         val leftD = (D powP v) * proof.Dp // CE 1 exp
         val rightD = group.gPowP(reply.k_D) // CE 1 acc
         val verdictD = (leftD == rightD)
@@ -401,15 +359,16 @@ class VerifierV(
 
 }
 
+// TODO is this relaly what vmn does? how is if 3x faster?
 // (2 exp) N
-fun prodColumnPow(rows: List<MultiText>, exps: VectorQ) : VectorCiphertext {
+fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ) : VectorCiphertext {
     val nrows = rows.size
     require(exps.nelems == nrows)
-    val width = rows[0].width
+    val width = rows[0].nelems
     val result = List(width){ col ->
-        val column = List(nrows) { row -> rows[row].ciphertexts[col] }
+        val column = List(nrows) { row -> rows[row].elems[col] }
         val columnV = VectorCiphertext(exps.group, column)
-        Prod(columnV powP exps) // (2 exp) width
+        Prod(columnV powP exps) // CE 2 * n * width exp
     }
     return VectorCiphertext(exps.group, result)
 }
@@ -418,36 +377,8 @@ fun innerProductColumn(matrixq: MatrixQ, exps: VectorQ) : VectorQ {
     require(exps.nelems == matrixq.nrows)
     val result = List(matrixq.width) { col ->
         val column = List(matrixq.nrows) { row -> matrixq.elems[row].elems[col] }
-        innerProduct(column, exps.elems)
+        VectorQ(exps.group, column).innerProduct(exps)
     }
     return VectorQ(exps.group, result)
 }
 
-// Compute aggregated products:
-// e_0', e_0'*e_1', e_0'*e_1'*e_2', ...
-fun VectorQ.aggProd(group: GroupContext): VectorQ {
-    var accum = group.ONE_MOD_Q
-    val agge: List<ElementModQ> = this.elems.map {
-        accum = accum * it
-        accum
-    }
-    return VectorQ(group, agge)
-}
-
-// ElementModQ[] bs = b.elements();
-// ElementModQ[] ipes = ipe.elements();
-// ElementModQ[] xs = new ElementModQ[size];
-// xs[0] = bs[0];
-// for (int i = 1; i < size; i++) {
-//   xs[i] = xs[i - 1].mul(ipes[i]).add(bs[i]);
-// }
-// List<ElementModQ> x = pRing.toElementArray(xs);
-// d = xs[size-1];
-fun recLin(b: VectorQ, ipe: VectorQ): VectorQ {
-    val xs = mutableListOf<ElementModQ>()
-    xs.add(b.elems[0])
-    for (idx in 1..b.nelems - 1) {
-        xs.add(xs[idx - 1] * ipe.elems[idx] + b.elems[idx])
-    }
-    return VectorQ(b.group, xs)
-}
