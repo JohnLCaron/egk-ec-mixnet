@@ -350,10 +350,11 @@ $$
 
 **vmn**
 
-|                  | shuffle | proof         | verify                |
-| ---------------- | ------- | ------------- | --------------------- |
-| regular exps     | 0       | 2*N + 5*n     | 4*N + 3*n + width + 4 |
-| accelerated exps | 2 * N   | 3*n+2*width+6 | n + 2*width + 3       |
+|                  | shuffle | proof of shuffle | proof of exp | verify          |
+| ---------------- | ------- | ---------------- | ------------ | --------------- |
+| regular exps     | 0       | 4n               | 2N           | 4*N + 4n + 4    |
+| accelerated exps | 2 * N   | 3*n+2*width+4    | 0            | n + 2*width + 3 |
+
 
 
 #### 2. wallclock times
@@ -384,9 +385,19 @@ Time egk-mixnet
   total: 119.711 secs, N=3400 perN=35 msecs
 ```
 
-Vmn has verifier 33355/12123 = 2.75 faster, TODO: investigate if theres an algorithm improvement there.
+Vmn proof 27/(17.4+5.4) = 1.18 is 18% slower
+
+Vmn has verifier 33355/12123 = 2.75 faster, TODO: investigate if theres an algorithm improvement there. Possibly related to the "wide integer" representation, eg see 
+
+```
+LargeInteger.modPowProd(LargeInteger[] bases, LargeInteger[] exponents, LargeInteger modulus)
+```
+
+Also note LargeInteger.magic that allows use of VMGJ.
 
 Vmn in pure Java mode, using BigInteger. TODO: Find out how much speedup using VMGJ gets.
+
+SO why doesnt same speedup alply to proof?
 
 
 

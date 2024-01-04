@@ -7,7 +7,7 @@ import electionguard.core.randomElementModQ
 import org.cryptobiotic.mixnet.core.VectorP
 import org.cryptobiotic.mixnet.core.VectorQ
 
-fun committmentChain(group: GroupContext,
+fun committmentChainV(group: GroupContext,
                      h: ElementModP, // another generator besides g
                      bold_u_tilde: VectorQ // Permuted public challenges
 ): Pair<VectorP, VectorQ> {
