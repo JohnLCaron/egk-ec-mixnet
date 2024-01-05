@@ -64,7 +64,7 @@ fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey, nonce: ElementModQ)
 ////////////////////////////////////////////////////////////////////////////////
 
 // parallel shuffle
-class PShuffleMultiText(val group: GroupContext,  val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
+class PShuffle(val group: GroupContext,  val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
     val n = rows.size
     var mixed = MutableList(n) { VectorCiphertext.empty(group) }
     var rnonces = MutableList(n) { VectorQ.empty(group) }
@@ -103,7 +103,6 @@ class PShuffleMultiText(val group: GroupContext,  val rows: List<VectorCiphertex
 
         for (pair in input) {
             val (row, jdx) = pair
-            // MultiText.reencrypt(publicKey: ElGamalPublicKey): Pair<MultiText, ElementModQ>
             val (reencrypt, nonces) = calculate(row)
             mutex.withLock {
                 mixed[jdx] = reencrypt

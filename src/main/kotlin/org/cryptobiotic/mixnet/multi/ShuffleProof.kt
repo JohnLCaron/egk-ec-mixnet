@@ -1,6 +1,11 @@
 package org.cryptobiotic.mixnet.multi
 
 import electionguard.core.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.cryptobiotic.mixnet.core.*
 
 // Could split into ProofOfShuffle and ProofOfExponents
@@ -26,9 +31,6 @@ class ProverV(
     /** Vector of random exponents. */
     val e: VectorQ
 
-    /** Randomizer for inverse permuted batching vector. */
-    val epsilon: VectorQ
-
     //////// Secret values
 
     val ipe: VectorQ // permuted e
@@ -51,7 +53,10 @@ class ProverV(
     /** Randomizer for opening last element of B. */
     val delta: ElementModQ
 
-    /** Randomizer for f. */
+    /** Randomizer for inverse permuted batching vector. */
+    val epsilon: VectorQ
+
+    /** Randomizers for f. */
     val phi: VectorQ // width
 
     // ################## Message 3 (Verifier) ##################
@@ -69,26 +74,27 @@ class ProverV(
         beta = VectorQ.randomQ(group, nrows)
         gamma = group.randomElementModQ()
         delta = group.randomElementModQ()
+        epsilon = VectorQ.randomQ(group, nrows)
+
         phi = VectorQ.randomQ(group, width)
-        epsilon =VectorQ.randomQ(group, nrows)
 
         b = VectorQ.randomQ(group, nrows)
         e = VectorQ.randomQ(group, nrows)
         this.ipe = e.permute(psi)
     }
 
-    fun prove(): Triple<ProofOfShuffleV, ElementModQ, ReplyV> {
-        val pos = commit()
+    fun prove(nthreads:Int): Triple<ProofOfShuffleV, ElementModQ, ReplyV> {
+        val pos = commit(nthreads)
 
         // Generate a challenge. For the moment let it be a random value
         val challenge = group.randomElementModQ()
 
-        val reply = reply(pos, challenge)
+        val reply = reply(pos, challenge, nthreads)
 
         return Triple(pos, challenge, reply)
     }
 
-    fun commit(): ProofOfShuffleV {
+    fun commit(nthreads:Int): ProofOfShuffleV {
         // A' = g^{\alpha} * \prod h_i^{\epsilon_i}
         // val Ap = g.exp(alpha).mul(h.expProd(epsilon))
         // val Ap = group.gPowP(alpha) * group.prodPow(generators, epsilon)
@@ -113,6 +119,7 @@ class ProverV(
         // D' = g^{\delta}
         val Dp = group.gPowP(delta)  // CE 1 acc
 
+        //// Proof of exponent
         // We must show that we can open F = \prod w_i^{e_i} as
         // F = Enc_pk(1,-f)\prod (w_i')^{e_i'}, where f=<s,e>.2
         // phi = ciphPRing.randomElement(randomSource, rbitlen)
@@ -120,13 +127,21 @@ class ProverV(
         val enc0: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, phi)  // CE 2 * width acc
 
         // product of columns raised to eps power; size width
-        val wp_eps: VectorCiphertext = prodColumnPow(wp, epsilon) // CE 2 * width * n exp
+        val wp_eps: VectorCiphertext = if (nthreads == 0 ) {
+            //  val wp_eps = prodPow(wp, epsilon) // PosBasicTW
+            //  val wp_eps = prodColumnPow(wp, epsilon)  // PosMultiW product of columns raised to eps power; pretend its one value width wide
+            prodColumnPow(wp, epsilon) // CE 2 * N exp
+        } else {
+            PprodColumnPow(group, epsilon, nthreads).calcColumnPow(wp)
+        }
+
         // val Fp = pkey.exp(phi.neg()).mul(wp.expProd(epsilon))
         val Fp = enc0 * wp_eps// component-wise; width wide
 
-        return ProofOfShuffleV(u, d, e, epsilon, B, Ap, Bp, Cp, Dp, Fp)
+        return ProofOfShuffleV(u, d, e, B, Ap, Bp, Cp, Dp, Fp)
     }
 
+    // // CE 2n exp, 2n acc
     fun computeBp(ipe: VectorQ): Triple<VectorP, VectorP, ElementModQ> {
         // Thus, we form the committed product of the inverse permuted random exponents.
         // To be able to use fixed-base exponentiation, this is, however, computed as:
@@ -204,8 +219,7 @@ class ProverV(
         return VectorQ(b.group, xs)
     }
 
-
-    fun reply(pos: ProofOfShuffleV, v: ElementModQ): ReplyV {
+    fun reply(pos: ProofOfShuffleV, v: ElementModQ, nthreads:Int): ReplyV {
         // Initialize the special exponents.
         //        final PRingElement a = r.innerProduct(ipe); TODO CHANGED to  innerProduct(r, e)
         //        final PRingElement c = r.sum();
@@ -234,10 +248,21 @@ class ProverV(
         val k_D = d * v + delta
         val k_E = ipe.timesScalar(v) + epsilon
         val k_EA = e.timesScalar(v) + epsilon // TODO changed to e for Ap to work
-        // val k_F: List<ElementModQ> = phi.mapIndexed { idx, it -> f[idx] * v + it } // width
+
+        // val k_F: ElementModQ = f * v + phi // PosBasicTW
+        // val k_F: List<ElementModQ> = phi.mapIndexed { idx, it -> f[idx] * v + it } // width PosMultiTW
         val k_F = f.timesScalar(v) + phi
 
         return ReplyV(k_A, k_B, k_C, k_D, k_EA, k_E, k_F)
+    }
+
+    fun innerProductColumn(matrixq: MatrixQ, exps: VectorQ) : VectorQ {
+        require(exps.nelems == matrixq.nrows)
+        val result = List(matrixq.width) { col ->
+            val column = List(matrixq.nrows) { row -> matrixq.elems[row].elems[col] }
+            VectorQ(exps.group, column).innerProduct(exps)
+        }
+        return VectorQ(exps.group, result)
     }
 }
 
@@ -246,7 +271,6 @@ data class ProofOfShuffleV(
     val u: VectorP, // permutation commitment = pcommit
     val d: ElementModQ, // x[n-1]
     val e: VectorQ,
-    val epsilon: VectorQ,
 
     val B: VectorP, // Bridging commitments used to build up a product in the exponent
     val Ap: ElementModP, // Proof commitment used for the bridging commitments
@@ -279,7 +303,7 @@ class VerifierV(
     val size = w.size
 
     // Algorithm 19
-    fun verify(proof: ProofOfShuffleV, reply: ReplyV, v: ElementModQ): Boolean {
+    fun verify(proof: ProofOfShuffleV, reply: ReplyV, v: ElementModQ, nthreads: Int = 10): Boolean {
         // Verify that prover knows a=<r,e'> and e' such that:
         //  A = \prod u_i^{e_i} = g^a * \prod h_i^{e_i'} LOOK wrong
         // verdictA = A.expMul(v, Ap).equals(g.exp(k_A).mul(h.expProd(k_E)));
@@ -343,13 +367,24 @@ class VerifierV(
         //  width is just compoonent-wise
         //  F = Prod(w^e)                               (8.3 point 3)
         //  F^v*Fp == Enc(0, -k_F) * Prod (wp^k_E)      (8.3 point 5)
-
+        // F^v = Prod(w^e)^v  CE (2 exp) N
         val ev = proof.e.timesScalar(v)
-        val Fv: VectorCiphertext = prodColumnPow(w, ev)  // F^v = Prod(w^e)^v  CE (2 exp) N
+        val Fv: VectorCiphertext = if (nthreads == 0 ) {
+            //         val Fv: ElGamalCiphertext = prodPow(w, ev) PosBasicTW
+            //         val Fv: List<ElGamalCiphertext> = prodColumnPow(w, ev)  // PosMultiTW F^v = Prod(w^e)^v  CE (2 exp) N
+            prodColumnPow(w, ev) // CE 2 * N exp
+        } else {
+            PprodColumnPow(group, ev, nthreads).calcColumnPow(w)
+        }
 
         val leftF : VectorCiphertext  = Fv * proof.Fp
         val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, reply.k_F) // CE width (acc, exp)
-        val right2: VectorCiphertext = prodColumnPow(wp, reply.k_E) // CE (2 exp) N
+
+        val right2: VectorCiphertext = if (nthreads == 0 ) {
+            prodColumnPow(wp, reply.k_E) // CE (2 exp) N
+        } else {
+            PprodColumnPow(group, reply.k_E, nthreads).calcColumnPow(wp)
+        }
         val rightF: VectorCiphertext = right1 * right2
         val verdictF = (leftF == rightF)
         //println(" verdictF = $verdictF")
@@ -357,6 +392,21 @@ class VerifierV(
         return verdictA && verdictB && verdictC && verdictD && verdictF
     }
 
+}
+
+// product of columns vectors to a power
+// CE (2 exp) N
+/**
+ * rows nrows x width
+ * exps width
+ * return nrows
+ */
+fun prodRowPow(rows: List<VectorCiphertext>, exps: VectorQ) : VectorCiphertext {
+    val width = rows[0].nelems
+    require(exps.nelems == width)
+    val expss : List<VectorCiphertext> = rows.map { row -> row powP exps }
+    val prods : List<ElGamalCiphertext> = expss.map { Prod( it) }
+    return VectorCiphertext(exps.group, prods)
 }
 
 // TODO is this relaly what vmn does? how is if 3x faster?
@@ -373,12 +423,77 @@ fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ) : VectorCiphertex
     return VectorCiphertext(exps.group, result)
 }
 
-fun innerProductColumn(matrixq: MatrixQ, exps: VectorQ) : VectorQ {
-    require(exps.nelems == matrixq.nrows)
-    val result = List(matrixq.width) { col ->
-        val column = List(matrixq.nrows) { row -> matrixq.elems[row].elems[col] }
-        VectorQ(exps.group, column).innerProduct(exps)
+// PosMultiTW
+fun prodColumnPow(rows: List<MultiText>, exps: List<ElementModQ>) : List<ElGamalCiphertext> {
+    val nrows = rows.size
+    require(exps.size == nrows)
+    val width = rows[0].width
+    val result = List(width) { col ->
+        val column = List(nrows) { row -> rows[row].ciphertexts[col] }
+        prodPow(column, exps)// (2 exp) width
     }
-    return VectorQ(exps.group, result)
+    return result
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+fun calcOneCol(columnV: VectorCiphertext, exps: VectorQ): ElGamalCiphertext {
+    require(exps.nelems == columnV.nelems)
+    return Prod(columnV powP exps) // CE 2 * width exp
+}
+
+// parellel calculator of product of columns vectors to a power
+// parralel over rows
+class PprodColumnPow(val group: GroupContext, val exps: VectorQ, val nthreads: Int = 10) {
+    val results = mutableMapOf<Int, ElGamalCiphertext>()
+
+    fun calcColumnPow(rows: List<VectorCiphertext>) : VectorCiphertext {
+        require(exps.nelems == rows.size)
+
+        runBlocking {
+            val jobs = mutableListOf<Job>()
+            val colProducer = producer(rows)
+            repeat(nthreads) {
+                jobs.add(launchCalculator(colProducer) { (columnV, colIdx) ->
+                    Pair(calcOneCol(columnV, exps), colIdx) })
+            }
+            // wait for all calculations to be done, then close everything
+            joinAll(*jobs.toTypedArray())
+        }
+
+        // put results in order
+        val columns = List(results.size) { results[it]!! }
+        return VectorCiphertext(group, columns)
+    }
+
+    private fun CoroutineScope.producer(rows: List<VectorCiphertext>): ReceiveChannel<Pair<VectorCiphertext, Int>> =
+        produce {
+            val nrows = rows.size
+            val width = rows[0].nelems
+            List(width){ col ->
+                val column = List(nrows) { row -> rows[row].elems[col] }
+                val columnV = VectorCiphertext(exps.group, column)
+                send(Pair(columnV, col))
+                yield()
+            }
+            channel.close()
+        }
+
+    private val mutex = Mutex()
+
+    private fun CoroutineScope.launchCalculator(
+        producer: ReceiveChannel<Pair<VectorCiphertext, Int>>,
+        calculate: (Pair<VectorCiphertext, Int>) -> Pair<ElGamalCiphertext, Int>
+    ) = launch(Dispatchers.Default) {
+
+        for (pair in producer) {
+            val (column, idx) = calculate(pair)
+            mutex.withLock {
+                results[idx] = column
+            }
+            yield()
+        }
+    }
+}
+
 

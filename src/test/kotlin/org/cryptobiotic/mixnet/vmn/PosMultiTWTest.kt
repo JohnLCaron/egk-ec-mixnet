@@ -26,7 +26,13 @@ class PosMultiTWTest {
     }
 
     @Test
+    fun testShuffleWidth() {
+        val group = productionGroup()
+        val linsys = LinSolver()
+        runShuffleProof(6, 9, group, linsys, showTiming = false)
+    }
 
+    @Test
     fun testShuffleVmn() {
         val group = productionGroup()
         val linsys = LinSolver()
