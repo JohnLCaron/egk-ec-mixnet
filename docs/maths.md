@@ -333,6 +333,10 @@ $$
 \prod_{j=1}^n ReEncr(\textbf {pe}_i^{\textbf ω^\prime_i}, r_j) =  ReEncr(\prod_{j=1}^n \textbf {pe}_i^{\textbf ω^\prime_i}, \sum_{j=1}^n r_j)
 $$
 
+
+
+
+
 ### Timings (preliminary)
 
 #### 1. Operation counts
@@ -341,6 +345,67 @@ $$
 - *width* = number of ciphertexts per row
 - *N* = nrows * width = total number of ciphertexts to be mixed
 
+**multi**
+
+|                  | shuffle | proof of shuffle      | proof of exp  | verify          |
+| ---------------- | ------- | --------------------- | ------------- | --------------- |
+| regular exps     | 0       | 4 * n                 | 2 * width * n | 4*N + 4n + 4    |
+| accelerated exps | 2 * N   | 3 * n + 2 * width + 4 | 0             | n + 2*width + 3 |
+
+Even though N dominates, width is bound but nrows can get arbitrarily big. Could parallelize over the rows also. 
+
+Could break into batches of 100 ballots each and do each batch in parallel. The advantage here is that there would be complete parallelization.
+
+- exp is about 3 times slower after the acceleration cache warms up:
+
+```
+acc took 15288 msec for 20000 = 0.7644 msec per acc
+exp took 46018 msec for 20000 = 2.3009 msec per exp
+exp/acc took 3.01007326007326
+```
+
+
+
+
+
+#### 2. wallclock times (vmn/ch)
+
+```
+shuffle: took 5967 msecs = 1.755 msecs/text (3400 texts)
+  proof: took 19248 msecs = 5.661 msecs/text (3400 texts)
+ verify: took 34751 msecs = 10.22 msecs/text (3400 texts)
+  total: took 59966 msecs = 17.63 msecs/text (3400 texts)
+```
+
+```
+shuffle
+nrows=100, width= 100 per row, N=10000, nthreads=32/16/8/4/2/1
+took 1882 msecs = .1882 msecs/text (10000 texts) = 1882.0 msecs/shuffle for 1 shuffles
+took 1880 msecs = .188 msecs/text (10000 texts) = 1880.0 msecs/shuffle for 1 shuffles
+took 2550 msecs = .255 msecs/text (10000 texts) = 2550.0 msecs/shuffle for 1 shuffles
+took 4624 msecs = .4624 msecs/text (10000 texts) = 4624.0 msecs/shuffle for 1 shuffles
+took 8713 msecs = .8713 msecs/text (10000 texts) = 8713.0 msecs/shuffle for 1 shuffles
+took 16446 msecs = 1.644 msecs/text (10000 texts) = 16446 msecs/shuffle for 1 shuffles
+```
+
+```
+shuffle
+nrows=100, width= 100 per row, N=10000, nthreads=32/24/16/8/4/2/1
+took 1884 msecs = .1884 msecs/text (10000 texts) = 1884.0 msecs/shuffle for 1 shuffles
+took 1853 msecs = .1853 msecs/text (10000 texts) = 1853.0 msecs/shuffle for 1 shuffles
+took 1832 msecs = .1832 msecs/text (10000 texts) = 1832.0 msecs/shuffle for 1 shuffles
+took 2564 msecs = .2564 msecs/text (10000 texts) = 2564.0 msecs/shuffle for 1 shuffles
+took 4555 msecs = .4555 msecs/text (10000 texts) = 4555.0 msecs/shuffle for 1 shuffles
+took 8844 msecs = .8844 msecs/text (10000 texts) = 8844.0 msecs/shuffle for 1 shuffles
+took 17188 msecs = 1.718 msecs/text (10000 texts) = 17188 msecs/shuffle for 1 shuffles
+```
+
+
+
+
+
+#### 3. wallclock times (vmn/ch)
+
 **ChVote**
 
 |                  | shuffle | proof       | verify          |
@@ -348,16 +413,6 @@ $$
 | regular exps     | 0       | 2*N + 5*n   | 4*N + 4*n + 6   |
 | accelerated exps | 2 * N   | 2*N + 3*n   | 8               |
 
-**vmn**
-
-|                  | shuffle | proof of shuffle | proof of exp | verify          |
-| ---------------- | ------- | ---------------- | ------------ | --------------- |
-| regular exps     | 0       | 4n               | 2N           | 4*N + 4n + 4    |
-| accelerated exps | 2 * N   | 3*n+2*width+4    | 0            | n + 2*width + 3 |
-
-
-
-#### 2. wallclock times
 
 nrows = 100, width = 34, N=3400
 
@@ -392,6 +447,8 @@ Vmn has verifier 33355/12123 = 2.75 faster, TODO: investigate if theres an algor
 ```
 LargeInteger.modPowProd(LargeInteger[] bases, LargeInteger[] exponents, LargeInteger modulus)
 ```
+
+More likely there are parallelization being done, eg in the same  routine. So to compare, we have to run vmn and see what parelization it gets. 
 
 Also note LargeInteger.magic that allows use of VMGJ.
 
