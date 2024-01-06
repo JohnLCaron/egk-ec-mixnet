@@ -1,6 +1,12 @@
 package org.cryptobiotic.mixnet.core
 
 import electionguard.core.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import org.cryptobiotic.mixnet.multi.reencrypt
 
 data class VectorP(val group: GroupContext, val elems: List<ElementModP> ) {
     val nelems = elems.size
@@ -41,4 +47,51 @@ data class VectorP(val group: GroupContext, val elems: List<ElementModP> ) {
 
 fun Prod(vp: VectorP): ElementModP {
     return vp.product()
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// parallel Prod(powP)
+class PProdPowP(val vp: VectorP, val exp: VectorQ, val nthreads: Int = 10) {
+    var result = exp.group.ONE_MOD_P
+
+    fun calc(): ElementModP {
+
+        runBlocking {
+            val jobs = mutableListOf<Job>()
+            val pairProducer = producer(vp, exp)
+            repeat(nthreads) {
+                jobs.add( launchCalculator(pairProducer) { (p, q) -> p powP q } )
+            }
+            // wait for all calculations to be done, then close everything
+            joinAll(*jobs.toTypedArray())
+        }
+
+        return result
+    }
+
+    private fun CoroutineScope.producer(vp: VectorP, ve: VectorQ): ReceiveChannel<Pair<ElementModP, ElementModQ>> =
+        produce {
+            repeat(vp.nelems) {
+                send(Pair(vp.elems[it], ve.elems[it]))
+                yield()
+            }
+            channel.close()
+        }
+
+    private val mutex = Mutex()
+
+    private fun CoroutineScope.launchCalculator(
+        input: ReceiveChannel<Pair<ElementModP, ElementModQ>>,
+        calculate: (Pair<ElementModP, ElementModQ>) -> ElementModP
+    ) = launch(Dispatchers.Default) {
+
+        for (pair in input) {
+            val pexp = calculate(pair)
+            mutex.withLock {
+                result *= pexp
+            }
+            yield()
+        }
+    }
 }
