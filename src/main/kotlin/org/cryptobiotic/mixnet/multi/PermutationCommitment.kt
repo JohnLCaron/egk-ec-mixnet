@@ -46,6 +46,7 @@ fun permutationCommitmentV(group: GroupContext,
 }
 
 // CE n acc
+// TODO Vmn does a strange thing here, can we replace with above?
 fun permutationCommitmentVmnV(group: GroupContext,
                              psi: Permutation,
                              generators: VectorP) : Pair<VectorP, VectorQ> {

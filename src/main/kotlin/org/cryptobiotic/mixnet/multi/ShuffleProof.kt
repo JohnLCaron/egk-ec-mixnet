@@ -254,23 +254,16 @@ class VerifierV(
     // Algorithm 19
     fun verify(proof: ProofOfShuffleV, reply: ReplyV, v: ElementModQ, nthreads: Int = 10): Boolean {
         //// pos
-
         val A: ElementModP = if (nthreads == 0) Prod(proof.u powP proof.e)
-                             else PProdPowP(proof.u,proof.e, nthreads).calc()        // CE n exps
-        val leftA = (A powP v) * proof.Ap                                           // CE 1 exp
+                             else PProdPowP(proof.u, proof.e, nthreads).calc()       // CE n exps
+        val leftA = (A powP v) * proof.Ap                                            // CE 1 exp
         val genE = if (nthreads == 0) Prod(generators powP reply.k_EA)           // CE n exp, 1 acc
                    else PProdPowP(generators, reply.k_EA, nthreads).calc()
         val rightA = group.gPowP(reply.k_A) * genE
         val verdictA = (leftA == rightA)
 
-        var verdictB = true
-        var Bminus1 = h
-        repeat(size) { i ->
-            val leftB = (proof.B.elems[i] powP v) * proof.Bp.elems[i]                        // CE n exp
-            val rightB = group.gPowP(reply.k_B.elems[i]) * (Bminus1 powP reply.k_E.elems[i]) // CE n exp, n acc
-            verdictB = verdictB && (leftB == rightB)
-            Bminus1 = proof.B.elems[i]
-        }
+        val verdictB = if (nthreads == 0) verifyB(proof, reply, v)                  // CE 2n exp, n acc
+                       else PverifyB(proof, reply, v, h, nthreads).calc()
 
         val C = Prod(proof.u) / Prod(generators)
         val leftC = (C powP v) * proof.Cp   // CE 1 exp
@@ -303,25 +296,21 @@ class VerifierV(
         return verdictA && verdictB && verdictC && verdictD && verdictF
     }
 
+    fun verifyB(proof: ProofOfShuffleV, reply: ReplyV, v: ElementModQ): Boolean {
+        var verdictB = true
+        repeat(size) { i ->
+            val Bminus1 = if (i == 0) h else proof.B.elems[i - 1]
+            val leftB = (proof.B.elems[i] powP v) * proof.Bp.elems[i]                        // CE n exp
+            val rightB = group.gPowP(reply.k_B.elems[i]) * (Bminus1 powP reply.k_E.elems[i]) // CE n exp, n acc
+            verdictB = verdictB && (leftB == rightB)
+        }
+        return verdictB
+    }
 }
 
 // product of columns vectors to a power
 // CE (2 exp) N
-/**
- * rows nrows x width
- * exps width
- * return nrows
- */
-fun prodRowPow(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
-    val width = rows[0].nelems
-    require(exps.nelems == width)
-    val expss: List<VectorCiphertext> = rows.map { row -> row powP exps }
-    val prods: List<ElGamalCiphertext> = expss.map { Prod(it) }
-    return VectorCiphertext(exps.group, prods)
-}
-
-// TODO is this relaly what vmn does? how is if 3x faster?
-// (2 exp) N
+// TODO is this also what vmn does?
 fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
     val nrows = rows.size
     require(exps.nelems == nrows)
@@ -332,18 +321,6 @@ fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext
         Prod(columnV powP exps) // CE 2 * n * width exp
     }
     return VectorCiphertext(exps.group, result)
-}
-
-// PosMultiTW
-fun prodColumnPow(rows: List<MultiText>, exps: List<ElementModQ>): List<ElGamalCiphertext> {
-    val nrows = rows.size
-    require(exps.size == nrows)
-    val width = rows[0].width
-    val result = List(width) { col ->
-        val column = List(nrows) { row -> rows[row].ciphertexts[col] }
-        prodPow(column, exps)// (2 exp) width
-    }
-    return result
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -425,7 +402,6 @@ class PcomputeB(
     val result = mutableMapOf<Int, Triple<ElementModP, ElementModP, Int>>()
 
     fun calc(): Pair<VectorP, VectorP> {
-
         runBlocking {
             val jobs = mutableListOf<Job>()
             val producer = producer(nrows)
@@ -437,7 +413,6 @@ class PcomputeB(
         }
         val Belems = List(nrows) { result[it]!!.first }
         val Bpelems = List(nrows) { result[it]!!.second }
-
         return Pair(VectorP(group, Belems), VectorP(group, Bpelems))
     }
 
@@ -467,7 +442,7 @@ class PcomputeB(
     }
 
     fun computeBp(idx: Int): Triple<ElementModP, ElementModP, Int> {
-        // val g_exp_x: VectorP = x.gPowP()                            // CE n acc
+        // val g_exp_x: VectorP = x.gPowP()
         // val h0_exp_y: VectorP = y.powScalar(h)                      // CE n exp
         // val B = g_exp_x * h0_exp_y  // g.exp(x) *  h0.exp(y)
         val g_exp_x = group.gPowP(x.elems[idx])
@@ -499,3 +474,62 @@ class PcomputeB(
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+// parallel verify of B
+class PverifyB(
+    val proof : ProofOfShuffleV,
+    val reply : ReplyV,
+    val challenge: ElementModQ,
+    val h: ElementModP,
+    val nthreads: Int = 10,
+) {
+    val group = challenge.context
+    val nrows = proof.B.nelems
+    var isValid = true
+
+    fun calc(): Boolean {
+        runBlocking {
+            val jobs = mutableListOf<Job>()
+            val producer = producer(nrows)
+            repeat(nthreads) {
+                jobs.add( launchCalculator(producer) { idx -> validateB(idx) } )
+            }
+            // wait for all calculations to be done, then close everything
+            joinAll(*jobs.toTypedArray())
+        }
+        return isValid
+    }
+
+    private fun CoroutineScope.producer(nrows: Int): ReceiveChannel<Int> =
+        produce {
+            repeat(nrows) {
+                send(it)
+                yield()
+            }
+            channel.close()
+        }
+
+    private val mutex = Mutex()
+
+    private fun CoroutineScope.launchCalculator(
+        input: ReceiveChannel<Int>,
+        calculate: (Int) -> Boolean
+    ) = launch(Dispatchers.Default) {
+
+        for (pair in input) {
+            val rowIsOk = calculate(pair)
+            mutex.withLock {
+                isValid = isValid && rowIsOk
+            }
+            yield()
+        }
+    }
+
+    fun validateB(idx: Int): Boolean {
+        val Bminus1 = if (idx == 0) h else proof.B.elems[idx-1]
+        val leftB = (proof.B.elems[idx] powP challenge) * proof.Bp.elems[idx]                        // CE n exp
+        val rightB = group.gPowP(reply.k_B.elems[idx]) * (Bminus1 powP reply.k_E.elems[idx])          // CE n exp, n acc
+        return (leftB == rightB)
+    }
+}

@@ -8,7 +8,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.cryptobiotic.mixnet.core.*
 
-
 fun shuffleMultiText(
     rows: List<VectorCiphertext>,
     publicKey: ElGamalPublicKey,
@@ -26,39 +25,6 @@ fun shuffleMultiText(
         rnonces.add(nonceV)
     }
     return Triple(mixed, MatrixQ(rnonces), psi)
-}
-
-fun VectorCiphertext.reencrypt(publicKey: ElGamalPublicKey): Pair<VectorCiphertext, VectorQ> {
-    val group = publicKey.context
-    val nonces = List(this.nelems) { group.randomElementModQ(minimum = 1) }
-    val reencrypt = this.elems.mapIndexed { idx, text ->
-        text.reencrypt(publicKey, nonces[idx])
-    }
-    return Pair(VectorCiphertext(group, reencrypt), VectorQ(group, nonces))
-}
-
-fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey): Pair<ElGamalCiphertext, ElementModQ> {
-    // Encr(m) = (g^ξ, K^(m+ξ)) = (a, b)
-    // ReEncr(m)  = (g^(ξ+ξ'), K^(m+ξ+ξ')) = (a * g^ξ', b * K^ξ')
-    // Encr(0) = (g^ξ', K^ξ') = (a', b'), so ReEncr(m) = (a * a', b * b')
-
-    val group = publicKey.context
-    val nonce: ElementModQ = group.randomElementModQ(minimum = 1)
-    val ap = group.gPowP(nonce)
-    val bp = publicKey.key powP nonce
-    val rencr = ElGamalCiphertext(this.pad * ap, this.data * bp)
-    return Pair(rencr, nonce)
-}
-
-fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey, nonce: ElementModQ): ElGamalCiphertext {
-    // Encr(m) = (g^ξ, K^(m+ξ)) = (a, b)
-    // ReEncr(m)  = (g^(ξ+ξ'), K^(m+ξ+ξ')) = (a * g^ξ', b * K^ξ')
-    // Encr(0) = (g^ξ', K^ξ') = (a', b'), so ReEncr(m) = (a * a', b * b') =  Encr(0) * Encr(m)
-
-    val group = publicKey.context
-    val ap = group.gPowP(nonce)
-    val bp = publicKey.key powP nonce
-    return ElGamalCiphertext(this.pad * ap, this.data * bp)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

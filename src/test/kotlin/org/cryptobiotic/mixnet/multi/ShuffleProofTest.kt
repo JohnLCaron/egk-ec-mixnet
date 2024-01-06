@@ -24,6 +24,65 @@ class ShuffleProofTest {
         return " expect ($nexps, $nacc)"
     }
 
+    fun makeBallots(keypair: ElGamalKeypair, nrows: Int, width: Int) : List<VectorCiphertext> {
+        // TODO in parallel to save time
+        return List(nrows) {
+            val ciphertexts = List(width) { Random.nextInt(11).encrypt(keypair) }
+            VectorCiphertext(group, ciphertexts)
+        }
+    }
+
+    class Result(val nthreads: Int, val shuffle: Long, val proof: Long, val verify : Long) {
+        val total = (shuffle+proof+verify)
+
+        override fun toString() =
+            "${nthreads}, ${shuffle*.001}, ${proof*.001}, ${verify*.001}, ${total*.001}"
+
+    }
+
+    @Test
+    fun testShuffle() {
+        runShuffleThreads(1000, 1)
+        runShuffleThreads(100, 10)
+        runShuffleThreads(100, 100)
+        runShuffleThreads(1000, 34)
+    }
+
+    fun runShuffleThreads(nrows: Int, width: Int) {
+        println("================= $nrows, $width ==========================")
+        val keypair = elGamalKeyPairFromRandom(group)
+        val ballots = makeBallots(keypair, nrows, width)
+
+        val results = mutableListOf<Result>()
+        results.add(runShuffle(keypair, ballots, 1))
+        results.add(runShuffle(keypair, ballots, 2))
+        results.add(runShuffle(keypair, ballots, 4))
+        results.add(runShuffle(keypair, ballots, 8))
+        results.add(runShuffle(keypair, ballots, 16))
+        results.add(runShuffle(keypair, ballots, 24))
+        results.add(runShuffle(keypair, ballots, 32))
+        results.add(runShuffle(keypair, ballots, 48))
+
+        println("\nnthreads, shuffle, proof, verify, total")
+        results.forEach{ println(it) }
+    }
+
+    fun runShuffle(keypair: ElGamalKeypair,
+                   ballots: List<VectorCiphertext>,
+                   nthreads : Int = 10,
+        ) : Result {
+        var starting = getSystemTimeInMillis()
+        group.showAndClearCountPowP()
+        val (mixedBallots, rnonces, psi) = if (nthreads == 0) {
+            shuffleMultiText(ballots, keypair.publicKey)
+        } else {
+            PShuffle(group, ballots, keypair.publicKey, nthreads).shuffle()
+        }
+        val shuffleTime = getSystemTimeInMillis() - starting
+        println("  runShuffle nthreads = $nthreads time = $shuffleTime")
+        return  Result(nthreads, shuffleTime, 0, 0)
+    }
+
     @Test
     fun testShuffleWidth() {
         runShuffleProof(6, 9, nthreads = 0, showTiming = false)
@@ -107,19 +166,40 @@ class ShuffleProofTest {
     }
 
     @Test
-    fun testMatrix() {
-        runThreads(100, 300)
+    fun testSPVpar() {
+        val nrows = 3
+        val width = 7
+
+        val keypair = elGamalKeyPairFromRandom(group)
+        val ballots = makeBallots(keypair, nrows, width)
+
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 0)
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 1)
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 2)
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 10)
     }
 
-    fun runThreads(nrows: Int, width: Int) {
-        println("testThreads nrows=$nrows, width= $width per row, N=${nrows*width}")
+    @Test
+    fun testSPV() {
+        runShuffleProofVerifyWithThreads(3, 1)
+        runShuffleProofVerifyWithThreads(3, 3)
+        runShuffleProofVerifyWithThreads(6, 3)
+        runShuffleProofVerifyWithThreads(6, 9)
+        runShuffleProofVerifyWithThreads(1, 11)
+    }
 
-        // TODO in parallel to save time
+    @Test
+    fun testSPVMatrix() {
+        runShuffleProofVerifyWithThreads(100, 34)
+    }
+
+    fun runShuffleProofVerifyWithThreads(nrows: Int, width: Int) {
+        println("=========================================")
+        println("testThreads nrows=$nrows, width= $width per row, N=${nrows*width}")
+        println("nthreads, shuffle, proof, verify, total")
+
         val keypair = elGamalKeyPairFromRandom(group)
-        val ballots: List<VectorCiphertext> = List(nrows) {
-            val ciphertexts = List(width) { Random.nextInt(11).encrypt(keypair) }
-            VectorCiphertext(group, ciphertexts)
-        }
+        val ballots = makeBallots(keypair, nrows, width)
 
         val results = mutableListOf<Result>()
         results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 48))
@@ -136,24 +216,15 @@ class ShuffleProofTest {
         results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 4))
         results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 2))
         results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 0))
-        println("nthreads, shuffle, proof, verify, total")
-        results.forEach{
-            println("${it.nthreads}, ${it.shuffle*.001}, ${it.proof*.001}, ${it.verify*.001}, ${it.total*.001} ")
-        }
-    }
-
-    class Result(val nthreads: Int, val shuffle: Long, val proof: Long, val verify : Long) {
-        val total = (shuffle+proof+verify)
+        println("\nnthreads, shuffle, proof, verify, total")
+        results.forEach{ println(it) }
     }
 
     fun runShuffleProofAndVerify(nrows: Int, width: Int, keypair: ElGamalKeypair, ballots: List<VectorCiphertext>,
                                  nthreads : Int = 10,
-                                 showExps: Boolean = false, showTiming: Boolean = true) : Result {
+                                 showExps: Boolean = false, showTiming: Boolean = false) : Result {
         val stats = Stats()
         val N = nrows*width
-        println("=========================================")
-        println("nrows=$nrows, width= $width per row, N=$N, nthreads=$nthreads")
-
         var starting = getSystemTimeInMillis()
         group.showAndClearCountPowP()
         val (mixedBallots, rnonces, psi) = if (nthreads == 0) {
@@ -201,10 +272,11 @@ class ShuffleProofTest {
         if (showExps) println("  after checkShuffleProof: ${group.showAndClearCountPowP()} ${expectCheck(nrows, width)}")
 
         assertTrue(valid)
-        println()
         if (showTiming) stats.show()
 
-        return Result(nthreads, shuffleTime, proofTime, verifyTime)
+        val r = Result(nthreads, shuffleTime, proofTime, verifyTime)
+        println(r)
+        return r
     }
 
 }

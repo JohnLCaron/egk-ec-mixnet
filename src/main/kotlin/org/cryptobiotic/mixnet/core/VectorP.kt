@@ -6,7 +6,6 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.cryptobiotic.mixnet.multi.reencrypt
 
 data class VectorP(val group: GroupContext, val elems: List<ElementModP> ) {
     val nelems = elems.size
