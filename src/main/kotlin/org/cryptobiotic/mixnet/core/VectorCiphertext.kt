@@ -17,9 +17,18 @@ data class VectorCiphertext(val group: GroupContext, val elems: List<ElGamalCiph
         return VectorCiphertext(group, products)
     }
 
+    fun reencrypt(publicKey: ElGamalPublicKey): Pair<VectorCiphertext, VectorQ> {
+        val group = publicKey.context
+        val nonces = List(this.nelems) { group.randomElementModQ(minimum = 1) }
+        val reencrypt = this.elems.mapIndexed { idx, text ->
+            text.reencrypt(publicKey, nonces[idx])
+        }
+        return Pair(VectorCiphertext(group, reencrypt), VectorQ(group, nonces))
+    }
+
     companion object {
         fun zeroEncryptNeg(publicKey: ElGamalPublicKey, exp: VectorQ, ) : VectorCiphertext {
-            return VectorCiphertext(publicKey.context, exp.elems.map { 0.encrypt( publicKey, -it) })
+            return VectorCiphertext(publicKey.context, exp.elems.map { 0.encrypt( publicKey, -it) }) // CE width * 2 acc
         }
         fun empty(group: GroupContext): VectorCiphertext {
             return VectorCiphertext(group, emptyList())
@@ -29,4 +38,16 @@ data class VectorCiphertext(val group: GroupContext, val elems: List<ElGamalCiph
 
 fun Prod(vc: VectorCiphertext): ElGamalCiphertext {
     return vc.elems.encryptedSum()!!
+}
+
+// TODO put this into ElGamalCiphertext
+fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey, nonce: ElementModQ): ElGamalCiphertext {
+    // Encr(m) = (g^ξ, K^(m+ξ)) = (a, b)
+    // ReEncr(m)  = (g^(ξ+ξ'), K^(m+ξ+ξ')) = (a * g^ξ', b * K^ξ')
+    // Encr(0) = (g^ξ', K^ξ') = (a', b'), so ReEncr(m) = (a * a', b * b') =  Encr(0) * Encr(m)
+
+    val group = publicKey.context
+    val ap = group.gPowP(nonce)
+    val bp = publicKey.key powP nonce
+    return ElGamalCiphertext(this.pad * ap, this.data * bp)
 }

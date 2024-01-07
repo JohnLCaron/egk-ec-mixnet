@@ -45,7 +45,7 @@ class ShuffleTest {
         val (mixedBallots, rnonces, psi) = if (nthreads == 0) {
             shuffleMultiText(ballots, keypair.publicKey)
         } else {
-            PShuffle(group, ballots, keypair.publicKey, nthreads).shuffle()
+            PShuffle(ballots, keypair.publicKey, nthreads).shuffle()
         }
         stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
 
