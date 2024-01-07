@@ -8,6 +8,15 @@ import kotlin.test.assertTrue
 class SubarrayManagerTest {
 
     @Test
+    fun test() {
+        val subject = SubArrayManager(10, 11)
+        println("size = ${subject.size.contentToString()}")
+        println("start = ${subject.start.contentToString()}")
+        testOrigIndex(subject)
+        testSubarray(subject)
+    }
+
+    @Test
     fun test1() {
         val subject = SubArrayManager(19, 3)
         assertTrue(subject.size contentEquals intArrayOf(7, 6, 6))

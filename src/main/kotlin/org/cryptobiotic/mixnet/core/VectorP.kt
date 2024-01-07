@@ -51,13 +51,12 @@ fun Prod(vp: VectorP): ElementModP {
 ////////////////////////////////////////////////////////////////////////////////
 
 // parallel Prod(powP)
-class PProdPowP(val vp: VectorP, val exp: VectorQ, val nthreads: Int = 10) {
+class PMProdPowP(val vp: VectorP, val exp: VectorQ, val nthreads: Int = 10) {
     val manager = SubArrayManager(vp.nelems, nthreads)
     init {
         require (vp.nelems == exp.nelems)
     }
     var result = exp.group.ONE_MOD_P
-
 
     fun calc(): ElementModP {
         runBlocking {
@@ -105,5 +104,49 @@ class PProdPowP(val vp: VectorP, val exp: VectorQ, val nthreads: Int = 10) {
             result *= vp.elems[rowidx] powP exp.elems[rowidx]
         }
         return result
+    }
+}
+
+class PProdPowP(val vp: VectorP, val exp: VectorQ, val nthreads: Int = 10) {
+    var result = exp.group.ONE_MOD_P
+
+    fun calc(): ElementModP {
+
+        runBlocking {
+            val jobs = mutableListOf<Job>()
+            val pairProducer = producer(vp, exp)
+            repeat(nthreads) {
+                jobs.add( launchCalculator(pairProducer) { (p, q) -> p powP q } )
+            }
+            // wait for all calculations to be done, then close everything
+            joinAll(*jobs.toTypedArray())
+        }
+
+        return result
+    }
+
+    private fun CoroutineScope.producer(vp: VectorP, ve: VectorQ): ReceiveChannel<Pair<ElementModP, ElementModQ>> =
+        produce {
+            repeat(vp.nelems) {
+                send(Pair(vp.elems[it], ve.elems[it]))
+                yield()
+            }
+            channel.close()
+        }
+
+    private val mutex = Mutex()
+
+    private fun CoroutineScope.launchCalculator(
+        input: ReceiveChannel<Pair<ElementModP, ElementModQ>>,
+        calculate: (Pair<ElementModP, ElementModQ>) -> ElementModP
+    ) = launch(Dispatchers.Default) {
+
+        for (pair in input) {
+            val pexp = calculate(pair)
+            mutex.withLock {
+                result *= pexp
+            }
+            yield()
+        }
     }
 }

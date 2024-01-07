@@ -325,12 +325,72 @@ fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
+fun calcOneCol(columnV: VectorCiphertext, exps: VectorQ): ElGamalCiphertext {
+    require(exps.nelems == columnV.nelems)
+    return Prod(columnV powP exps) // CE 2 * width exp
+}
+
 // parellel calculator of product of columns vectors to a power
 class PprodColumnPow(val rows: List<VectorCiphertext>, val exps: VectorQ, val nthreads: Int = 10) {
+    val group: GroupContext = exps.group
+    val results = mutableMapOf<Int, ElGamalCiphertext>()
+
+    fun calc(): VectorCiphertext {
+        require(exps.nelems == rows.size)
+
+        runBlocking {
+            val jobs = mutableListOf<Job>()
+            val colProducer = producer(rows)
+            repeat(nthreads) {
+                jobs.add(launchCalculator(colProducer) { (columnV, colIdx) ->
+                    Pair(calcOneCol(columnV, exps), colIdx)
+                })
+            }
+            // wait for all calculations to be done, then close everything
+            joinAll(*jobs.toTypedArray())
+        }
+
+        // put results in order
+        val columns = List(results.size) { results[it]!! }
+        return VectorCiphertext(group, columns)
+    }
+
+    private fun CoroutineScope.producer(rows: List<VectorCiphertext>): ReceiveChannel< Pair<VectorCiphertext, Int> > =
+        produce {
+            val nrows = rows.size
+            val width = rows[0].nelems
+            List(width) { col ->
+                val column = List(nrows) { row -> rows[row].elems[col] }
+                val columnV = VectorCiphertext(exps.group, column)
+                send(Pair(columnV, col))
+                yield()
+            }
+            channel.close()
+        }
+
+    private val mutex = Mutex()
+
+    private fun CoroutineScope.launchCalculator(
+        producer: ReceiveChannel<Pair<VectorCiphertext, Int>>,
+        calculate: (Pair<VectorCiphertext, Int>) -> Pair<ElGamalCiphertext, Int>
+    ) = launch(Dispatchers.Default) {
+
+        for (pair in producer) {
+            val (column, idx) = calculate(pair)
+            mutex.withLock {
+                results[idx] = column
+            }
+            yield()
+        }
+    }
+}
+
+// parellel calculator of product of columns vectors to a power
+class PMprodColumnPow(val rows: List<VectorCiphertext>, val exps: VectorQ, val nthreads: Int = 10) {
     val group = exps.group
     val nrows = rows.size
     val width = rows[0].nelems
-    val manager = SubArrayManager(nrows, nthreads)
+    val manager = SubArrayManager(width, nthreads) // dividing the columns, not the rows(!)
 
     val results = mutableMapOf<Int, ElGamalCiphertext>()
 
@@ -367,8 +427,8 @@ class PprodColumnPow(val rows: List<VectorCiphertext>, val exps: VectorQ, val nt
         input: ReceiveChannel<Int>,
         calculate: (Int) -> List<Pair<ElGamalCiphertext, Int>>
     ) = launch(Dispatchers.Default) {
-        for (pair in input) {
-            val pairList = calculate(pair)
+        for (subidx in input) {
+            val pairList = calculate(subidx)
             mutex.withLock {
                 pairList.forEach { results[it.second] = it.first }
             }
@@ -381,12 +441,10 @@ class PprodColumnPow(val rows: List<VectorCiphertext>, val exps: VectorQ, val nt
     //  do all the calculations for the given subarray
     fun calcSubarray(subidx: Int): List<Pair<ElGamalCiphertext, Int>> {
         val result = mutableListOf<Pair<ElGamalCiphertext, Int>>()
-        for (rowidx in manager.subarray(subidx)) {
-            List(width) { col ->
-                val column = List(nrows) { row -> rows[row].elems[col] }
-                val columnV = VectorCiphertext(exps.group, column)
-                result.add( Pair(calcOneCol(columnV, exps), col))
-            }
+        for (col in manager.subarray(subidx)) {
+            val column = List(nrows) { row -> rows[row].elems[col] }
+            val columnV = VectorCiphertext(exps.group, column)
+            result.add( Pair(calcOneCol(columnV, exps), col))
         }
         return result
     }
@@ -399,8 +457,96 @@ class PprodColumnPow(val rows: List<VectorCiphertext>, val exps: VectorQ, val nt
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// parallel computation of B and Bp
+// parallel computatiopn of B and Bp
 class PcomputeB(
+    val x: VectorQ,
+    val y: VectorQ,
+    val h : ElementModP, // TODO make accelerated
+    val beta : VectorQ,
+    val epsilon: VectorQ,
+    val nthreads: Int = 10,
+) {
+
+    val group = x.group
+    val nrows = x.nelems
+
+    val result = mutableMapOf<Int, Triple<ElementModP, ElementModP, Int>>()
+
+    fun calc(): Pair<VectorP, VectorP> {
+        runBlocking {
+            val jobs = mutableListOf<Job>()
+            val producer = producer(nrows)
+            repeat(nthreads) {
+                jobs.add( launchCalculator(producer) { idx -> computeBp(idx) } )
+            }
+            // wait for all calculations to be done, then close everything
+            joinAll(*jobs.toTypedArray())
+        }
+        val Belems = List(nrows) { result[it]!!.first }
+        val Bpelems = List(nrows) { result[it]!!.second }
+        return Pair(VectorP(group, Belems), VectorP(group, Bpelems))
+    }
+
+    private fun CoroutineScope.producer(nrows: Int): ReceiveChannel<Int> =
+        produce {
+            repeat(nrows) {
+                send(it)
+                yield()
+            }
+            channel.close()
+        }
+
+    private val mutex = Mutex()
+
+    private fun CoroutineScope.launchCalculator(
+        input: ReceiveChannel<Int>,
+        calculate: (Int) -> Triple<ElementModP, ElementModP, Int>
+    ) = launch(Dispatchers.Default) {
+
+        for (pair in input) {
+            val triple = calculate(pair)
+            mutex.withLock {
+                result[triple.third] = triple
+            }
+            yield()
+        }
+    }
+
+    fun computeBp(idx: Int): Triple<ElementModP, ElementModP, Int> {
+        // val g_exp_x: VectorP = x.gPowP()
+        // val h0_exp_y: VectorP = y.powScalar(h)                      // CE n exp
+        // val B = g_exp_x * h0_exp_y  // g.exp(x) *  h0.exp(y)
+        val g_exp_x = group.gPowP(x.elems[idx])
+        val h0_exp_y = h powP y.elems[idx]
+        val B = g_exp_x * h0_exp_y
+
+        // val xp = x.shiftPush(group.ZERO_MOD_Q)
+        val xp = if (idx == 0) group.ZERO_MOD_Q else x.elems[idx-1]
+
+        // val yp = y.shiftPush(group.ONE_MOD_Q)
+        val yp = if (idx == 0) group.ONE_MOD_Q else y.elems[idx-1]
+
+        val xp_mul_epsilon = xp * epsilon.elems[idx]
+        val beta_add_prod = beta.elems[idx] + xp_mul_epsilon
+
+        // val g_exp_beta_add_prod = beta_add_prod.gPowP()                 // CE n acc
+        val g_exp_beta_add_prod = group.gPowP(beta_add_prod)
+
+        //        final PRingElementArray yp_mul_epsilon = yp.mul(epsilon);
+        val yp_mul_epsilon = yp * epsilon.elems[idx]
+
+        // val h0_exp_yp_mul_epsilon = yp_mul_epsilon.powScalar(h)         // CE n exp
+        val h0_exp_yp_mul_epsilon = h powP yp_mul_epsilon
+
+        //        Bp = g_exp_beta_add_prod.mul(h0_exp_yp_mul_epsilon);
+        val Bp = g_exp_beta_add_prod * h0_exp_yp_mul_epsilon
+
+        return Triple(B, Bp, idx)
+    }
+}
+
+// parallel computation of B and Bp
+class PMcomputeB(
         val x: VectorQ,
         val y: VectorQ,
         val h : ElementModP, // TODO make accelerated
@@ -500,6 +646,64 @@ class PcomputeB(
 
 // parallel verify of B
 class PverifyB(
+    val proof : ProofOfShuffleV,
+    val reply : ReplyV,
+    val challenge: ElementModQ,
+    val h: ElementModP,
+    val nthreads: Int = 10,
+) {
+    val group = challenge.context
+    val nrows = proof.B.nelems
+    var isValid = true
+
+    fun calc(): Boolean {
+        runBlocking {
+            val jobs = mutableListOf<Job>()
+            val producer = producer(nrows)
+            repeat(nthreads) {
+                jobs.add( launchCalculator(producer) { idx -> validateB(idx) } )
+            }
+            // wait for all calculations to be done, then close everything
+            joinAll(*jobs.toTypedArray())
+        }
+        return isValid
+    }
+
+    private fun CoroutineScope.producer(nrows: Int): ReceiveChannel<Int> =
+        produce {
+            repeat(nrows) {
+                send(it)
+                yield()
+            }
+            channel.close()
+        }
+
+    private val mutex = Mutex()
+
+    private fun CoroutineScope.launchCalculator(
+        input: ReceiveChannel<Int>,
+        calculate: (Int) -> Boolean
+    ) = launch(Dispatchers.Default) {
+
+        for (pair in input) {
+            val rowIsOk = calculate(pair)
+            mutex.withLock {
+                isValid = isValid && rowIsOk
+            }
+            yield()
+        }
+    }
+
+    fun validateB(idx: Int): Boolean {
+        val Bminus1 = if (idx == 0) h else proof.B.elems[idx-1]
+        val leftB = (proof.B.elems[idx] powP challenge) * proof.Bp.elems[idx]                        // CE n exp
+        val rightB = group.gPowP(reply.k_B.elems[idx]) * (Bminus1 powP reply.k_E.elems[idx])          // CE n exp, n acc
+        return (leftB == rightB)
+    }
+}
+
+// parallel verify of B
+class PMverifyB(
     val proof : ProofOfShuffleV,
     val reply : ReplyV,
     val challenge: ElementModQ,

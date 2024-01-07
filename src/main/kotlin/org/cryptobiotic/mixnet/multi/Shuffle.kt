@@ -39,7 +39,7 @@ fun shuffleMultiText(
 ////////////////////////////////////////////////////////////////////////////////
 
 // parallel shuffle
-class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
+class PMShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
     val nrows = rows.size
     val group = publicKey.context
     val manager = SubArrayManager(nrows, nthreads)
@@ -102,6 +102,57 @@ class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey
             result.add(rows[rowidx].reencrypt(publicKey))
         }
         return result
+    }
+}
+
+// parallel shuffle
+class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
+    val group: GroupContext = publicKey.context
+    val n = rows.size
+    var mixed = MutableList(n) { VectorCiphertext.empty(group) }
+    var rnonces = MutableList(n) { VectorQ.empty(group) }
+    val psi = Permutation.random(n)
+
+    fun shuffle(): Triple<List<VectorCiphertext>, MatrixQ, Permutation> {
+
+        runBlocking {
+            val jobs = mutableListOf<Job>()
+            val pairProducer = producer(rows, psi)
+            repeat(nthreads) {
+                jobs.add( launchCalculator(pairProducer) { row -> row.reencrypt(publicKey) })
+            }
+            // wait for all calculations to be done, then close everything
+            joinAll(*jobs.toTypedArray())
+        }
+
+        return Triple(mixed, MatrixQ(rnonces), psi)
+    }
+
+    private fun CoroutineScope.producer(rows: List<VectorCiphertext>, psi: Permutation): ReceiveChannel<Pair<VectorCiphertext, Int>> =
+        produce {
+            rows.forEachIndexed { idx, row ->
+                send(Pair(row, psi.inv(idx)))
+                yield()
+            }
+            channel.close()
+        }
+
+    private val mutex = Mutex()
+
+    private fun CoroutineScope.launchCalculator(
+        input: ReceiveChannel<Pair<VectorCiphertext, Int>>,
+        calculate: (VectorCiphertext) -> Pair<VectorCiphertext, VectorQ>
+    ) = launch(Dispatchers.Default) {
+
+        for (pair in input) {
+            val (row, jdx) = pair
+            val (reencrypt, nonces) = calculate(row)
+            mutex.withLock {
+                mixed[jdx] = reencrypt
+                rnonces[jdx] = nonces
+            }
+            yield()
+        }
     }
 }
 

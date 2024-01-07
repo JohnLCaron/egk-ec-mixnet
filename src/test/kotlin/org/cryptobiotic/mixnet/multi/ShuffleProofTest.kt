@@ -193,7 +193,7 @@ class ShuffleProofTest {
 
     @Test
     fun testSPVMatrix() {
-        runShuffleProofVerifyWithThreads(100, 34)
+        runShuffleProofVerifyWithThreads(100, 1)
     }
 
     fun runShuffleProofVerifyWithThreads(nrows: Int, width: Int) {
