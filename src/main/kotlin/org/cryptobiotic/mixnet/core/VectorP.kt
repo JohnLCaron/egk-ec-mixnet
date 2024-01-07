@@ -52,28 +52,33 @@ fun Prod(vp: VectorP): ElementModP {
 
 // parallel Prod(powP)
 class PProdPowP(val vp: VectorP, val exp: VectorQ, val nthreads: Int = 10) {
+    val manager = SubArrayManager(vp.nelems, nthreads)
+    init {
+        require (vp.nelems == exp.nelems)
+    }
     var result = exp.group.ONE_MOD_P
 
-    fun calc(): ElementModP {
 
+    fun calc(): ElementModP {
         runBlocking {
             val jobs = mutableListOf<Job>()
-            val pairProducer = producer(vp, exp)
+            val workProducer = producer(manager)
             repeat(nthreads) {
-                jobs.add( launchCalculator(pairProducer) { (p, q) -> p powP q } )
+                jobs.add( launchCalculator(workProducer) {  subarray -> powp(subarray) } )
             }
             // wait for all calculations to be done, then close everything
             joinAll(*jobs.toTypedArray())
         }
-
         return result
     }
 
-    private fun CoroutineScope.producer(vp: VectorP, ve: VectorQ): ReceiveChannel<Pair<ElementModP, ElementModQ>> =
+    private fun CoroutineScope.producer(manager : SubArrayManager): ReceiveChannel<Int> =
         produce {
-            repeat(vp.nelems) {
-                send(Pair(vp.elems[it], ve.elems[it]))
-                yield()
+            repeat(manager.nthreads) { subidx ->
+                if ( manager.size[subidx] > 0) {
+                    send(subidx)
+                    yield()
+                }
             }
             channel.close()
         }
@@ -81,16 +86,24 @@ class PProdPowP(val vp: VectorP, val exp: VectorQ, val nthreads: Int = 10) {
     private val mutex = Mutex()
 
     private fun CoroutineScope.launchCalculator(
-        input: ReceiveChannel<Pair<ElementModP, ElementModQ>>,
-        calculate: (Pair<ElementModP, ElementModQ>) -> ElementModP
+        input: ReceiveChannel<Int>,
+        calculate: (Int) -> ElementModP
     ) = launch(Dispatchers.Default) {
 
-        for (pair in input) {
-            val pexp = calculate(pair)
+        for (subidx in input) {
+            val calcResult = calculate(subidx)
             mutex.withLock {
-                result *= pexp
+                result *= calcResult
             }
             yield()
         }
+    }
+
+    fun powp(subidx: Int): ElementModP {
+        var result = exp.group.ONE_MOD_P
+        for (rowidx in manager.subarray(subidx)) {
+            result *= vp.elems[rowidx] powP exp.elems[rowidx]
+        }
+        return result
     }
 }

@@ -28,7 +28,7 @@ data class VectorCiphertext(val group: GroupContext, val elems: List<ElGamalCiph
 
     companion object {
         fun zeroEncryptNeg(publicKey: ElGamalPublicKey, exp: VectorQ, ) : VectorCiphertext {
-            return VectorCiphertext(publicKey.context, exp.elems.map { 0.encrypt( publicKey, -it) })
+            return VectorCiphertext(publicKey.context, exp.elems.map { 0.encrypt( publicKey, -it) }) // CE width * 2 acc
         }
         fun empty(group: GroupContext): VectorCiphertext {
             return VectorCiphertext(group, emptyList())

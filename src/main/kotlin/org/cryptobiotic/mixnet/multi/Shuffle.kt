@@ -8,6 +8,16 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.cryptobiotic.mixnet.core.*
 
+
+fun shuffle(rows: List<VectorCiphertext>, publicKey: ElGamalPublicKey, nthreads: Int = 10):
+        Triple<List<VectorCiphertext>, MatrixQ, Permutation> {
+    return if (nthreads == 0) {
+        shuffleMultiText(rows, publicKey)
+    } else {
+        PShuffle(rows, publicKey, nthreads).shuffle()
+    }
+}
+
 fun shuffleMultiText(
     rows: List<VectorCiphertext>,
     publicKey: ElGamalPublicKey,
@@ -16,9 +26,8 @@ fun shuffleMultiText(
     val mixed = mutableListOf<VectorCiphertext>()
     val rnonces = mutableListOf<VectorQ>()
 
-    val n = rows.size
-    val psi = Permutation.random(n)
-    repeat(n) { jdx ->
+    val psi = Permutation.random(rows.size)
+    repeat(rows.size) { jdx ->
         val idx = psi.of(jdx) //  pe[jdx] = e[ps.of(jdx)]; you have an element in pe, and need to get the corresponding element from e
         val (reencrypt, nonceV) = rows[idx].reencrypt(publicKey)
         mixed.add(reencrypt)
@@ -30,32 +39,37 @@ fun shuffleMultiText(
 ////////////////////////////////////////////////////////////////////////////////
 
 // parallel shuffle
-class PShuffle(val group: GroupContext,  val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
-    val n = rows.size
-    var mixed = MutableList(n) { VectorCiphertext.empty(group) }
-    var rnonces = MutableList(n) { VectorQ.empty(group) }
-    val psi = Permutation.random(n)
+class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
+    val nrows = rows.size
+    val group = publicKey.context
+    val manager = SubArrayManager(nrows, nthreads)
+
+    val psi = Permutation.random(nrows)
+    var mixed = Array(nrows) { VectorCiphertext.empty(group) }
+    var rnonces = Array(nrows) { VectorQ.empty(group) }
 
     fun shuffle(): Triple<List<VectorCiphertext>, MatrixQ, Permutation> {
 
         runBlocking {
             val jobs = mutableListOf<Job>()
-            val pairProducer = producer(rows, psi)
+            val workProducer = producer(manager)
             repeat(nthreads) {
-                jobs.add( launchCalculator(pairProducer) { row -> row.reencrypt(publicKey) })
+                jobs.add( launchCalculator(workProducer) { subarray -> reencrypt(subarray) } )
             }
             // wait for all calculations to be done, then close everything
             joinAll(*jobs.toTypedArray())
         }
 
-        return Triple(mixed, MatrixQ(rnonces), psi)
+        return Triple(mixed.toList(), MatrixQ(rnonces.toList()), psi)
     }
 
-    private fun CoroutineScope.producer(rows: List<VectorCiphertext>, psi: Permutation): ReceiveChannel<Pair<VectorCiphertext, Int>> =
+    private fun CoroutineScope.producer(manager : SubArrayManager): ReceiveChannel<Int> =
         produce {
-            rows.forEachIndexed { idx, row ->
-                send(Pair(row, psi.inv(idx)))
-                yield()
+            repeat(manager.nthreads) { subidx ->
+                if ( manager.size[subidx] > 0) {
+                    send(subidx)
+                    yield()
+                }
             }
             channel.close()
         }
@@ -63,18 +77,31 @@ class PShuffle(val group: GroupContext,  val rows: List<VectorCiphertext>, val p
     private val mutex = Mutex()
 
     private fun CoroutineScope.launchCalculator(
-        input: ReceiveChannel<Pair<VectorCiphertext, Int>>,
-        calculate: (VectorCiphertext) -> Pair<VectorCiphertext, VectorQ>
+        input: ReceiveChannel<Int>,
+        calculate: (Int) -> List<Pair<VectorCiphertext, VectorQ>>
     ) = launch(Dispatchers.Default) {
 
-        for (pair in input) {
-            val (row, jdx) = pair
-            val (reencrypt, nonces) = calculate(row)
+        for (subidx in input) {
+            val calcResult: List<Pair<VectorCiphertext, VectorQ>> = calculate(subidx)
             mutex.withLock {
-                mixed[jdx] = reencrypt
-                rnonces[jdx] = nonces
+                calcResult.forEachIndexed { idx, wwtf ->
+                    val origRowIdx = manager.origIndex(subidx, idx)
+                    val jdx = psi.inv(origRowIdx)
+                    mixed[jdx] = wwtf.first
+                    rnonces[jdx] = wwtf.second
+                }
             }
             yield()
         }
     }
+
+    //  do all the reencyptions for the given subarray
+    fun reencrypt(subidx: Int): List<Pair<VectorCiphertext, VectorQ>> {
+        val result = mutableListOf<Pair<VectorCiphertext, VectorQ>>()
+        for (rowidx in manager.subarray(subidx)) {
+            result.add(rows[rowidx].reencrypt(publicKey))
+        }
+        return result
+    }
 }
+

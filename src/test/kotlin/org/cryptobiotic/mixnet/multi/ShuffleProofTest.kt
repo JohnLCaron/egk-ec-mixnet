@@ -41,6 +41,13 @@ class ShuffleProofTest {
     }
 
     @Test
+    fun testShuffleThreads() {
+        runShuffleThreads(3, 1)
+        runShuffleThreads(42, 5)
+        runShuffleThreads(11, 11)
+    }
+
+    @Test
     fun testShuffle() {
         runShuffleThreads(1000, 1)
         runShuffleThreads(100, 10)
@@ -73,11 +80,9 @@ class ShuffleProofTest {
         ) : Result {
         var starting = getSystemTimeInMillis()
         group.showAndClearCountPowP()
-        val (mixedBallots, rnonces, psi) = if (nthreads == 0) {
-            shuffleMultiText(ballots, keypair.publicKey)
-        } else {
-            PShuffle(group, ballots, keypair.publicKey, nthreads).shuffle()
-        }
+
+        val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
+
         val shuffleTime = getSystemTimeInMillis() - starting
         println("  runShuffle nthreads = $nthreads time = $shuffleTime")
         return  Result(nthreads, shuffleTime, 0, 0)
@@ -134,11 +139,9 @@ class ShuffleProofTest {
 
         var starting = getSystemTimeInMillis()
         group.showAndClearCountPowP()
-        val (mixedBallots, rnonces, psi) = if (nthreads == 0) {
-            shuffleMultiText(ballots, keypair.publicKey)
-        } else {
-            PShuffle(group, ballots, keypair.publicKey, nthreads).shuffle()
-        }
+
+        val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
+
         stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
 
@@ -222,16 +225,14 @@ class ShuffleProofTest {
 
     fun runShuffleProofAndVerify(nrows: Int, width: Int, keypair: ElGamalKeypair, ballots: List<VectorCiphertext>,
                                  nthreads : Int = 10,
-                                 showExps: Boolean = false, showTiming: Boolean = false) : Result {
+                                 showExps: Boolean = false, showTiming: Boolean = true) : Result {
         val stats = Stats()
         val N = nrows*width
         var starting = getSystemTimeInMillis()
         group.showAndClearCountPowP()
-        val (mixedBallots, rnonces, psi) = if (nthreads == 0) {
-            shuffleMultiText(ballots, keypair.publicKey)
-        } else {
-            PShuffle(group, ballots, keypair.publicKey, nthreads).shuffle()
-        }
+
+        val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
+
         val shuffleTime = getSystemTimeInMillis() - starting
         stats.of("shuffle", "text", "shuffle").accum(shuffleTime, N)
         if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
