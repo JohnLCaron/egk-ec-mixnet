@@ -53,8 +53,8 @@ fun permutationCommitmentVmnV(group: GroupContext,
 
     //  Com(ψ, r) = { g^rj * h_j }, j=1..N
     //  Com(ψ, r) = { g^rj * h_ψ-1(j) }, j=1..N
-    val pcommitments = MutableList(psi.n) { group.ZERO_MOD_P }
-    val pnonces = MutableList(psi.n) { group.ZERO_MOD_Q }
+    val pcommitments = Array(psi.n) { group.ZERO_MOD_P }
+    val pnonces = Array(psi.n) { group.ZERO_MOD_Q }
     // ALGORITHM
     repeat(psi.n) { idx ->
         val jdx = psi.of(idx)
@@ -65,5 +65,5 @@ fun permutationCommitmentVmnV(group: GroupContext,
         pnonces[jdx] = rj
         pcommitments[jdx] = cj
     }
-    return Pair(VectorP(group, pcommitments), VectorQ(group, pnonces))
+    return Pair(VectorP(group, pcommitments.toList()), VectorQ(group, pnonces.toList()))
 }

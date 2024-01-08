@@ -5,7 +5,6 @@ import electionguard.util.Stats
 import org.cryptobiotic.mixnet.core.*
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
-import kotlin.test.assertEquals
 
 class ShuffleTest {
     val group = productionGroup()
@@ -43,7 +42,7 @@ class ShuffleTest {
         var starting = getSystemTimeInMillis()
         group.showAndClearCountPowP()
         val (mixedBallots, rnonces, psi) = if (nthreads == 0) {
-            shuffleMultiText(ballots, keypair.publicKey)
+            shuffle(ballots, keypair.publicKey)
         } else {
             PShuffle(ballots, keypair.publicKey, nthreads).shuffle()
         }

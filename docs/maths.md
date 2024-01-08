@@ -191,43 +191,151 @@ $$
 
 The $Encr(0, ..)$ is because we use exponential ElGamal, so is fine. Their use of $u_j$ instead of $pu_j$ appears to be a mistake. Its also possible there is a difference in notation that I didnt catch.
 
+
+
 ### Verificatum
+#### Proof Construction
+Let
 
-#### ShuffleProof
+- n = number of rows
+- width = number of ciphertexts in each row
+- $\vec{w}$ = rows of ciphertexts (n x width)
+- $\vec{wp}$ = shuffled and reencrypted rows of ciphertexts (n x width)
+- $\vec{rn}$ = reencryption nonces (n x width). All nonces are $\in \Z_q$
+- $\psi$ = permutation function
+- *ipe* = inverse permutation function = $\psi^{-1}$
+- $h_0, \vec{h}$ = generators of $\Z_p^r$
 
-$\vec{w}$ = ()
-
-$\vec{pw}$ = Rencr(w)
-
-$\alpha, \vec{\epsilon}$ random elements in $\Z_q$
 
 
+**Commitment to permutation**
 
-**Create Committment:**
+Choose *n* random permutation nonces $\vec{pn}$.
+And form permutation commitments $\vec{u}$ that will be public:
+$$
+u_j = g^{pn_j} * h_i,\ \ \ j = \psi(i)
+$$
+
+**Commitment to shuffle**
+
+Choose *n* random nonces $\vec{e}$ that will be public.
+Choose *n* random nonces $\vec{\epsilon}$ that will be private.
+Choose random nonces $\alpha, \gamma, \delta$ that will be private.
+
+Form the following values:
+$$
+A^\prime &= g^\alpha \prod_{i=1}^n h_i^{\epsilon_i} \in \Z_p^r \\
+B &= g^\gamma \in (\Z_p^r)^n \\
+B^\prime &= g^\gamma \in (\Z_p^r)^n \\
+C^\prime &= g^\gamma \in \Z_p^r \\
+D^\prime &= g^\delta \in \Z_p^r \\
+$$
+
+**Commitment to exponents**
+
+Choose *width* random nonces $\vec{\phi}$ that will be private.
+
+Form the following values:
+
+$$
+wpcolj &=\ jth\ column\ of \vec {wp}  \in ciphertext^{n},\ j=1..width \\
+F^\prime_j &= Encr(0, {\phi_j}) \cdot \prod_{i=1}^n (wpcolj)_i ^ {\epsilon_i} \in ciphertext,\ j=1..width \\
+$$
+
+Note that $F^\prime$ has *width* components, one for each of the columns of $\vec {wp}$.
+
+
+
+**Reply to challenge v:**
+
+A challenge v $\in \Z_q$ is given, and the following is the reply:
 $$
 \begin{align}
-B &= \\
-A^\prime &= g^\alpha \prod_{i=0}^{n-1} h_i^{eps_i} \\
-F^\prime &= Encr(0, -\phi) \prod_{i=0}^{n-1} pw_i^{\epsilon_i} \\
-\end{align}
-$$
-**Send challenge v and get Reply:**
-$$
-\begin{align}
-k_A &= (r \cdot e) * v + \alpha \\
-\vec{k_{E}} &= \vec{e^\prime} \cdot v + \vec{\epsilon} \\
-k_E &= (rnonces \cdot e^{\prime}) * v + \alpha \\
+k_A &= v  (r \cdot e) + \alpha,\ \in \Z_q \\
+\vec{k_B} &= v  \vec b + \beta,\ \in (\Z_q)^n \\
+k_C &= v  \sum_{i=1}^n r_i + \gamma,\ \in \Z_q \\
+k_D &= v * d + \delta,\ \in \Z_q \\
+\vec{k_{E}} &= v \cdot \vec{e^\prime} + \vec{\epsilon},\ \in (\Z_q)^n \\
+k_E &= (rnonces \cdot e^{\prime}) * v + \alpha v,\ \in (\Z_q)^n \\
 \end{align}
 $$
 
+**Serialized TW Proof**
+
+```
+// τ^pos = Commitment of the Fiat-Shamir proof.
+data class ProofOfShuffle(
+    val u: VectorP, // permutation commitment = pcommit
+    val d: ElementModQ, // x[n-1]
+    val e: VectorQ, // supposed to be deterministically derived
+
+    val Ap: ElementModP, // Proof commitment used for the bridging commitments
+    val B: VectorP, // Bridging commitments used to build up a product in the exponent
+    val Bp: VectorP, // Proof commitments for the bridging commitments
+    val Cp: ElementModP, // Proof commitment for proving sum of random components
+    val Dp: ElementModP, // Proof commitment for proving product of random components.
+
+    val Fp: VectorCiphertext, // width
+)
+
+// σ^pos = Reply of the Fiat-Shamir proof.
+data class Reply(
+    val k_A: ElementModQ,
+    val k_B: VectorQ,
+    val k_C: ElementModQ,
+    val k_D: ElementModQ,
+    val k_EA: VectorQ,
+    val k_E: VectorQ,
+    
+    val k_F: VectorQ, // width
+)
+```
 
 
-**Verify**
+
+#### Proof Verification
+
+The Verifier is provided with:
+
+- n = number of rows
+- width = number of ciphertexts in each row
+- $\vec{w}$ = rows of ciphertexts (n x width)
+- $\vec{wp}$ = shuffled and reencrypted rows of ciphertexts (n x width)
+- $h_0, \vec{h}$ = generators of $\Z_p^r$
+- ProofOfShuffle and Reply
+
+
+
+The $\vec e$ nonces and challenge are deterministically recalculated. This prevents those from being carefully chosen to subvert the proof.
+
+
+
+The following are computed:
 $$
-\begin{align}
-A^v \cdot A^\prime &= g^{k_A} \prod_{i=0}^{n-1} h_i^{k_{E,i}} \\
-\end{align}
+A &= \prod_{i=1}^n u_i^{e_i} \in \Z_p^r \\
+C &= (\prod_{i=1}^n u_i) / (\prod_{i=1}^n h_i),\ \in \Z_p^r \\
+D &= B_{n} \cdot h_0^{\prod_{i=1}^n e_i} \in \Z_p^r \\
 $$
+and
+$$
+wcolj &=\ jth\ column\ of \vec {w}  \in ciphertext^{n},\ j=1..width \\
+F_j &= \prod_{i=1}^n (wcolj)_i ^ {e_i} \in ciphertext,\ j=1..width \\
+$$
+
+Then the following are checked, and if all are true, the verification succeeds:
+$$
+A^v \cdot A^\prime &= g^{k_A} \prod_{i=1}^{n} h_i^{k_{E,i}} \\
+B_i^v \cdot B_i^\prime &= g^{k_{B,i}} B_{i-1}^{k_{E,i}},\ B_0 = h_0,\ i = 1..N\\
+C^v \cdot C^\prime &= g^{k_C} \\
+D^v \cdot D^\prime &= g^{k_D} \\
+$$
+and
+$$
+wpcolj &=\ jth\ column\ of\ \vec {wp}  \in ciphertext^{n},\ j=1..width \\
+F_j^v F_j^\prime &= Encr(0, -k_{F,i}) \prod_{i=1}^{n} (wpcolj)^{k_{E,i}},\ j=1..width \\
+$$
+
+
 
 ### Shuffling vectors
 
@@ -347,10 +455,10 @@ $$
 
 **multi**
 
-|                  | shuffle | proof of shuffle      | proof of exp  | verify          |
-| ---------------- | ------- | --------------------- | ------------- | --------------- |
-| regular exps     | 0       | 4 * n                 | 2 * width * n | 4*N + 4n + 4    |
-| accelerated exps | 2 * N   | 3 * n + 2 * width + 4 | 0             | n + 2*width + 3 |
+|                  | shuffle | proof of shuffle      | proof of exp | verify          |
+| ---------------- | ------- | --------------------- | ------------ | --------------- |
+| regular exps     | 0       | 4 * n                 | 2 * N        | 4*N + 4 * n + 4 |
+| accelerated exps | 2 * N   | 3 * n + 2 * width + 4 | 0            | n + 2*width + 3 |
 
 Even though N dominates, width is bound but nrows can get arbitrarily big. Could parallelize over the rows also. 
 
@@ -399,10 +507,25 @@ took 4555 msecs = .4555 msecs/text (10000 texts) = 4555.0 msecs/shuffle for 1 sh
 took 8844 msecs = .8844 msecs/text (10000 texts) = 8844.0 msecs/shuffle for 1 shuffles
 took 17188 msecs = 1.718 msecs/text (10000 texts) = 17188 msecs/shuffle for 1 shuffles
 ```
+nrows = 1000, width = 34, N=3400
 
+```
+Time verificatum as used by rave
 
+RunMixnet elapsed time = 67598 msecs
+RunMixnet elapsed time = 67853 msecs)
+RunMixnetVerifier elapsed time = 68855 msecs
+RunMixnetVerifier elapsed time = 68738 msecs
+```
 
+```
+nrows=1000, width= 34 per row, N=34000, nthreads=24
 
+shuffle: took 5511 msecs
+proof: took 12944 msecs
+verify: took 27983 msecs
+total: took 46438 msecs
+```
 
 #### 3. wallclock times (vmn/ch)
 
