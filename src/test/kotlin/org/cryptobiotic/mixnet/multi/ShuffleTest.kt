@@ -3,7 +3,6 @@ package org.cryptobiotic.mixnet.multi
 import electionguard.core.*
 import electionguard.util.Stats
 import org.cryptobiotic.mixnet.core.*
-import org.cryptobiotic.mixnet.vmn.innerProductColumn
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertEquals
@@ -65,11 +64,11 @@ class ShuffleTest {
         val ipe = e.invert(psi)
 
         // if i have a px, how do i turn it into a ix? invert it twice
-        val inner1 = innerProductColumn(rnonces, pe.elems)
-        val inner2 = innerProductColumn(rnonces.invert(psi).invert(psi), ipe.elems)
+        val inner1 = innerProductColumn(rnonces, pe)
+        val inner2 = innerProductColumn(rnonces.invert(psi).invert(psi), ipe)
         println("   inner1 == inner2 ${inner1 == inner2}")
         // convert back to original order
-        val inner3 = innerProductColumn(rnonces.invert(psi), e.elems)
+        val inner3 = innerProductColumn(rnonces.invert(psi), e)
         println("   inner1 == inner3 ${inner1 == inner3}")
 
         val inonces = rnonces.invert(psi).invert(psi)
@@ -109,8 +108,8 @@ class ShuffleTest {
         val ev = e.timesScalar(v)
         val Fv = prodColumnPow(rows, ev, 0)
         val leftv = Fv * enc0 * prodColumnPow(mixed, epsilon) // Fp = enc0 * prodColumnPow(wp, epsilon)
-        val ff = innerProductColumn(rnonces, pe.elems)
-        val kF = VectorQ(group, ff).timesScalar(v) + phi
+        val ff = innerProductColumn(rnonces, pe)
+        val kF = ff.timesScalar(v) + phi
         val right1v = VectorCiphertext.zeroEncryptNeg(publicKey, kF) // k_F = innerProductColumn(rnonces, ipe).timesScalar(v) + phi
         val kE = pe.timesScalar(v) + epsilon
         val right2v = prodColumnPow(mixed, kE, 0) // k_E = ipe.timesScalar(v) + epsilon

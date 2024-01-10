@@ -7,7 +7,6 @@ import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.cryptobiotic.mixnet.core.*
-import org.cryptobiotic.mixnet.vmn.innerProductColumn
 
 /**
  * Verifies the TW proof of shuffle.
@@ -34,8 +33,8 @@ class VerifierV(
         val ev1 = dp.proof.e.timesScalar(v)
         val Fv1 = prodColumnPow(w, ev1, 0)
         val leftv = Fv1 * enc0 * prodColumnPow(wp, dp.epsilon) // Fp = enc0 * prodColumnPow(wp, epsilon)
-        val ff = innerProductColumn(dp.rnonces, dp.ipe.elems)
-        val kF = VectorQ(group, ff).timesScalar(v) + dp.phi
+        val ff = innerProductColumn(dp.rnonces, dp.ipe)
+        val kF = ff.timesScalar(v) + dp.phi
         val right1v = VectorCiphertext.zeroEncryptNeg(publicKey, kF) // k_F = innerProductColumn(rnonces, ipe).timesScalar(v) + phi
         val kE = dp.ipe.timesScalar(v) + dp.epsilon
         val right2v = prodColumnPow(wp, kE, 0) // k_E = ipe.timesScalar(v) + epsilon

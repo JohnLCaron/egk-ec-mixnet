@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.core
+package org.cryptobiotic.mixnet.ch
 
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
