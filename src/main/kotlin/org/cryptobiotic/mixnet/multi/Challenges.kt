@@ -6,8 +6,7 @@ import electionguard.core.hashFunction
 import electionguard.core.toElementModQ
 import org.cryptobiotic.mixnet.core.VectorQ
 
-//  simplified (for now) version of ALGORITHM 8.4, 8.5
-//  must be deterministic, so CheckProof gets exactly the same results
+//  vector version of org.cryptobiotic.mixnet.ch. Not used yet
 
 fun getChallengesV(group: GroupContext, n: Int, y: Any): VectorQ {
     val bold_c = mutableListOf<ElementModQ>()

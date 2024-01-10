@@ -43,30 +43,6 @@ $$
 
 
 
-#### 3. Pedersen Commitments
-
-For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Extended Pedersen committment* to $\textbf m$ is
-$$
-\begin{align}
-Commit(\textbf m, cr) = g^{cr} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n} 
-= g^{cr} * \prod_{i=1}^n h_i^{m_i}
-\end{align}
-$$
-where ($ g, \textbf h $) are generators of  $ \Z_p^r $ with randomization nonce $ cr \in Z_q $.
-
-
-
-If $\textbf b_i$ is the $i^{th}$ column of $B_\psi$, then the *permutation commitment to $\psi$* is defined as the vector of committments to its columns:
-$$
-Commit(\psi, \textbf {cr}) = (Commit(\textbf b_1, cr_1), Commit(\textbf b_2, cr_2),..Commit(\textbf b_N, cr_N)) =
-$$
-where
-$$
-\begin{align}
-c_j = Commit(\textbf b_j, cr_j) = g^{cr_j} * \prod_{i=1}^n h_i^{b_{ij}} = g^{cr_j} * h_i ,\ for\ i=ψ^{-1}(j)
-\end{align}
-$$
-
 
 
 ####  4. ElGamal Encryption and Reencryption
@@ -117,9 +93,228 @@ re_j &= Encr(0,r_j) * e_j \\
 \end{align}
 $$
 
+### Verificatum
+
+#### Pedersen Commitments
+
+For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Pedersen committment* to $\textbf m$ is
+$$
+\begin{align}
+Commit(\textbf m, cr) = g^{cr} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n} 
+= g^{cr} * \prod_{i=1}^n h_i^{m_i}
+\end{align}
+$$
+where ($ g, \textbf h $) are generators of  $ \Z_p^r $ with randomization nonce $ cr \in Z_q $. (section 1.2 of [4])
+
+
+
+If $\textbf b_i$ is the $i^{th}$ column of $B_\psi$, then the *permutation commitment to $\psi$* is defined as the vector of committments to its columns:
+$$
+Commit(\psi, \textbf {cr}) = (Commit(\textbf b_1, cr_1), Commit(\textbf b_2, cr_2),..Commit(\textbf b_N, cr_N)) =
+$$
+where
+$$
+\begin{align}
+c_j = Commit(\textbf b_j, cr_j) = g^{cr_j} * \prod_{i=1}^n h_i^{b_{ij}} = g^{cr_j} * h_i ,\ for\ i=ψ^{-1}(j)
+\end{align}
+$$
+
+
+#### Proof Construction
+Let
+
+- n = number of rows
+- width = number of ciphertexts in each row
+- $\vec{w}$ = rows of ciphertexts (n x width)
+- $\vec{wp}$ = shuffled and reencrypted rows of ciphertexts (n x width)
+- $\vec{rn}$ = reencryption nonces (n x width). All nonces are $\in \Z_q$
+- $\psi$ = permutation function
+- *ipe* = inverse permutation function = $\psi^{-1}$
+- $h_0, \vec{h}$ = generators of $\Z_p^r$
+
+
+
+**Commitment to permutation**
+
+Choose *n* random permutation nonces $\vec{pn}$.
+And form permutation commitments $\vec{u}$ that will be public:
+$$
+u_j = g^{pn_j} h_i,\ \ \ j = \psi(i) LOOK
+$$
+
+**Commitment to shuffle**
+
+Choose *n* random nonces $\vec{e}$ that will be public. Let ${e^\prime}$ = $\psi^{-1}(\vec e)$.
+Choose *n* random nonces $\vec{\epsilon}$ that will be private.
+Choose random nonces $\alpha, \gamma, \delta$ that will be private.
+
+Form the following values:
+$$
+\begin{align}
+A^\prime &= g^\alpha \prod_{i=1}^n h_i^{\epsilon_i} \in \Z_p^r \\
+B &= g^\gamma \in (\Z_p^r)^n \\
+B^\prime &= g^\gamma \in (\Z_p^r)^n \\
+C^\prime &= g^\gamma \in \Z_p^r \\
+D^\prime &= g^\delta \in \Z_p^r \\
+\end{align}
+$$
+
+**Commitment to exponents**
+
+Choose *width* random nonces $\vec{\phi}$ that will be private.
+
+Form the following values:
+
+$$
+\begin{align}
+wpcolj &=\ jth\ column\ of\ \vec {wp}  \in ciphertext^{n},\ j=1..width \\
+F^\prime_j &= Encr(0, -{\phi_j}) \cdot \prod_{i=1}^n (wpcolj)_i ^ {\epsilon_i} \in ciphertext,\ j=1..width \\
+\end{align}
+$$
+
+Note that $F^\prime$ has *width* components, one for each of the columns of $\vec {wp}$. This disambiguates   $\prod_{i=1}^{n} wp^{\epsilon}$, which is interpreted as shorthand for *width* equations, using the column vectors of wp. 
+
+
+
+**Reply to challenge v:**
+
+A challenge v $\in \Z_q$ is given, and the following is the reply:
+$$
+\begin{align}
+k_A &= v\ \cdot <\vec r \cdot \vec e> + \alpha,\ \in \Z_q \\
+\vec{k_B} &= v \cdot \vec b + \beta,\ \in (\Z_q)^n \\
+k_C &= v \cdot \sum_{i=1}^n r_i + \gamma,\ \in \Z_q \\
+k_D &= v \cdot d + \delta,\ \in \Z_q \\
+\vec{k_E} &= v \cdot \vec{e^\prime} + \vec{\epsilon},\ \in (\Z_q)^n \\
+\end{align}
+$$
+and
+$$
+\begin{align}
+rncolj &=\ jth\ column\ of\ reencryption\ nonces\ \vec {rn},\ j=1..width \\
+k_{F,j} &= v\ \cdot <rncolj, e^{\prime}> + \phi_j \\
+\end{align}
+$$
+
+**Serialization of the TW Proof of Shuffle**
+
+```
+// τ^pos = Commitment of the Fiat-Shamir proof.
+data class ProofOfShuffle(
+    val u: VectorP, // permutation commitment = pcommit
+    val d: ElementModQ, // x[n-1]
+    val e: VectorQ, // supposed to be deterministically derived
+
+    val Ap: ElementModP, // Proof commitment used for the bridging commitments
+    val B: VectorP, // Bridging commitments used to build up a product in the exponent
+    val Bp: VectorP, // Proof commitments for the bridging commitments
+    val Cp: ElementModP, // Proof commitment for proving sum of random components
+    val Dp: ElementModP, // Proof commitment for proving product of random components.
+
+    val Fp: VectorCiphertext, // width
+)
+
+// σ^pos = Reply of the Fiat-Shamir proof.
+data class Reply(
+    val k_A: ElementModQ,
+    val k_B: VectorQ,
+    val k_C: ElementModQ,
+    val k_D: ElementModQ,
+    val k_EA: VectorQ,
+    val k_E: VectorQ,
+    
+    val k_F: VectorQ, // width
+)
+```
+
+
+
+#### Proof Verification
+
+The following equations are taken from Algorithm 19 of [6] and checked against the verificatum  implementation. The main ambiguity is in the meaning of  $\prod_{i=1}^{n} w_i^{e_i}$ and  $\prod_{i=1}^{n} wp_i^{k_{E,i}}$ in steps 3 and 5. These are interpreted as a short hand for *width* equations on the column vectors of *w* and *wp*. We use one-based array indexing for notational simplicity.
+
+The Verifier is provided with:
+
+- n = number of rows
+- width = number of ciphertexts in each row
+- $\vec{w}$ = rows of ciphertexts (n x width)
+- $\vec{wp}$ = shuffled and reencrypted rows of ciphertexts (n x width)
+- $h_0, \vec{h}$ = generators of $\Z_p^r$
+- *ProofOfShuffle* and *Reply*
+
+
+
+The $\vec e$ nonces and challenge are deterministically recalculated. This prevents those from being carefully chosen to subvert the proof.
+
+
+
+The following are computed:
+$$
+\begin{align}
+A &= \prod_{i=1}^n u_i^{e_i} \in \Z_p^r \\
+C &= (\prod_{i=1}^n u_i) / (\prod_{i=1}^n h_i),\ \in \Z_p^r \\
+D &= B_{n} \cdot h_0^{\prod_{i=1}^n e_i} \in \Z_p^r \\
+\end{align}
+$$
+and
+$$
+\begin{align}
+F_j &= \prod_{i=1}^n (wcolj)_i ^ {e_i} \in ciphertext,\ j=1..width \\
+\end{align}
+$$
+
+where $wcolj$ = jth column of $\vec w$, is an array of ciphertexts of length n
+
+Then the following are checked, and if all are true, the verification succeeds:
+$$
+\begin{align}
+A^v \cdot A^\prime &= g^{k_A} \prod_{i=1}^{n} h_i^{k_{E,i}} \\
+B_i^v \cdot B_i^\prime &= g^{k_{B,i}} B_{i-1}^{k_{E,i}},\ where\ B_0 = h_0,\ i = 1..N\\
+C^v \cdot C^\prime &= g^{k_C} \ \ \ (sum\ of\ each\ row\ of\ \psi\ is\ 1) \\
+D^v \cdot D^\prime &= g^{k_D} \\
+\end{align}
+$$
+and
+$$
+\begin{align}
+F_j^v F_j^\prime &= Encr(0, -k_{F,i}) \prod_{i=1}^{n} (wpcolj)^{k_{E,i}},\ j=1..width \\
+where\ wpcolj &=\ jth\ column\ of\ \vec {wp}  \in ciphertext^{n} \\
+\end{align}
+$$
+
+
+
+
+
 ### ChVote
 
 This follows Haenni et. al. [2], which has a good explanation of TW, sans vectors.
+
+#### 3. Pedersen Commitments
+
+For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Extended Pedersen committment* to $\textbf m$ is
+$$
+\begin{align}
+Commit(\textbf m, cr) = g^{cr} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n} 
+= g^{cr} * \prod_{i=1}^n h_i^{m_i}
+\end{align}
+$$
+where ($ g, \textbf h $) are generators of  $ \Z_p^r $ with randomization nonce $ cr \in Z_q $.
+
+
+
+If $\textbf b_i$ is the $i^{th}$ column of $B_\psi$, then the *permutation commitment to $\psi$* is defined as the vector of committments to its columns:
+$$
+Commit(\psi, \textbf {cr}) = (Commit(\textbf b_1, cr_1), Commit(\textbf b_2, cr_2),..Commit(\textbf b_N, cr_N)) =
+$$
+where
+$$
+\begin{align}
+c_j = Commit(\textbf b_j, cr_j) = g^{cr_j} * \prod_{i=1}^n h_i^{b_{ij}} = g^{cr_j} * h_i ,\ for\ i=ψ^{-1}(j)
+\end{align}
+$$
+
+
 
 #### 1. Proof of permutation
 
@@ -191,43 +386,7 @@ $$
 
 The $Encr(0, ..)$ is because we use exponential ElGamal, so is fine. Their use of $u_j$ instead of $pu_j$ appears to be a mistake. Its also possible there is a difference in notation that I didnt catch.
 
-### Verificatum
 
-#### ShuffleProof
-
-$\vec{w}$ = ()
-
-$\vec{pw}$ = Rencr(w)
-
-$\alpha, \vec{\epsilon}$ random elements in $\Z_q$
-
-
-
-**Create Committment:**
-$$
-\begin{align}
-B &= \\
-A^\prime &= g^\alpha \prod_{i=0}^{n-1} h_i^{eps_i} \\
-F^\prime &= Encr(0, -\phi) \prod_{i=0}^{n-1} pw_i^{\epsilon_i} \\
-\end{align}
-$$
-**Send challenge v and get Reply:**
-$$
-\begin{align}
-k_A &= (r \cdot e) * v + \alpha \\
-\vec{k_{E}} &= \vec{e^\prime} \cdot v + \vec{\epsilon} \\
-k_E &= (rnonces \cdot e^{\prime}) * v + \alpha \\
-\end{align}
-$$
-
-
-
-**Verify**
-$$
-\begin{align}
-A^v \cdot A^\prime &= g^{k_A} \prod_{i=0}^{n-1} h_i^{k_{E,i}} \\
-\end{align}
-$$
 
 ### Shuffling vectors
 
@@ -347,10 +506,10 @@ $$
 
 **multi**
 
-|                  | shuffle | proof of shuffle      | proof of exp  | verify          |
-| ---------------- | ------- | --------------------- | ------------- | --------------- |
-| regular exps     | 0       | 4 * n                 | 2 * width * n | 4*N + 4n + 4    |
-| accelerated exps | 2 * N   | 3 * n + 2 * width + 4 | 0             | n + 2*width + 3 |
+|                  | shuffle | proof of shuffle      | proof of exp | verify          |
+| ---------------- | ------- | --------------------- | ------------ | --------------- |
+| regular exps     | 0       | 4 * n                 | 2 * N        | 4*N + 4 * n + 4 |
+| accelerated exps | 2 * N   | 3 * n + 2 * width + 4 | 0            | n + 2*width + 3 |
 
 Even though N dominates, width is bound but nrows can get arbitrarily big. Could parallelize over the rows also. 
 
@@ -399,10 +558,25 @@ took 4555 msecs = .4555 msecs/text (10000 texts) = 4555.0 msecs/shuffle for 1 sh
 took 8844 msecs = .8844 msecs/text (10000 texts) = 8844.0 msecs/shuffle for 1 shuffles
 took 17188 msecs = 1.718 msecs/text (10000 texts) = 17188 msecs/shuffle for 1 shuffles
 ```
+nrows = 1000, width = 34, N=3400
 
+```
+Time verificatum as used by rave
 
+RunMixnet elapsed time = 67598 msecs
+RunMixnet elapsed time = 67853 msecs)
+RunMixnetVerifier elapsed time = 68855 msecs
+RunMixnetVerifier elapsed time = 68738 msecs
+```
 
+```
+nrows=1000, width= 34 per row, N=34000, nthreads=24
 
+shuffle: took 5511 msecs
+proof: took 12944 msecs
+verify: took 27983 msecs
+total: took 46438 msecs
+```
 
 #### 3. wallclock times (vmn/ch)
 

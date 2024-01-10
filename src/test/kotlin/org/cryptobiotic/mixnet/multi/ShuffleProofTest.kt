@@ -27,7 +27,10 @@ class ShuffleProofTest {
     fun makeBallots(keypair: ElGamalKeypair, nrows: Int, width: Int) : List<VectorCiphertext> {
         // TODO in parallel to save time
         return List(nrows) {
-            val ciphertexts = List(width) { Random.nextInt(11).encrypt(keypair) }
+            val ciphertexts = List(width) {
+                val vote = if (Random.nextBoolean()) 0 else  1
+                vote.encrypt(keypair)
+            }
             VectorCiphertext(group, ciphertexts)
         }
     }
@@ -38,6 +41,16 @@ class ShuffleProofTest {
         override fun toString() =
             "${nthreads}, ${shuffle*.001}, ${proof*.001}, ${verify*.001}, ${total*.001}"
 
+    }
+
+    @Test
+    fun testShuffleSmall() {
+        runShuffleThreads(11, 1)
+        runShuffleThreads(1, 11)
+        runShuffleThreads(3, 3)
+        runShuffleThreads(6, 3)
+        runShuffleThreads(6, 9)
+        runShuffleThreads(9, 6)
     }
 
     @Test
@@ -184,16 +197,23 @@ class ShuffleProofTest {
 
     @Test
     fun testSPV() {
-        runShuffleProofVerifyWithThreads(3, 1)
+        runShuffleProofVerifyWithThreads(1000, 1)
+        /* runShuffleProofVerifyWithThreads(11, 1)
+        runShuffleProofVerifyWithThreads(1, 11)
         runShuffleProofVerifyWithThreads(3, 3)
         runShuffleProofVerifyWithThreads(6, 3)
         runShuffleProofVerifyWithThreads(6, 9)
-        runShuffleProofVerifyWithThreads(1, 11)
+        runShuffleProofVerifyWithThreads(9, 6) */
     }
 
     @Test
     fun testSPVMatrix() {
-        runShuffleProofVerifyWithThreads(100, 1)
+        val nrows = 1000
+        val width = 34
+        val keypair = elGamalKeyPairFromRandom(group)
+        val ballots = makeBallots(keypair, nrows, width)
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 48)
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 48)
     }
 
     fun runShuffleProofVerifyWithThreads(nrows: Int, width: Int) {
@@ -247,10 +267,9 @@ class ShuffleProofTest {
             keypair.publicKey,
             h,
             generators, // generators
-            ballots, // ciphertexts
-            mixedBallots, // permuted ciphertexts
+            w = ballots, // ciphertexts
+            wp = mixedBallots, // permuted ciphertexts
             rnonces, // unpermuted Reencryption nonces
-            // psi.invert(rnonces), // unpermuted Reencryption nonces
             psi,
         )
         val (pos: ProofOfShuffleV, challenge: ElementModQ, reply: ReplyV) = prover.prove(nthreads)
@@ -264,8 +283,8 @@ class ShuffleProofTest {
             keypair.publicKey,
             h,
             generators, // generators
-            ballots, // ciphertexts
-            mixedBallots, // permuted ciphertexts
+            w = ballots, // ciphertexts
+            wp = mixedBallots, // permuted ciphertexts
         )
         val valid = verifier.verify(pos, reply, challenge, nthreads)
         val verifyTime = getSystemTimeInMillis() - starting
@@ -279,5 +298,49 @@ class ShuffleProofTest {
         println(r)
         return r
     }
+
+    @Test
+    fun testSPVdebug() {
+        val nrows = 7
+        val width = 3
+
+        val keypair = elGamalKeyPairFromRandom(group)
+        val ballots = makeBallots(keypair, nrows, width)
+        runSPVdebug(keypair, ballots)
+    }
+
+    fun runSPVdebug(keypair: ElGamalKeypair, ballots: List<VectorCiphertext>) {
+
+        val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey)
+
+        val U = "PosBasicTW"
+        val seed = group.randomElementModQ()
+        val (h, generators) = getGeneratorsV(group, psi.n, U, seed) // CE 1 acc n exp
+
+        val prover = ProverV(   // CE n acc
+            group,
+            keypair.publicKey,
+            h,
+            generators, // generators
+            w = ballots, // ciphertexts
+            wp = mixedBallots, // permuted ciphertexts
+            rnonces, // unpermuted Reencryption nonces
+            psi,
+        )
+        val dp = prover.proveDebug()
+
+        val verifier = VerifierV(
+            group,
+            keypair.publicKey,
+            h,
+            generators, // generators
+            w = ballots, // ciphertexts
+            wp = mixedBallots, // permuted ciphertexts
+        )
+        val valid = verifier.verifyF(dp)
+
+        assertTrue(valid)
+    }
+
 
 }

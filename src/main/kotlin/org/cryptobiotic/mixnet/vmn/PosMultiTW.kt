@@ -421,7 +421,7 @@ fun prodColumnPow(rows: List<MultiText>, exps: List<ElementModQ>) : List<ElGamal
 fun innerProductColumn(matrixq: MatrixQ, exps: List<ElementModQ>) : List<ElementModQ> {
     require(exps.size == matrixq.nrows)
     val result = List(matrixq.width) { col ->
-        val column = List(matrixq.nrows) { row -> matrixq.elems[row].elems[col] }
+        val column = List(matrixq.nrows) { row -> matrixq.elem(row, col) }
         innerProduct(column, exps)
     }
     return result

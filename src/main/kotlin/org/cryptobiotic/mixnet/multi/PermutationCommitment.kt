@@ -2,6 +2,7 @@ package org.cryptobiotic.mixnet.multi
 
 import electionguard.core.*
 import org.cryptobiotic.mixnet.core.Permutation
+import org.cryptobiotic.mixnet.core.PermutationVmn
 import org.cryptobiotic.mixnet.core.VectorP
 import org.cryptobiotic.mixnet.core.VectorQ
 
@@ -46,15 +47,14 @@ fun permutationCommitmentV(group: GroupContext,
 }
 
 // CE n acc
-// TODO Vmn does a strange thing here, can we replace with above?
 fun permutationCommitmentVmnV(group: GroupContext,
                              psi: Permutation,
                              generators: VectorP) : Pair<VectorP, VectorQ> {
 
     //  Com(ψ, r) = { g^rj * h_j }, j=1..N
     //  Com(ψ, r) = { g^rj * h_ψ-1(j) }, j=1..N
-    val pcommitments = MutableList(psi.n) { group.ZERO_MOD_P }
-    val pnonces = MutableList(psi.n) { group.ZERO_MOD_Q }
+    val pcommitments = Array(psi.n) { group.ZERO_MOD_P }
+    val pnonces = Array(psi.n) { group.ZERO_MOD_Q }
     // ALGORITHM
     repeat(psi.n) { idx ->
         val jdx = psi.of(idx)
@@ -65,5 +65,29 @@ fun permutationCommitmentVmnV(group: GroupContext,
         pnonces[jdx] = rj
         pcommitments[jdx] = cj
     }
-    return Pair(VectorP(group, pcommitments), VectorQ(group, pnonces))
+    return Pair(VectorP(group, pcommitments.toList()), VectorQ(group, pnonces.toList()))
+}
+
+// Prover computes a permutation commitment.
+// u_i = g^{r_{\pi(i)}} * h_{\pi(i)}
+//
+//        this.r = pRing.randomElementArray(size, randomSource, rbitlen);
+//        final PGroupElementArray tmp1 = g.exp(r);
+//        final PGroupElementArray tmp2 = h.mul(tmp1);
+//        u = tmp2.permute(pi);
+fun permutationCommitmentVmnVorg(group: GroupContext,
+                                 psi: PermutationVmn,
+                                 generators: VectorP) : Pair<VectorP, VectorQ> {
+
+    //  this.r = pRing.randomElementArray(size, randomSource, rbitlen);
+    val pnonces = Array(psi.n) { group.randomElementModQ() }
+    val commit = pnonces.mapIndexed { idx, it ->
+        // tmp1 = g.exp(r);
+        val tmp1 = group.gPowP(it)
+        // tmp2 = h.mul(tmp1);
+        tmp1 * generators.elems[idx]
+    }
+    val pcommit = psi.permute(commit)
+
+    return Pair(VectorP(group, pcommit), VectorQ(group, pnonces.toList()))
 }
