@@ -1,9 +1,8 @@
-package org.cryptobiotic.mixnet.multi
+package org.cryptobiotic.mixnet.vmn
 
 import electionguard.core.*
 import org.cryptobiotic.mixnet.core.*
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
 
 class PermutationCommittmentTest {
     val group = productionGroup()
