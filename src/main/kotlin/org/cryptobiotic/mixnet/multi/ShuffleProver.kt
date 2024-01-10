@@ -46,7 +46,7 @@ class ProverV(
     val phi: VectorQ //  Randomizer for f; width
 
     init {
-        val (pcommit, pnonces) = permutationCommitmentVmnVorg(
+        val (pcommit, pnonces) = permutationCommitmentVmn(
             group,
             psi,
             generators
@@ -66,19 +66,17 @@ class ProverV(
         e = VectorQ.randomQ(group, nrows)
         //         final Permutation piinv = pi.inv();
         //        ipe = e.permute(piinv);
-        ipe = e.invert(psi)
+        ipe = e.invert(psi) // TODO works for A, not for F
     }
 
     // does both the commit and the reply
-    fun prove(nthreads: Int): Triple<ProofOfShuffleV, ElementModQ, ReplyV> {
+    fun prove(nthreads: Int): ProofOfShuffle {
         val pos = commit(nthreads)
 
         // Generate a challenge. For the moment let it be a random value
         val challenge = group.randomElementModQ()
 
-        val reply = reply(pos, challenge)
-
-        return Triple(pos, challenge, reply)
+        return reply(pos, challenge)
     }
 
     fun proveDebug(): DebugPrivate {
@@ -91,10 +89,10 @@ class ProverV(
 
         val irnonces = rnonces.invert(psi)
 
-        return DebugPrivate(pos, challenge, reply, epsilon, phi, ipe, rnonces)
+        return DebugPrivate(reply, epsilon, phi, ipe, rnonces)
     }
 
-    fun commit(nthreads: Int): ProofOfShuffleV {
+    fun commit(nthreads: Int): ProofCommittment {
         //// pos
         //         Ap = g.exp(alpha).mul(h.expProd(epsilon));
         val genEps = prodPowP(generators, epsilon, nthreads)    // CE n exp, 1 acc
@@ -115,20 +113,7 @@ class ProverV(
         val wp_eps: VectorCiphertext = prodColumnPow(wp, epsilon, nthreads)  // CE 2 * N exp
         val Fp = enc0 * wp_eps
 
-        // data class ProofOfShuffleV(
-        //    val u: VectorP, // permutation commitment = pcommit
-        //    val d: ElementModQ, // x[n-1]
-        //    val e: VectorQ,
-        //
-        //    val B: VectorP, // Bridging commitments used to build up a product in the exponent
-        //    val Ap: ElementModP, // Proof commitment used for the bridging commitments
-        //    val Bp: VectorP, // Proof commitments for the bridging commitments
-        //    val Cp: ElementModP, // Proof commitment for proving sum of random components
-        //    val Dp: ElementModP, // Proof commitment for proving product of random components.
-        //
-        //    val Fp: VectorCiphertext, // width
-        //)
-        return ProofOfShuffleV(u, d, e, B, Ap, Bp, Cp, Dp, Fp)
+        return ProofCommittment(u, d, e, B, Ap, Bp, Cp, Dp, Fp)
     }
 
     // Compute aggregated products:
@@ -185,7 +170,7 @@ class ProverV(
         return Pair(B, Bp)
     }
 
-    fun reply(pos: ProofOfShuffleV, v: ElementModQ): ReplyV {
+    fun reply(pos: ProofCommittment, v: ElementModQ): ProofOfShuffle {
         val a: ElementModQ = r.innerProduct(ipe)
         val c: ElementModQ = r.sum() // = pr.sumQ()
         // val f = innerProductColumn(rnonces, ipe) // width
@@ -217,15 +202,7 @@ class ProverV(
         // val k_F: List<ElementModQ> = phi.mapIndexed { idx, it -> f[idx] * v + it } // width PosMultiTW
         val k_F = f.timesScalar(v) + phi
 
-        // data class ReplyV(
-        //    val k_A: ElementModQ,
-        //    val k_B: VectorQ,
-        //    val k_C: ElementModQ,
-        //    val k_D: ElementModQ,
-        //    val k_E: VectorQ,
-        //    val k_F: VectorQ, // width
-        //)
-        return ReplyV(k_A, k_B, k_C, k_D, k_E, k_EF, k_F)
+        return ProofOfShuffle(pos, v, k_A, k_B, k_C, k_D, k_E, k_EF, k_F)
     }
 
     fun innerProductColumn(matrixq: MatrixQ, exps: VectorQ): VectorQ {
@@ -237,6 +214,28 @@ class ProverV(
         return VectorQ(exps.group, result)
     }
 }
+
+data class ProofCommittment (
+    val u: VectorP, // permutation commitment = pcommit
+    val d: ElementModQ, // x[n-1]
+    val e: VectorQ,
+
+    val B: VectorP, // Bridging commitments used to build up a product in the exponent
+    val Ap: ElementModP, // Proof commitment used for the bridging commitments
+    val Bp: VectorP, // Proof commitments for the bridging commitments
+    val Cp: ElementModP, // Proof commitment for proving sum of random components
+    val Dp: ElementModP, // Proof commitment for proving product of random components.
+
+    val Fp: VectorCiphertext, // width
+)
+
+data class DebugPrivate(
+    val proof: ProofOfShuffle,
+    val epsilon: VectorQ,
+    val phi: VectorQ,
+    val ipe: VectorQ,
+    val rnonces: MatrixQ,
+)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 

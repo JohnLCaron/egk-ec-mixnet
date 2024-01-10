@@ -40,6 +40,7 @@ fun shuffle(
     return Triple(mixed, MatrixQ(rnonces), psi)
 }
 
+// debug
 fun shuffleWithInverse(
     rows: List<VectorCiphertext>,
     publicKey: ElGamalPublicKey,

@@ -9,7 +9,7 @@ import kotlinx.coroutines.sync.withLock
 import org.cryptobiotic.mixnet.core.*
 
 // these are parellel algorithms that use subarray management.
-// turns out not as efficient
+// turns out not as efficient, so not used.
 
 // parallel Prod(powP)
 class PMProdPowP(val vp: VectorP, val exp: VectorQ, val nthreads: Int = 10) {
@@ -306,13 +306,11 @@ class PMcomputeB(
 
 // parallel verify of B, with SubArrayManager. Not used.
 class PMverifyB(
-    val proof : ProofOfShuffleV,
-    val reply : ReplyV,
-    val challenge: ElementModQ,
+    val proof : ProofOfShuffle,
     val h: ElementModP,
     val nthreads: Int = 10,
 ) {
-    val group = challenge.context
+    val group = h.context
     val nrows = proof.B.nelems
     val manager = SubArrayManager(nrows, nthreads)
     var isValid = true
@@ -361,8 +359,8 @@ class PMverifyB(
         var result = true
         for (rowidx in manager.subarray(subidx)) {
             val Bminus1 = if (rowidx == 0) h else proof.B.elems[rowidx - 1]
-            val leftB = (proof.B.elems[rowidx] powP challenge) * proof.Bp.elems[rowidx]                        // CE n exp
-            val rightB = group.gPowP(reply.k_B.elems[rowidx]) * (Bminus1 powP reply.k_E.elems[rowidx])          // CE n exp, n acc
+            val leftB = (proof.B.elems[rowidx] powP proof.challenge) * proof.Bp.elems[rowidx]                        // CE n exp
+            val rightB = group.gPowP(proof.k_B.elems[rowidx]) * (Bminus1 powP proof.k_E.elems[rowidx])          // CE n exp, n acc
             result = result && (leftB == rightB)
         }
         return result
