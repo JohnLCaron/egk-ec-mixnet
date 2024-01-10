@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.multi
+package org.cryptobiotic.mixnet.vmn
 
 import electionguard.core.*
 import electionguard.util.Stats
@@ -258,7 +258,7 @@ class ShuffleProofTest {
 
         val U = "PosBasicTW"
         val seed = group.randomElementModQ()
-        val (h, generators) = getGeneratorsV(group, psi.n, U, seed) // CE 1 acc n exp
+        val (h, generators) = getGeneratorsV(group, nrows, U, seed) // CE 1 acc n exp
 
         starting = getSystemTimeInMillis()
         val prover = ProverV(   // CE n acc

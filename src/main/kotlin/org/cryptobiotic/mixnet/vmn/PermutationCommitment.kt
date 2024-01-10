@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.multi
+package org.cryptobiotic.mixnet.vmn
 
 import electionguard.core.*
 import org.cryptobiotic.mixnet.core.PermutationVmn
