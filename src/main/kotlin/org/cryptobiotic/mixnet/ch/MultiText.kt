@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.core
+package org.cryptobiotic.mixnet.ch
 
 import electionguard.core.*
 import kotlinx.coroutines.*
@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.cryptobiotic.mixnet.core.VectorQ
 
 data class MultiText(val ciphertexts: List<ElGamalCiphertext>) {
     val width = ciphertexts.size

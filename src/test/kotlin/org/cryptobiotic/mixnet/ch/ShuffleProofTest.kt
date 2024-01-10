@@ -2,7 +2,6 @@ package org.cryptobiotic.mixnet.ch
 
 import electionguard.core.*
 import electionguard.util.Stats
-import org.cryptobiotic.mixnet.core.MultiText
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertTrue

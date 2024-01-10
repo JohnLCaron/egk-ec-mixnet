@@ -204,15 +204,15 @@ class ProverV(
 
         return ProofOfShuffle(pos, v, k_A, k_B, k_C, k_D, k_E, k_EF, k_F)
     }
+}
 
-    fun innerProductColumn(matrixq: MatrixQ, exps: VectorQ): VectorQ {
-        require(exps.nelems == matrixq.nrows)
-        val result = List(matrixq.width) { col ->
-            val column = List(matrixq.nrows) { row -> matrixq.elem(row, col) }
-            VectorQ(exps.group, column).innerProduct(exps)
-        }
-        return VectorQ(exps.group, result)
+fun innerProductColumn(matrixq: MatrixQ, exps: VectorQ): VectorQ {
+    require(exps.nelems == matrixq.nrows)
+    val result = List(matrixq.width) { col ->
+        val column = List(matrixq.nrows) { row -> matrixq.elem(row, col) }
+        VectorQ(exps.group, column).innerProduct(exps)
     }
+    return VectorQ(exps.group, result)
 }
 
 data class ProofCommittment (
