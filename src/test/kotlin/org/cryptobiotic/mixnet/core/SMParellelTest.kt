@@ -170,16 +170,16 @@ class SMParellelTest {
             rnonces,
             psi,
         )
-        val (pos: ProofOfShuffleV, challenge: ElementModQ, reply: ReplyV) = prover.prove(nthreads)
+        val pos: ProofOfShuffle = prover.prove(nthreads)
 
         group.showAndClearCountPowP()
         var starting = getSystemTimeInMillis()
-        val r = PverifyB(pos, reply, challenge, h, nthreads).calc()
+        val r = PverifyB(pos, h, nthreads).calc()
         val rtime = getSystemTimeInMillis() - starting
         println("  PcomputeB: ${group.showAndClearCountPowP()}")
 
         starting = getSystemTimeInMillis()
-        val rm = PMverifyB(pos, reply, challenge, h, nthreads).calc()
+        val rm = PMverifyB(pos, h, nthreads).calc()
         val rmtime = getSystemTimeInMillis() - starting
         println("  PMcomputeB: ${group.showAndClearCountPowP()}")
 

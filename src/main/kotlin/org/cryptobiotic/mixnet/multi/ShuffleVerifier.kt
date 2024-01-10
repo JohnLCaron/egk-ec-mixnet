@@ -30,59 +30,61 @@ class VerifierV(
     // debug
     fun verifyF(dp: DebugPrivate): Boolean {
         val enc0: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, dp.phi)  // CE 2 * width acc
-        val ev1 = dp.proof.e.timesScalar(dp.v)
+        val v = dp.proof.challenge
+        val ev1 = dp.proof.e.timesScalar(v)
         val Fv1 = prodColumnPow(w, ev1, 0)
         val leftv = Fv1 * enc0 * prodColumnPow(wp, dp.epsilon) // Fp = enc0 * prodColumnPow(wp, epsilon)
         val ff = innerProductColumn(dp.rnonces, dp.ipe.elems)
-        val kF = VectorQ(group, ff).timesScalar(dp.v) + dp.phi
+        val kF = VectorQ(group, ff).timesScalar(v) + dp.phi
         val right1v = VectorCiphertext.zeroEncryptNeg(publicKey, kF) // k_F = innerProductColumn(rnonces, ipe).timesScalar(v) + phi
-        val kE = dp.ipe.timesScalar(dp.v) + dp.epsilon
+        val kE = dp.ipe.timesScalar(v) + dp.epsilon
         val right2v = prodColumnPow(wp, kE, 0) // k_E = ipe.timesScalar(v) + epsilon
         val rightv = right1v * right2v
         println("   rightv == leftv ${rightv == leftv}")
 
         //// poe
-        val ev = dp.proof.e.timesScalar(dp.v)
+        val ev = dp.proof.e.timesScalar(v)
         val Fv: VectorCiphertext = prodColumnPow(w, ev, nthreads)                            // CE 2 * N exp
         val leftF: VectorCiphertext = Fv * dp.proof.Fp
-        val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, dp.reply.k_F) // CE width * 2 acc
-        val right2: VectorCiphertext = prodColumnPow(wp, dp.reply.k_EF, nthreads)                // CE 2 * N exp
+        val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, dp.proof.k_F) // CE width * 2 acc
+        val right2: VectorCiphertext = prodColumnPow(wp, dp.proof.k_EF, nthreads)                // CE 2 * N exp
         val rightF: VectorCiphertext = right1 * right2
         val verdictF = (leftF == rightF)
         println("   leftF == rightF ${leftF == rightF}")
         return verdictF
     }
 
-    fun verify(proof: ProofOfShuffleV, reply: ReplyV, v: ElementModQ, nthreads: Int = 10): Boolean {
+    fun verify(proof: ProofOfShuffle, nthreads: Int = 10): Boolean {
+        val v = proof.challenge
         //// pos
         // A = u.expProd(e)
         val A: ElementModP = prodPowP(proof.u, proof.e, nthreads)                   // CE n exps
         // A.expMul(v, Ap).equals(g.exp(k_A).mul(h.expProd(k_E)));
         val leftA = (A powP v) * proof.Ap                                           // CE 1 exp
-        val genE = prodPowP(generators, reply.k_E, nthreads)                       // CE n exp, 1 acc
-        val rightA = group.gPowP(reply.k_A) * genE
+        val genE = prodPowP(generators, proof.k_E, nthreads)                       // CE n exp, 1 acc
+        val rightA = group.gPowP(proof.k_A) * genE
         val verdictA = (leftA == rightA)
 
-        val verdictB = if (nthreads == 0) verifyB(proof, reply, v)                  // CE 2n exp, n acc
-                       else PverifyB(proof, reply, v, h, nthreads).calc()
+        val verdictB = if (nthreads == 0) verifyB(proof, v)                  // CE 2n exp, n acc
+                       else PverifyB(proof, h, nthreads).calc()
 
         val C: ElementModP = Prod(proof.u) / Prod(generators)
         val leftC = (C powP v) * proof.Cp   // CE 1 exp
-        val rightC = group.gPowP(reply.k_C) // CE 1 acc
+        val rightC = group.gPowP(proof.k_C) // CE 1 acc
         val verdictC = (leftC == rightC)
 
         val prode = Prod(proof.e)
         val D: ElementModP = proof.B.elems[size - 1] / (h powP prode) // CE 1 exp
         val leftD = (D powP v) * proof.Dp   // CE 1 exp
-        val rightD = group.gPowP(reply.k_D) // CE 1 acc
+        val rightD = group.gPowP(proof.k_D) // CE 1 acc
         val verdictD = (leftD == rightD)
 
         //// poe
         val ev = proof.e.timesScalar(v)
         val Fv: VectorCiphertext = prodColumnPow(w, ev, nthreads)                            // CE 2 * N exp
         val leftF: VectorCiphertext = Fv * proof.Fp
-        val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, reply.k_F) // CE width * 2 acc
-        val right2: VectorCiphertext = prodColumnPow(wp, reply.k_EF, nthreads)                // CE 2 * N exp
+        val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, proof.k_F) // CE width * 2 acc
+        val right2: VectorCiphertext = prodColumnPow(wp, proof.k_EF, nthreads)                // CE 2 * N exp
         val rightF: VectorCiphertext = right1 * right2
         val verdictF = (leftF == rightF)
 
@@ -91,12 +93,12 @@ class VerifierV(
         // return verdictB && verdictC && verdictD && verdictF
     }
 
-    fun verifyB(proof: ProofOfShuffleV, reply: ReplyV, v: ElementModQ): Boolean {
+    fun verifyB(proof: ProofOfShuffle, v: ElementModQ): Boolean {
         var verdictB = true
         repeat(size) { i ->
             val Bminus1 = if (i == 0) h else proof.B.elems[i - 1]
             val leftB = (proof.B.elems[i] powP v) * proof.Bp.elems[i]                        // CE n exp
-            val rightB = group.gPowP(reply.k_B.elems[i]) * (Bminus1 powP reply.k_E.elems[i]) // CE n exp, n acc
+            val rightB = group.gPowP(proof.k_B.elems[i]) * (Bminus1 powP proof.k_E.elems[i]) // CE n exp, n acc
             verdictB = verdictB && (leftB == rightB)
         }
         return verdictB
@@ -106,13 +108,11 @@ class VerifierV(
 ////////////////////////////////////////////////////////////////////////////////////////////
 // parallel verify of B
 class PverifyB(
-    val proof : ProofOfShuffleV,
-    val reply : ReplyV,
-    val challenge: ElementModQ,
+    val proof : ProofOfShuffle,
     val h: ElementModP,
     val nthreads: Int = 10,
 ) {
-    val group = challenge.context
+    val group = h.context
     val nrows = proof.B.nelems
     var isValid = true
 
@@ -156,8 +156,8 @@ class PverifyB(
 
     fun validateB(idx: Int): Boolean {
         val Bminus1 = if (idx == 0) h else proof.B.elems[idx-1]
-        val leftB = (proof.B.elems[idx] powP challenge) * proof.Bp.elems[idx]                        // CE n exp
-        val rightB = group.gPowP(reply.k_B.elems[idx]) * (Bminus1 powP reply.k_E.elems[idx])          // CE n exp, n acc
+        val leftB = (proof.B.elems[idx] powP proof.challenge) * proof.Bp.elems[idx]                        // CE n exp
+        val rightB = group.gPowP(proof.k_B.elems[idx]) * (Bminus1 powP proof.k_E.elems[idx])          // CE n exp, n acc
         return (leftB == rightB)
     }
 }

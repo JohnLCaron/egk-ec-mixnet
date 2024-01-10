@@ -91,7 +91,7 @@ class ShuffleProofTest {
                    ballots: List<VectorCiphertext>,
                    nthreads : Int = 10,
         ) : Result {
-        var starting = getSystemTimeInMillis()
+        val starting = getSystemTimeInMillis()
         group.showAndClearCountPowP()
 
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
@@ -174,7 +174,7 @@ class ShuffleProofTest {
             // psi.invert(rnonces), // unpermuted Reencryption nonces
             psi,
             )
-        val (pos: ProofOfShuffleV, challenge: ElementModQ, reply: ReplyV) = prover.prove(nthreads)
+        val pos: ProofOfShuffle = prover.prove(nthreads)
         stats.of("proof", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  proof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
 
@@ -197,13 +197,12 @@ class ShuffleProofTest {
 
     @Test
     fun testSPV() {
-        runShuffleProofVerifyWithThreads(1000, 1)
-        /* runShuffleProofVerifyWithThreads(11, 1)
+        runShuffleProofVerifyWithThreads(11, 1)
         runShuffleProofVerifyWithThreads(1, 11)
         runShuffleProofVerifyWithThreads(3, 3)
         runShuffleProofVerifyWithThreads(6, 3)
         runShuffleProofVerifyWithThreads(6, 9)
-        runShuffleProofVerifyWithThreads(9, 6) */
+        runShuffleProofVerifyWithThreads(9, 6)
     }
 
     @Test
@@ -272,7 +271,7 @@ class ShuffleProofTest {
             rnonces, // unpermuted Reencryption nonces
             psi,
         )
-        val (pos: ProofOfShuffleV, challenge: ElementModQ, reply: ReplyV) = prover.prove(nthreads)
+        val pos: ProofOfShuffle = prover.prove(nthreads)
         val proofTime = getSystemTimeInMillis() - starting
         stats.of("proof", "text", "shuffle").accum(proofTime, N)
         if (showExps) println("  proof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
@@ -286,7 +285,7 @@ class ShuffleProofTest {
             w = ballots, // ciphertexts
             wp = mixedBallots, // permuted ciphertexts
         )
-        val valid = verifier.verify(pos, reply, challenge, nthreads)
+        val valid = verifier.verify(pos, nthreads)
         val verifyTime = getSystemTimeInMillis() - starting
         stats.of("verify", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after checkShuffleProof: ${group.showAndClearCountPowP()} ${expectCheck(nrows, width)}")
