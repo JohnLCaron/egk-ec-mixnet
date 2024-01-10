@@ -23,7 +23,7 @@ class ProverV(
     val w: List<VectorCiphertext>, //  rows (nrows x width)
     val wp: List<VectorCiphertext>, // shuffled (nrows x width)
     val rnonces: MatrixQ, // reencryption nonces (nrows x width), corresponding to wp
-    val psi: Permutation, // nrows
+    val psi: PermutationVmn, // nrows
 ) {
     /** Size of the set that is permuted. */
     val nrows: Int = w.size
@@ -46,11 +46,11 @@ class ProverV(
     val phi: VectorQ //  Randomizer for f; width
 
     init {
-        val (pcommit, pnonces) = permutationCommitmentVmnV(
+        val (pcommit, pnonces) = permutationCommitmentVmnVorg(
             group,
             psi,
             generators
-        ) // TODO can we use permutationCommitment()?
+        )
         this.u = pcommit
         this.r = pnonces
 
@@ -61,9 +61,12 @@ class ProverV(
         epsilon = VectorQ.randomQ(group, nrows)
         phi = VectorQ.randomQ(group, width)
         b = VectorQ.randomQ(group, nrows)
-        e = VectorQ.randomQ(group, nrows)
 
-        this.ipe = e.permute(psi)
+        // TODO replace this with deterministic prg
+        e = VectorQ.randomQ(group, nrows)
+        //         final Permutation piinv = pi.inv();
+        //        ipe = e.permute(piinv);
+        ipe = e.invert(psi)
     }
 
     // does both the commit and the reply
@@ -78,8 +81,22 @@ class ProverV(
         return Triple(pos, challenge, reply)
     }
 
+    fun proveDebug(): DebugPrivate {
+        val pos = commit(0)
+
+        // Generate a challenge. For the moment let it be a random value
+        val challenge = group.randomElementModQ()
+
+        val reply = reply(pos, challenge)
+
+        val irnonces = rnonces.invert(psi)
+
+        return DebugPrivate(pos, challenge, reply, epsilon, phi, ipe, rnonces)
+    }
+
     fun commit(nthreads: Int): ProofOfShuffleV {
         //// pos
+        //         Ap = g.exp(alpha).mul(h.expProd(epsilon));
         val genEps = prodPowP(generators, epsilon, nthreads)    // CE n exp, 1 acc
         val Ap = group.gPowP(alpha) * genEps  // CE 1 acc
 
@@ -90,14 +107,27 @@ class ProverV(
                          else PcomputeB(x, y, h, beta, epsilon, nthreads).calc()
 
         val Cp = group.gPowP(gamma) // CE 1 acc
-
         val Dp = group.gPowP(delta) // CE 1 acc
 
         //// poe
+        //        Fp = pkey.exp(phi.neg()).mul(wp.expProd(epsilon));
         val enc0: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, phi)  // CE 2 * width acc
         val wp_eps: VectorCiphertext = prodColumnPow(wp, epsilon, nthreads)  // CE 2 * N exp
         val Fp = enc0 * wp_eps
 
+        // data class ProofOfShuffleV(
+        //    val u: VectorP, // permutation commitment = pcommit
+        //    val d: ElementModQ, // x[n-1]
+        //    val e: VectorQ,
+        //
+        //    val B: VectorP, // Bridging commitments used to build up a product in the exponent
+        //    val Ap: ElementModP, // Proof commitment used for the bridging commitments
+        //    val Bp: VectorP, // Proof commitments for the bridging commitments
+        //    val Cp: ElementModP, // Proof commitment for proving sum of random components
+        //    val Dp: ElementModP, // Proof commitment for proving product of random components.
+        //
+        //    val Fp: VectorCiphertext, // width
+        //)
         return ProofOfShuffleV(u, d, e, B, Ap, Bp, Cp, Dp, Fp)
     }
 
@@ -156,13 +186,11 @@ class ProverV(
     }
 
     fun reply(pos: ProofOfShuffleV, v: ElementModQ): ReplyV {
-        // Initialize the special exponents.
-        //        final PRingElement a = r.innerProduct(ipe); TODO CHANGED to  innerProduct(r, e)
-        //        final PRingElement c = r.sum();
-        //        final PRingElement f = s.innerProduct(e); TODO CHANGED to  innerProduct(s, ipe), s == rnonces
-        val a: ElementModQ = r.innerProduct(e)
+        val a: ElementModQ = r.innerProduct(ipe)
         val c: ElementModQ = r.sum() // = pr.sumQ()
-        val f = innerProductColumn(rnonces, ipe) // width
+        // val f = innerProductColumn(rnonces, ipe) // width
+        val pe = e.permute(psi)
+        val f = innerProductColumn(rnonces, pe) // TODO CHANGED innerProduct(s, e) to innerProduct(s, pe), s == rnonces. Possibly rnonces has been permuted differently?
         val d = pos.d
 
         // Compute the replies as:
@@ -183,19 +211,27 @@ class ProverV(
         val k_C = c * v + gamma
         val k_D = d * v + delta
         val k_E = ipe.timesScalar(v) + epsilon
-        val k_EA = e.timesScalar(v) + epsilon // TODO changed to e for Ap to work
+        val k_EF = pe.timesScalar(v) + epsilon // TODO using pe.timesScalar(v) instead of ipe.timesScalar(v) + epsilon
 
         // val k_F: ElementModQ = f * v + phi // PosBasicTW
         // val k_F: List<ElementModQ> = phi.mapIndexed { idx, it -> f[idx] * v + it } // width PosMultiTW
         val k_F = f.timesScalar(v) + phi
 
-        return ReplyV(k_A, k_B, k_C, k_D, k_EA, k_E, k_F)
+        // data class ReplyV(
+        //    val k_A: ElementModQ,
+        //    val k_B: VectorQ,
+        //    val k_C: ElementModQ,
+        //    val k_D: ElementModQ,
+        //    val k_E: VectorQ,
+        //    val k_F: VectorQ, // width
+        //)
+        return ReplyV(k_A, k_B, k_C, k_D, k_E, k_EF, k_F)
     }
 
     fun innerProductColumn(matrixq: MatrixQ, exps: VectorQ): VectorQ {
         require(exps.nelems == matrixq.nrows)
         val result = List(matrixq.width) { col ->
-            val column = List(matrixq.nrows) { row -> matrixq.elems[row].elems[col] }
+            val column = List(matrixq.nrows) { row -> matrixq.elem(row, col) }
             VectorQ(exps.group, column).innerProduct(exps)
         }
         return VectorQ(exps.group, result)

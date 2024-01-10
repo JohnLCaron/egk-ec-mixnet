@@ -46,10 +46,12 @@ data class Permutation(private val psi: IntArray) {
     }
 }
 
+
 data class PermutationMatrix( val elems: List<IntArray> ) {
     val n = elems.size
 
     // right multiply by a column vector
+    // psi(x) = B * x
     fun rmultiply(colv: List<Int>) : List<Int> {
         val result = elems.map{ row ->
             var sum = 0
@@ -59,12 +61,70 @@ data class PermutationMatrix( val elems: List<IntArray> ) {
         return result
     }
 
+    fun column(col : Int) : List<Int> {
+        return elems.map{ it[col] }
+    }
+
     override fun toString(): String {
         return buildString {
             elems.forEach { append("${it.contentToString()}\n")
             }
         }
     }
+}
 
+// port from vmn code, for testing
+data class VmnPermutation(private val table: IntArray) {
+    val n = table.size
 
+    fun <T> applyPermutation(
+        array: List<T>,
+        permutedArray: MutableList<T>
+    ) {
+        for (i in array.indices) {
+            permutedArray[table[i]] = array[i]
+        }
+    }
+
+    fun inverse(): VmnPermutation {
+        val invtable = IntArray(n)
+        for (i in table.indices) {
+            invtable[table[i]] = i
+        }
+        return VmnPermutation(invtable)
+    }
+
+    companion object {
+        fun random(n: Int) : VmnPermutation {
+            val result = MutableList(n) { it }
+            result.shuffle(SecureRandom.getInstanceStrong())
+            return VmnPermutation(result.toIntArray())
+        }
+    }
+}
+
+// matches VmnPermutation
+data class PermutationVmn(private val inverse: IntArray) {
+    val n = inverse.size
+    private val table: IntArray
+    init {
+        table = IntArray(n)
+        for (idx in inverse) {
+            table[inverse[idx]] = idx
+        }
+    }
+
+    fun inv(idx:Int) = inverse[idx]
+    fun of(jdx:Int) = table[jdx]
+
+    fun <T> invert(list: List<T>): List<T> = List(list.size) { idx -> list[inverse[idx]] }
+    fun <T> permute(list: List<T>): List<T> = List(list.size) { idx -> list[table[idx]] }
+
+    companion object {
+        fun random(n: Int) : PermutationVmn {
+            val result = MutableList(n) { it }
+            result.shuffle(SecureRandom.getInstanceStrong())
+            return PermutationVmn(result.toIntArray())
+        }
+    }
 }

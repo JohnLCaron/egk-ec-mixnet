@@ -6,17 +6,25 @@ data class MatrixQ(val elems: List<VectorQ> ) {
     val nrows = elems.size
     val width = elems[0].nelems
 
-    constructor(group: GroupContext, llist: List<List<ElementModQ>>): this(llist.map{VectorQ(group, it)})
+    fun elem(row: Int, col: Int) = elems[row].elems[col]
+
+    constructor(group: GroupContext, llist: List<List<ElementModQ>>): this(llist.map{ VectorQ(group, it) })
 
     // right multiply
     fun rmultiply(colv: VectorQ) : List<ElementModQ> {
         require(colv.nelems == width)
         return elems.map{ row -> row.innerProduct(colv) }
     }
+
+    fun permute(psi: PermutationVmn) = MatrixQ(psi.permute(elems))
+    fun invert(psi: PermutationVmn) = MatrixQ(psi.invert(elems))
 }
 
 data class VectorQ(val group: GroupContext, val elems: List<ElementModQ> ) {
     val nelems = elems.size
+
+    fun permute(psi: PermutationVmn) = VectorQ(group, psi.permute(elems))
+    fun invert(psi: PermutationVmn) = VectorQ(group, psi.invert(elems))
 
     fun permute(psi: Permutation) = VectorQ(group, psi.permute(elems))
     fun invert(psi: Permutation) = VectorQ(group, psi.invert(elems))

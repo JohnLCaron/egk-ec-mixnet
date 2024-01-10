@@ -7,6 +7,7 @@ import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.cryptobiotic.mixnet.core.*
+import org.cryptobiotic.mixnet.vmn.innerProductColumn
 
 /**
  * Verifies the TW proof of shuffle.
@@ -26,11 +27,39 @@ class VerifierV(
 ) {
     val size = w.size
 
+    // debug
+    fun verifyF(dp: DebugPrivate): Boolean {
+        val enc0: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, dp.phi)  // CE 2 * width acc
+        val ev1 = dp.proof.e.timesScalar(dp.v)
+        val Fv1 = prodColumnPow(w, ev1, 0)
+        val leftv = Fv1 * enc0 * prodColumnPow(wp, dp.epsilon) // Fp = enc0 * prodColumnPow(wp, epsilon)
+        val ff = innerProductColumn(dp.rnonces, dp.ipe.elems)
+        val kF = VectorQ(group, ff).timesScalar(dp.v) + dp.phi
+        val right1v = VectorCiphertext.zeroEncryptNeg(publicKey, kF) // k_F = innerProductColumn(rnonces, ipe).timesScalar(v) + phi
+        val kE = dp.ipe.timesScalar(dp.v) + dp.epsilon
+        val right2v = prodColumnPow(wp, kE, 0) // k_E = ipe.timesScalar(v) + epsilon
+        val rightv = right1v * right2v
+        println("   rightv == leftv ${rightv == leftv}")
+
+        //// poe
+        val ev = dp.proof.e.timesScalar(dp.v)
+        val Fv: VectorCiphertext = prodColumnPow(w, ev, nthreads)                            // CE 2 * N exp
+        val leftF: VectorCiphertext = Fv * dp.proof.Fp
+        val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, dp.reply.k_F) // CE width * 2 acc
+        val right2: VectorCiphertext = prodColumnPow(wp, dp.reply.k_EF, nthreads)                // CE 2 * N exp
+        val rightF: VectorCiphertext = right1 * right2
+        val verdictF = (leftF == rightF)
+        println("   leftF == rightF ${leftF == rightF}")
+        return verdictF
+    }
+
     fun verify(proof: ProofOfShuffleV, reply: ReplyV, v: ElementModQ, nthreads: Int = 10): Boolean {
         //// pos
+        // A = u.expProd(e)
         val A: ElementModP = prodPowP(proof.u, proof.e, nthreads)                   // CE n exps
+        // A.expMul(v, Ap).equals(g.exp(k_A).mul(h.expProd(k_E)));
         val leftA = (A powP v) * proof.Ap                                           // CE 1 exp
-        val genE = prodPowP(generators, reply.k_EA, nthreads)                       // CE n exp, 1 acc
+        val genE = prodPowP(generators, reply.k_E, nthreads)                       // CE n exp, 1 acc
         val rightA = group.gPowP(reply.k_A) * genE
         val verdictA = (leftA == rightA)
 
@@ -53,11 +82,13 @@ class VerifierV(
         val Fv: VectorCiphertext = prodColumnPow(w, ev, nthreads)                            // CE 2 * N exp
         val leftF: VectorCiphertext = Fv * proof.Fp
         val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, reply.k_F) // CE width * 2 acc
-        val right2: VectorCiphertext = prodColumnPow(wp, reply.k_E, nthreads)                // CE 2 * N exp
+        val right2: VectorCiphertext = prodColumnPow(wp, reply.k_EF, nthreads)                // CE 2 * N exp
         val rightF: VectorCiphertext = right1 * right2
         val verdictF = (leftF == rightF)
 
+        println("$verdictA && $verdictB && $verdictC && $verdictD && $verdictF")
         return verdictA && verdictB && verdictC && verdictD && verdictF
+        // return verdictB && verdictC && verdictD && verdictF
     }
 
     fun verifyB(proof: ProofOfShuffleV, reply: ReplyV, v: ElementModQ): Boolean {

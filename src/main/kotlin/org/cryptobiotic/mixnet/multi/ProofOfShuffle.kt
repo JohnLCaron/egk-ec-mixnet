@@ -2,9 +2,7 @@ package org.cryptobiotic.mixnet.multi
 
 import electionguard.core.ElementModP
 import electionguard.core.ElementModQ
-import org.cryptobiotic.mixnet.core.VectorCiphertext
-import org.cryptobiotic.mixnet.core.VectorP
-import org.cryptobiotic.mixnet.core.VectorQ
+import org.cryptobiotic.mixnet.core.*
 
 // τ^pos = Commitment of the Fiat-Shamir proof.
 data class ProofOfShuffleV(
@@ -27,7 +25,17 @@ data class ReplyV(
     val k_B: VectorQ,
     val k_C: ElementModQ,
     val k_D: ElementModQ,
-    val k_EA: VectorQ,
     val k_E: VectorQ,
+    val k_EF: VectorQ, // width
     val k_F: VectorQ, // width
+)
+
+data class DebugPrivate(
+    val proof: ProofOfShuffleV,
+    val v: ElementModQ,
+    val reply: ReplyV,
+    val epsilon: VectorQ,
+    val phi: VectorQ,
+    val ipe: VectorQ,
+    val rnonces: MatrixQ,
 )

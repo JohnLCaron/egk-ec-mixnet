@@ -10,6 +10,9 @@ import kotlinx.coroutines.sync.withLock
 data class VectorP(val group: GroupContext, val elems: List<ElementModP> ) {
     val nelems = elems.size
 
+    fun permute(psi: Permutation) = VectorP(group, psi.permute(elems))
+    fun invert(psi: Permutation) = VectorP(group, psi.invert(elems))
+
     operator fun times(other: VectorP): VectorP {
         require (nelems == other.nelems)
         return VectorP(group,  List( nelems) { elems[it] * other.elems[it] })
@@ -40,6 +43,13 @@ data class VectorP(val group: GroupContext, val elems: List<ElementModP> ) {
 
     fun shiftPush(elem0: ElementModP): VectorP {
         return VectorP(group, List (this.nelems) { if (it == 0) elem0 else this.elems[it - 1] })
+    }
+
+    fun show() = buildString {
+        elems.forEach {
+            append( it.toStringShort())
+            append(", ")
+        }
     }
 
 }

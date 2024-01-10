@@ -14,7 +14,7 @@ import org.cryptobiotic.mixnet.core.*
  * Operation count is 2 * nrows * width accelerated exponentiations = "2N acc".
  */
 fun shuffle(rows: List<VectorCiphertext>, publicKey: ElGamalPublicKey, nthreads: Int = 10):
-        Triple<List<VectorCiphertext>, MatrixQ, Permutation> {
+        Triple<List<VectorCiphertext>, MatrixQ, PermutationVmn> {
     return if (nthreads == 0) {
         shuffle(rows, publicKey)
     } else {
@@ -25,14 +25,32 @@ fun shuffle(rows: List<VectorCiphertext>, publicKey: ElGamalPublicKey, nthreads:
 fun shuffle(
     rows: List<VectorCiphertext>,
     publicKey: ElGamalPublicKey,
-): Triple<List<VectorCiphertext>, MatrixQ, Permutation> {
+): Triple<List<VectorCiphertext>, MatrixQ, PermutationVmn> {
 
     val mixed = mutableListOf<VectorCiphertext>()
     val rnonces = mutableListOf<VectorQ>()
 
-    val psi = Permutation.random(rows.size)
+    val psi = PermutationVmn.random(rows.size)
     repeat(rows.size) { jdx ->
         val idx = psi.of(jdx) //  pe[jdx] = e[ps.of(jdx)]; you have an element in pe, and need to get the corresponding element from e
+        val (reencrypt, nonceV) = rows[idx].reencrypt(publicKey)
+        mixed.add(reencrypt)
+        rnonces.add(nonceV)
+    }
+    return Triple(mixed, MatrixQ(rnonces), psi)
+}
+
+fun shuffleWithInverse(
+    rows: List<VectorCiphertext>,
+    publicKey: ElGamalPublicKey,
+): Triple<List<VectorCiphertext>, MatrixQ, PermutationVmn> {
+
+    val mixed = mutableListOf<VectorCiphertext>()
+    val rnonces = mutableListOf<VectorQ>()
+
+    val psi = PermutationVmn.random(rows.size)
+    repeat(rows.size) { jdx ->
+        val idx = psi.inv(jdx) //  pe[jdx] = e[ps.of(jdx)]; you have an element in pe, and need to get the corresponding element from e
         val (reencrypt, nonceV) = rows[idx].reencrypt(publicKey)
         mixed.add(reencrypt)
         rnonces.add(nonceV)
@@ -46,9 +64,9 @@ class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey
     val n = rows.size
     var mixed = MutableList(n) { VectorCiphertext.empty(group) }
     var rnonces = MutableList(n) { VectorQ.empty(group) }
-    val psi = Permutation.random(n)
+    val psi = PermutationVmn.random(n)
 
-    fun shuffle(): Triple<List<VectorCiphertext>, MatrixQ, Permutation> {
+    fun shuffle(): Triple<List<VectorCiphertext>, MatrixQ, PermutationVmn> {
         runBlocking {
             val jobs = mutableListOf<Job>()
             val pairProducer = producer(rows, psi)
@@ -62,7 +80,7 @@ class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey
         return Triple(mixed, MatrixQ(rnonces), psi)
     }
 
-    private fun CoroutineScope.producer(rows: List<VectorCiphertext>, psi: Permutation): ReceiveChannel<Pair<VectorCiphertext, Int>> =
+    private fun CoroutineScope.producer(rows: List<VectorCiphertext>, psi: PermutationVmn): ReceiveChannel<Pair<VectorCiphertext, Int>> =
         produce {
             rows.forEachIndexed { idx, row ->
                 send(Pair(row, psi.inv(idx)))
