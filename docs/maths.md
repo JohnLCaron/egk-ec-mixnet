@@ -4,9 +4,9 @@ Preliminary explorations of mixnet implementations to be used with the ElectionG
 
 We use the ElectionGuard Kotlin library [7] for all the cryptography primitives. This library closely follows the ElectionGuard 2.0 specification [1].
 
-Some of the prototype code in egk-mixlib is a port of code found in the OpenCHVote repository [8], and the appropriate license has been added. Please use any of this work in any way consistent with that.
+The math here mostly recapitulates the work of Wikström [6]; Haenni et. al. [2], [3] in explaining the Terelius / Wikström (TW) mixnet algorithm [4], [5]; and the work of Haines [9] that gives a formal proof of security of TW when the shuffle involves vectors of ciphertexts.
 
-The math here mostly recapitulates the work of Haenni et. al. [2], [3] in explaining the Terelius / Wikström (TW) mixnet algorithm [4], [5], and the work of Haines [9] that gives a formal proof of security of TW when the shuffle involves vectors of ciphertexts.
+Instead of psuedocode, the kotlin code acts as the implementation of the math described here. It can act as a reference and comparison for ports to other languages.
 
 Ive tried to avoid notation that is hard to read, preferring for example, multiple character symbols like $pr$ instead of  r̃ or r̂ , since the glyphs can get too small to read when they are used in exponents or subscripts, and can be hard to replicate in places other than high quality Tex or PDF renderers.
 
@@ -16,7 +16,7 @@ Ive tried to avoid notation that is hard to read, preferring for example, multip
 
 ### Definitions
 
-#### 1. The ElectionGuard Group
+#### The ElectionGuard Group
 
 - $ \Z = \{. . . , −3, −2, −1, 0, 1, 2, 3, . . . \} $ is the set of integers.
 
@@ -29,7 +29,7 @@ We use the ElectionGuard Kotlin library [7] and ElectionGuard 2.0 specification 
 
 
 
-#### 2. Permutations
+#### Permutations
 
 A *permutation* is a bijective map $\psi: {1..N} \to {1..N}$. We use **px** to mean the permutation of a vector **x**, **px** = $\psi(\textbf x)$, so that $x_i$ = $px_j$, where $i={\psi(j)}$ and $j={\psi^{-1}(i)}$.   $x_i = px_{\psi^{-1}(i)}$,   $px_j = x_{\psi(j)}$, 
 
@@ -45,7 +45,7 @@ $$
 
 
 
-####  4. ElGamal Encryption and Reencryption
+####  ElGamal Encryption and Reencryption
 
 $$
 \begin{align}
@@ -284,13 +284,19 @@ $$
 
 
 
+#### issues
+
+**Calculation of   $\vec h$ (generators) , $\vec e$ and the challenge nonces** are highly dependent on the VMN implementation. The verifier is expected to independently generate, ie they are not part of the ProofOfShuffle output).
+
+**generators** may need to be carefully chosen, see section 6.8 of vmnv: "In particular, it is not acceptable to derive exponents x1 , . . . , xN in Zq and then define hi = g^xi"
+
 
 
 ### ChVote
 
 This follows Haenni et. al. [2], which has a good explanation of TW, sans vectors.
 
-#### 3. Pedersen Commitments
+#### Pedersen Commitments
 
 For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Extended Pedersen committment* to $\textbf m$ is
 $$
@@ -316,7 +322,7 @@ $$
 
 
 
-#### 1. Proof of permutation
+#### Proof of permutation
 
 Let **c** = $Commit(\psi, \textbf r)$ = $(c_1, c_2, .. c_N)$, with randomization vector **cr** = $(cr_1, cr_2, .. cr_N)$, and $crbar = \sum_{i=1}^n cr_i$. 
 
@@ -340,7 +346,7 @@ Which constitutes proof that condition 1 and 2 are true, so that c is a commitme
 
 
 
-#### 2. Proof of equal exponents
+#### Proof of equal exponents
 
 Let $\textbf m$ be a vector of messages, $\textbf e$ their encryptions **e** = Encr($\textbf m$), and **re(e, r)** their reenryptions with nonces **r**.  A shuffle operation both reencrypts and permutes, so $shuffle(\textbf{e}, \textbf{r}) \to (\textbf{pre}, \textbf{pr})$, where **pre** is the permutation of **re ** by $\psi$, and **pr** the permutation of **r ** by $\psi$.
 $$
@@ -429,7 +435,7 @@ $$
 $$
 ​	Here we just flatten the list of lists of ciphertexts for $\textbf e, \textbf {pe}$, so that all are included in the hash. Since the hash is dependent on the ordering of the hash elements, this should preclude an attack that switches ciphertexts within a row.
 
-#### Verificatum
+
 
 ####  Haines Proof of vector shuffling
 
@@ -480,7 +486,7 @@ $$
 \textbf t_4 = \{ Rencr( \prod_i^n \textbf {pe}_{i,k}^{\textbf ω^\prime_i}, − \textbf {ω}_4 ) \}, k = 1.. width
 $$
 
-(quite a bit more complicated than "our simplest thing to do" above)
+#### (quite a bit more complicated than "our simplest thing to do" above)
 
 
 
@@ -498,66 +504,61 @@ $$
 
 ### Timings (preliminary)
 
-#### 1. Operation counts
+Environment used for testing: 
+* Ubuntu 22.04.3
+* HP Z840 Workstation, Intel Xeon CPU E5-2680 v3 @ 2.50GHz
+* 24-cores, two threads per core. 
+
+
+
+**Regular vs accelerated exponentiation time**
+
+Regular exponentiation is about 3 times slower after the acceleration cache warms up:
+
+```
+acc took 15288 msec for 20000 = 0.7644 msec per acc
+exp took 46018 msec for 20000 = 2.3009 msec per exp
+exp/acc = 3.01007326007326
+```
+
+
+
+#### VMN
+
+See [Vmn spreadsheets](https://docs.google.com/spreadsheets/d/1Sny1xXxU9vjPnqo2K1QPeBHQwPVWhJOHdlXocMimt88/edit?usp=sharing) for graphs of results (work in progress).
+
+**Operation counts**
 
 - *n* = number of rows, eg ballots or contests
 - *width* = number of ciphertexts per row
 - *N* = nrows * width = total number of ciphertexts to be mixed
-
-**multi**
 
 |                  | shuffle | proof of shuffle      | proof of exp | verify          |
 | ---------------- | ------- | --------------------- | ------------ | --------------- |
 | regular exps     | 0       | 4 * n                 | 2 * N        | 4*N + 4 * n + 4 |
 | accelerated exps | 2 * N   | 3 * n + 2 * width + 4 | 0            | n + 2*width + 3 |
 
-Even though N dominates, width is bound but nrows can get arbitrarily big. Could parallelize over the rows also. 
+Even though N dominates, width is bound but nrows can get arbitrarily big. 
 
-Could break into batches of 100 ballots each and do each batch in parallel. The advantage here is that there would be complete parallelization.
-
-- exp is about 3 times slower after the acceleration cache warms up:
-
-```
-acc took 15288 msec for 20000 = 0.7644 msec per acc
-exp took 46018 msec for 20000 = 2.3009 msec per exp
-exp/acc took 3.01007326007326
-```
+Could break into batches of 100-1000 ballots each and do each batch in parallel. The advantage here is that there would be complete parallelization.
 
 
 
 
 
-#### 2. wallclock times (vmn/ch)
+#### OpenChVote
 
-```
-shuffle: took 5967 msecs = 1.755 msecs/text (3400 texts)
-  proof: took 19248 msecs = 5.661 msecs/text (3400 texts)
- verify: took 34751 msecs = 10.22 msecs/text (3400 texts)
-  total: took 59966 msecs = 17.63 msecs/text (3400 texts)
-```
+**operations count**
 
-```
-shuffle
-nrows=100, width= 100 per row, N=10000, nthreads=32/16/8/4/2/1
-took 1882 msecs = .1882 msecs/text (10000 texts) = 1882.0 msecs/shuffle for 1 shuffles
-took 1880 msecs = .188 msecs/text (10000 texts) = 1880.0 msecs/shuffle for 1 shuffles
-took 2550 msecs = .255 msecs/text (10000 texts) = 2550.0 msecs/shuffle for 1 shuffles
-took 4624 msecs = .4624 msecs/text (10000 texts) = 4624.0 msecs/shuffle for 1 shuffles
-took 8713 msecs = .8713 msecs/text (10000 texts) = 8713.0 msecs/shuffle for 1 shuffles
-took 16446 msecs = 1.644 msecs/text (10000 texts) = 16446 msecs/shuffle for 1 shuffles
-```
+|                  | shuffle | proof       | verify          |
+| ---------------- | ------- | ----------- | --------------- |
+| regular exps     | 0       | 2*N + 5*n   | 4*N + 4*n + 6   |
+| accelerated exps | 2 * N   | 2*N + 3*n   | 8               |
 
-```
-shuffle
-nrows=100, width= 100 per row, N=10000, nthreads=32/24/16/8/4/2/1
-took 1884 msecs = .1884 msecs/text (10000 texts) = 1884.0 msecs/shuffle for 1 shuffles
-took 1853 msecs = .1853 msecs/text (10000 texts) = 1853.0 msecs/shuffle for 1 shuffles
-took 1832 msecs = .1832 msecs/text (10000 texts) = 1832.0 msecs/shuffle for 1 shuffles
-took 2564 msecs = .2564 msecs/text (10000 texts) = 2564.0 msecs/shuffle for 1 shuffles
-took 4555 msecs = .4555 msecs/text (10000 texts) = 4555.0 msecs/shuffle for 1 shuffles
-took 8844 msecs = .8844 msecs/text (10000 texts) = 8844.0 msecs/shuffle for 1 shuffles
-took 17188 msecs = 1.718 msecs/text (10000 texts) = 17188 msecs/shuffle for 1 shuffles
-```
+
+
+**wallclock time vs verificatum**
+
 nrows = 1000, width = 34, N=3400
 
 ```
@@ -577,17 +578,6 @@ proof: took 12944 msecs
 verify: took 27983 msecs
 total: took 46438 msecs
 ```
-
-#### 3. wallclock times (vmn/ch)
-
-**ChVote**
-
-|                  | shuffle | proof       | verify          |
-| ---------------- | ------- | ----------- | --------------- |
-| regular exps     | 0       | 2*N + 5*n   | 4*N + 4*n + 6   |
-| accelerated exps | 2 * N   | 2*N + 3*n   | 8               |
-
-
 nrows = 100, width = 34, N=3400
 
 ```
@@ -628,25 +618,7 @@ Also note LargeInteger.magic that allows use of VMGJ.
 
 Vmn in pure Java mode, using BigInteger. TODO: Find out how much speedup using VMGJ gets.
 
-SO why doesnt same speedup alply to proof?
-
-
-
-**Parallelize egk-mixnet**
-
-After parallelizing all sections of egk-mixnet that are O(N)  (time is in msecs):
-
-| N    | shuffle1 | proof1 | verify1 | shuffle2 | proof2 | verify2 | total  |
-| ---- | -------- | ------ | ------- | -------- | ------ | ------- | ------ |
-| 1    | 5490     | 17315  | 33348   | 5501     | 17260  | 33277   | 118576 |
-| 2    | 2872     | 9756   | 17932   | 2928     | 9725   | 17804   | 67640  |
-| 4    | 1625     | 5746   | 10192   | 1546     | 5869   | 10282   | 41948  |
-| 8    | 883      | 3774   | 6300    | 862      | 3867   | 6264    | 28592  |
-| 16   | 693      | 2951   | 3993    | 659      | 2615   | 4119    | 22143  |
-
-Could parallelize over the rows also. 
-
-Could break into batches of 100 ballots each and do each batch in parallel. The advantage here is that there would be complete parallelization.
+SO why doesnt same speedup apply to proof?
 
 
 
