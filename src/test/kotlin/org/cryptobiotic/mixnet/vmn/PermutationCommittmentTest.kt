@@ -11,7 +11,7 @@ class PermutationCommittmentTest {
     fun testOrg() {
         val n = 7
         val psi = Permutation.random(n)
-        val (h0, h) = getGeneratorsV(group, n, "testPermutationCommittment")
+        val (h0, h) = getGeneratorsVmn(group, n, "testPermutationCommittment")
         val pn = List(n) { group.randomElementModQ() }
         val uorg: VectorP = commitVmnVorg(group, psi, h, pn)
         println("  uorg = ${uorg.show()}")
@@ -40,7 +40,7 @@ class PermutationCommittmentTest {
     fun testCompareOrg() {
         val n = 3
         val psi = Permutation(intArrayOf(2, 1, 0))
-        val (h0, h) = getGeneratorsV(group, n, "testPermutationCommittment")
+        val (h0, h) = getGeneratorsVmn(group, n, "testPermutationCommittment")
         val pn = List(n) { group.randomElementModQ() }
         val u = commitNvmn(group, psi, h, pn)
         val uorg = commitVmnVorg(group, psi, h, pn)
@@ -55,7 +55,7 @@ class PermutationCommittmentTest {
         val psi = Permutation(intArrayOf(2, 1, 0))
         val matrix = psi.makePermutationMatrix()
         val pn = List(n) { group.randomElementModQ() }
-        val (h0, h) = getGeneratorsV(group, n, "testPermutationCommittment")
+        val (h0, h) = getGeneratorsVmn(group, n, "testPermutationCommittment")
 
         val cm = List(n) {
             val col = matrix.column(it)
@@ -75,7 +75,7 @@ class PermutationCommittmentTest {
     fun testPermutationCommittment() {
         val n = 3
         val psi = Permutation(intArrayOf(2, 1, 0))
-        val (h0, h) = getGeneratorsV(group, n, "testPermutationCommittment")
+        val (h0, h) = getGeneratorsVmn(group, n, "testPermutationCommittment")
         val pn = List(n) { group.randomElementModQ() }
         val u = commitN(group, psi, h, pn)
         val uv = commitNvmn(group, psi, h, pn)

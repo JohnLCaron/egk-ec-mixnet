@@ -103,7 +103,28 @@ data class VmnPermutation(private val table: IntArray) {
     }
 }
 
-// matches VmnPermutation
+//////////////////////////////////////////////////////////////
+// move to vmn
+
+//     public void applyPermutation(final Object[] array,
+//                                 final Object[] permutedArray) {
+//        final LargeInteger[] integers = table.integers();
+//        for (int i = 0; i < array.length; i++) {
+//            permutedArray[integers[i].intValue()] = array[i];
+//        }
+//    }
+
+//     public Permutation inv() {
+//        final LargeInteger[] invtable = new LargeInteger[table.size()];
+//        final LargeInteger[] orig = table.integers();
+//
+//        for (int i = 0; i < orig.length; i++) {
+//            invtable[orig[i].intValue()] = new LargeInteger(i);
+//        }
+//        return new PermutationIM(new LargeIntegerArrayIM(invtable));
+//    }
+
+// matches Vmn PermutationIM
 data class PermutationVmn(private val inverse: IntArray) {
     val n = inverse.size
     private val table: IntArray

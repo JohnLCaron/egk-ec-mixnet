@@ -160,13 +160,13 @@ class ShuffleProofTest {
 
         val U = "PosBasicTW"
         val seed = group.randomElementModQ()
-        val (h, generators) = getGeneratorsV(group, psi.n, U, seed) // CE 1 acc n exp
+        val (h, generators) = getGeneratorsVmn(group, psi.n, U, seed) // CE 1 acc n exp
 
         starting = getSystemTimeInMillis()
         val prover = ProverV(   // CE n acc
             group,
             keypair.publicKey,
-            h,
+            generators.elems[0],
             generators, // generators
             ballots, // ciphertexts
             mixedBallots, // permuted ciphertexts
@@ -258,13 +258,13 @@ class ShuffleProofTest {
 
         val U = "PosBasicTW"
         val seed = group.randomElementModQ()
-        val (h, generators) = getGeneratorsV(group, nrows, U, seed) // CE 1 acc n exp
+        val (h, generators) = getGeneratorsVmn(group, nrows, U, seed) // CE 1 acc n exp
 
         starting = getSystemTimeInMillis()
         val prover = ProverV(   // CE n acc
             group,
             keypair.publicKey,
-            h,
+            generators.elems[0],
             generators, // generators
             w = ballots, // ciphertexts
             wp = mixedBallots, // permuted ciphertexts
@@ -280,7 +280,7 @@ class ShuffleProofTest {
         val verifier = VerifierV(
             group,
             keypair.publicKey,
-            h,
+            generators.elems[0],
             generators, // generators
             w = ballots, // ciphertexts
             wp = mixedBallots, // permuted ciphertexts
@@ -314,7 +314,7 @@ class ShuffleProofTest {
 
         val U = "PosBasicTW"
         val seed = group.randomElementModQ()
-        val (h, generators) = getGeneratorsV(group, psi.n, U, seed) // CE 1 acc n exp
+        val (h, generators) = getGeneratorsVmn(group, psi.n, U, seed) // CE 1 acc n exp
 
         val prover = ProverV(   // CE n acc
             group,
