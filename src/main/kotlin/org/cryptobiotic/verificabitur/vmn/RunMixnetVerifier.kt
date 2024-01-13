@@ -132,15 +132,15 @@ class MyVerifier(
         val verifier = VerifierV(
             group,
             mpk.publicKey(),
-            h.elems[0],
             h, // generators
+            e,
+            challenge,
             w = ballots, // ciphertexts
             wp = mixedBallots, // permuted ciphertexts
         )
 
         val proof = ProofOfShuffle(
-            e,
-            challenge,
+            "RunMixnetVerifier",
             VectorP(group, pcommit.commitments),
             VectorP(group, pos.B),
             pos.Ap,

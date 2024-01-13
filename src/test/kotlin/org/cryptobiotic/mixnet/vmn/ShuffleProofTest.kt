@@ -158,23 +158,16 @@ class ShuffleProofTest {
         stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
 
-        val U = "PosBasicTW"
-        val seed = group.randomElementModQ()
-        val (h, generators) = getGeneratorsVmn(group, psi.n, U, seed) // CE 1 acc n exp
-
         starting = getSystemTimeInMillis()
-        val prover = ProverV(   // CE n acc
+        runProof(
             group,
+            "runShuffleProof",
             keypair.publicKey,
-            generators.elems[0],
-            generators, // generators
-            ballots, // ciphertexts
-            mixedBallots, // permuted ciphertexts
-            rnonces, // unpermuted Reencryption nonces
-            // psi.invert(rnonces), // unpermuted Reencryption nonces
+            w = ballots,
+            wp = mixedBallots,
+            rnonces,
             psi,
-            )
-        val pos: ProofOfShuffle = prover.prove(nthreads)
+            nthreads)
         stats.of("proof", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  proof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
 
@@ -193,6 +186,11 @@ class ShuffleProofTest {
         runShuffleProofAndVerify(nrows, width, keypair, ballots, 1)
         runShuffleProofAndVerify(nrows, width, keypair, ballots, 2)
         runShuffleProofAndVerify(nrows, width, keypair, ballots, 10)
+    }
+
+    @Test
+    fun testSPVone() {
+        runShuffleProofVerifyWithThreads(11, 7)
     }
 
     @Test
@@ -256,36 +254,29 @@ class ShuffleProofTest {
         stats.of("shuffle", "text", "shuffle").accum(shuffleTime, N)
         if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
 
-        val U = "PosBasicTW"
-        val seed = group.randomElementModQ()
-        val (h, generators) = getGeneratorsVmn(group, nrows, U, seed) // CE 1 acc n exp
-
         starting = getSystemTimeInMillis()
-        val prover = ProverV(   // CE n acc
+        val pos: ProofOfShuffle = runProof(
             group,
+            "runShuffleProofAndVerify",
             keypair.publicKey,
-            generators.elems[0],
-            generators, // generators
-            w = ballots, // ciphertexts
-            wp = mixedBallots, // permuted ciphertexts
-            rnonces, // unpermuted Reencryption nonces
+            w = ballots,
+            wp = mixedBallots,
+            rnonces,
             psi,
-        )
-        val pos: ProofOfShuffle = prover.prove(nthreads)
+            nthreads)
         val proofTime = getSystemTimeInMillis() - starting
         stats.of("proof", "text", "shuffle").accum(proofTime, N)
         if (showExps) println("  proof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
 
         starting = getSystemTimeInMillis()
-        val verifier = VerifierV(
+        val valid = runVerify(
             group,
             keypair.publicKey,
-            generators.elems[0],
-            generators, // generators
-            w = ballots, // ciphertexts
-            wp = mixedBallots, // permuted ciphertexts
+            w = ballots,
+            wp = mixedBallots,
+            pos,
+            nthreads,
         )
-        val valid = verifier.verify(pos, nthreads)
         val verifyTime = getSystemTimeInMillis() - starting
         stats.of("verify", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
         if (showExps) println("  after checkShuffleProof: ${group.showAndClearCountPowP()} ${expectCheck(nrows, width)}")
@@ -298,6 +289,7 @@ class ShuffleProofTest {
         return r
     }
 
+    /*
     @Test
     fun testSPVdebug() {
         val nrows = 7
@@ -340,6 +332,8 @@ class ShuffleProofTest {
 
         assertTrue(valid)
     }
+
+     */
 
 
 }

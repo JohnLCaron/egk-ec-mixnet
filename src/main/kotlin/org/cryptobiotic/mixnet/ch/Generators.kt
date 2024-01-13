@@ -1,6 +1,7 @@
-package org.cryptobiotic.mixnet.core
+package org.cryptobiotic.mixnet.ch
 
 import electionguard.core.*
+import org.cryptobiotic.mixnet.core.VectorP
 
 // generate a set of n+1 independent generators
 fun getGenerators(group: GroupContext, n: Int, U: String, seed: ElementModQ = group.randomElementModQ()): Pair<ElementModP, List<ElementModP>> {

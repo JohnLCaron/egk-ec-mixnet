@@ -5,6 +5,8 @@ import org.cryptobiotic.mixnet.core.PermutationVmn
 import org.cryptobiotic.mixnet.core.VectorP
 import org.cryptobiotic.mixnet.core.VectorQ
 
+// pcommit = u, part of the ProofOfShuffle
+// PoSBasicTW line 452
 // Prover computes a permutation commitment.
 // u_i = g^{r_{\pi(i)}} * h_{\pi(i)}
 //

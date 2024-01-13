@@ -1,8 +1,10 @@
 # egk mixnet maths
 
+_John Caron, 1/11/2024_
+
 Preliminary explorations of mixnet implementations to be used with the ElectionGuard Kotlin library.
 
-We use the ElectionGuard Kotlin library [7] for all the cryptography primitives. This library closely follows the ElectionGuard 2.0 specification [1].
+The ElectionGuard Kotlin library [7] is used for the cryptography primitives. This library closely follows the ElectionGuard 2.0 specification [1].
 
 The math here mostly recapitulates the work of Wikström [6]; Haenni et. al. [2], [3] in explaining the Terelius / Wikström (TW) mixnet algorithm [4], [5]; and the work of Haines [9] that gives a formal proof of security of TW when the shuffle involves vectors of ciphertexts.
 
@@ -10,7 +12,7 @@ Instead of psuedocode, the kotlin code acts as the implementation of the math de
 
 Ive tried to avoid notation that is hard to read, preferring for example, multiple character symbols like $pr$ instead of  r̃ or r̂ , since the glyphs can get too small to read when they are used in exponents or subscripts, and can be hard to replicate in places other than high quality Tex or PDF renderers.
 
-**Table of Contents**
+### Table of Contents
 
 [TOC]
 
@@ -24,7 +26,7 @@ Ive tried to avoid notation that is hard to read, preferring for example, multip
 - $ \Z_n^* $ is the multiplicative subgroup of $ \Z_n$ that consists of all invertible elements modulo n. When p is a prime,  $ \Z_p^* = \{1, 2, 3, . . . , p − 1\} $
 -  $ \Z_p^r $ is the set of r-th-residues in $\Z_p^* $ . Formally, $ \Z_p^r = \{y \in \Z_p^* $ for which there exists $x \in \Z_p^*$ where $y = x^r$ mod p}. When p is a prime for which p − 1 = q * r with q a prime that is not a divisor of the integer r, then  $\Z_p^r$ is an order-q cyclic subgroup of $\Z_p^*$ , and for any $y \in \Z_p^* $ , $y \in \Z_p^r $ if and only if $y^q$ mod p = 1.
 
-We use the ElectionGuard Kotlin library [7] and ElectionGuard 2.0 specification [1] for all the cryptography primitives, in particular the parameters for $ \Z_p^r $, the variant of ElGamal encryption described next, and the use of HMAC-SHA-256 for hashing. 
+The ElectionGuard Kotlin library [7] and ElectionGuard 2.0 specification [1] is used for the cryptography primitives, in particular the parameters for $ \Z_p^r $, the variant of ElGamal encryption described next, and the use of HMAC-SHA-256 for hashing. 
 
 
 
@@ -139,7 +141,7 @@ Let
 Choose *n* random permutation nonces $\vec{pn}$.
 And form permutation commitments $\vec{u}$ that will be public:
 $$
-u_j = g^{pn_j} h_i,\ \ \ j = \psi(i) LOOK
+u_j = g^{pn_j} h_i,\ \ \ j = \psi(i)\ \ \ TODO
 $$
 
 **Commitment to shuffle**
@@ -152,8 +154,8 @@ Form the following values:
 $$
 \begin{align}
 A^\prime &= g^\alpha \prod_{i=1}^n h_i^{\epsilon_i} \in \Z_p^r \\
-B &= g^\gamma \in (\Z_p^r)^n \\
-B^\prime &= g^\gamma \in (\Z_p^r)^n \\
+B &= g^\gamma \in (\Z_p^r)^n \ \ \ TODO \\
+B^\prime &= g^\gamma \in (\Z_p^r)^n \ \ \ TODO \\
 C^\prime &= g^\gamma \in \Z_p^r \\
 D^\prime &= g^\delta \in \Z_p^r \\
 \end{align}
@@ -196,33 +198,22 @@ k_{F,j} &= v\ \cdot <rncolj, e^{\prime}> + \phi_j \\
 \end{align}
 $$
 
-**Serialization of the TW Proof of Shuffle**
+#### Serialization of the TW Proof of Shuffle
 
 ```
-// τ^pos = Commitment of the Fiat-Shamir proof.
 data class ProofOfShuffle(
-    val u: VectorP, // permutation commitment = pcommit
-    val d: ElementModQ, // x[n-1]
-    val e: VectorQ, // supposed to be deterministically derived
-
-    val Ap: ElementModP, // Proof commitment used for the bridging commitments
-    val B: VectorP, // Bridging commitments used to build up a product in the exponent
-    val Bp: VectorP, // Proof commitments for the bridging commitments
-    val Cp: ElementModP, // Proof commitment for proving sum of random components
-    val Dp: ElementModP, // Proof commitment for proving product of random components.
-
+    val Ap: ElementModP, 
+    val B: VectorP, 
+    val Bp: VectorP, 
+    val Cp: ElementModP, 
+    val Dp: ElementModP, 
     val Fp: VectorCiphertext, // width
-)
 
-// σ^pos = Reply of the Fiat-Shamir proof.
-data class Reply(
     val k_A: ElementModQ,
     val k_B: VectorQ,
     val k_C: ElementModQ,
     val k_D: ElementModQ,
-    val k_EA: VectorQ,
     val k_E: VectorQ,
-    
     val k_F: VectorQ, // width
 )
 ```
@@ -231,7 +222,8 @@ data class Reply(
 
 #### Proof Verification
 
-The following equations are taken from Algorithm 19 of [6] and checked against the verificatum  implementation. The main ambiguity is in the meaning of  $\prod_{i=1}^{n} w_i^{e_i}$ and  $\prod_{i=1}^{n} wp_i^{k_{E,i}}$ in steps 3 and 5. These are interpreted as a short hand for *width* equations on the column vectors of *w* and *wp*. We use one-based array indexing for notational simplicity.
+The following equations are taken from Algorithm 19 of [6] and checked against the verificatum  implementation. The main ambiguity is in the meaning of  $\prod_{i=1}^{n} w_i^{e_i}$ and  $\prod_{i=1}^{n} wp_i^{k_{E,i}}$ in steps 3 and 5. These are interpreted as a short hand for *width* equations on the column vectors of *w* and *wp*. 
+We use one-based array indexing for notational simplicity.
 
 The Verifier is provided with:
 
@@ -244,7 +236,7 @@ The Verifier is provided with:
 
 
 
-The $\vec e$ nonces and challenge are deterministically recalculated. This prevents those from being carefully chosen to subvert the proof.
+The $\vec h$ (generators), $\vec e$ nonces, and challenge are deterministically recalculated. This prevents those from being carefully chosen to subvert the proof.
 
 
 
@@ -398,7 +390,8 @@ The $Encr(0, ..)$ is because we use exponential ElGamal, so is fine. Their use o
 
 #### Simple
 
-Much of the literature assumes that each row to be mixed consists of a single ciphertext. In our application we need the possibility that each row consists of a vector of ciphertexts. So for each row i, we now have a vector of *w = width* ciphertexts:
+Much of the literature assumes that each row to be mixed consists of a single ciphertext. In our application we need the possibility that each row consists of a vector of ciphertexts. 
+So for each row i, we now have a vector of *w = width* ciphertexts:
 $$
 \textbf {e}_i = (e_{i,1},.. e_{i,w}) = \{e_{i,k}\},\ k=1..w
 $$
@@ -525,8 +518,6 @@ exp/acc = 3.01007326007326
 
 #### VMN
 
-See [Vmn spreadsheets](https://docs.google.com/spreadsheets/d/1Sny1xXxU9vjPnqo2K1QPeBHQwPVWhJOHdlXocMimt88/edit?usp=sharing) for graphs of results (work in progress).
-
 **Operation counts**
 
 - *n* = number of rows, eg ballots or contests
@@ -542,7 +533,9 @@ Even though N dominates, width is bound but nrows can get arbitrarily big.
 
 Could break into batches of 100-1000 ballots each and do each batch in parallel. The advantage here is that there would be complete parallelization.
 
+**Timing results**
 
+See [VMN spreadsheets](https://docs.google.com/spreadsheets/d/1Sny1xXxU9vjPnqo2K1QPeBHQwPVWhJOHdlXocMimt88/edit?usp=sharing) for graphs of timing results (work in progress).
 
 
 
