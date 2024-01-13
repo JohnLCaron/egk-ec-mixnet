@@ -10,11 +10,11 @@ data class ProofOfShuffle(
     val u: VectorP, // permutation commitment
 
     // τ^pos = Commitment of the Fiat-Shamir proof.
-    val B: VectorP, // Bridging commitments used to build up a product in the exponent
-    val Ap: ElementModP, // Proof commitment used for the bridging commitments
-    val Bp: VectorP, // Proof commitments for the bridging commitments
-    val Cp: ElementModP, // Proof commitment for proving sum of random components
-    val Dp: ElementModP, // Proof commitment for proving product of random components.
+    val B: VectorP,
+    val Ap: ElementModP,
+    val Bp: VectorP,
+    val Cp: ElementModP,
+    val Dp: ElementModP,
     val Fp: VectorCiphertext, // width
 
     // σ^pos = Reply of the Fiat-Shamir proof.

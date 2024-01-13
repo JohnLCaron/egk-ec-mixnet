@@ -202,19 +202,25 @@ $$
 
 ```
 data class ProofOfShuffle(
-    val Ap: ElementModP, 
+    val mixname: String,
+    val u: VectorP, // permutation commitment
+
+    // τ^pos = Commitment of the Fiat-Shamir proof.
     val B: VectorP, 
+    val Ap: ElementModP, 
     val Bp: VectorP, 
     val Cp: ElementModP, 
     val Dp: ElementModP, 
     val Fp: VectorCiphertext, // width
 
-    val k_A: ElementModQ,
-    val k_B: VectorQ,
-    val k_C: ElementModQ,
-    val k_D: ElementModQ,
-    val k_E: VectorQ,
-    val k_F: VectorQ, // width
+    // σ^pos = Reply of the Fiat-Shamir proof.
+    val kA: ElementModQ,
+    val kB: VectorQ,
+    val kC: ElementModQ,
+    val kD: ElementModQ,
+    val kE: VectorQ,
+    val kEF: VectorQ,
+    val kF: VectorQ, // width
 )
 ```
 

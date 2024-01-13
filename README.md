@@ -6,7 +6,7 @@ _last update 11/11/2024_
 
 Preliminary explorations of mixnet implementations to be used with the ElectionGuard Kotlin library. 
 Besides being a port to modern kotlin, the code has been made parallel using kotlin coroutines.
-Preliminary measurements show a 3x - 8x speedup.
+Preliminary measurements show a 3x - 8x speedup vs verificatum.
 
 Some of the code in org.cryptobiotic.mixnet.vmn is a port of code from the Verificatum repository
 (https://github.com/verificatum/verificatum-vmn). Our library can independently verify mixnet output from Verificatum,
