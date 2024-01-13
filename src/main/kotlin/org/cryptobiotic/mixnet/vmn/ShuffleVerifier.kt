@@ -135,8 +135,8 @@ class VerifierV(
         val ev = this.e.timesScalar(v)
         val Fv: VectorCiphertext = prodColumnPow(w, ev, nthreads)                            // CE 2 * N exp
         val leftF: VectorCiphertext = Fv * dp.proof.Fp
-        val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, dp.proof.k_F) // CE width * 2 acc
-        val right2: VectorCiphertext = prodColumnPow(wp, dp.proof.k_EF, nthreads)                // CE 2 * N exp
+        val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, dp.proof.kF) // CE width * 2 acc
+        val right2: VectorCiphertext = prodColumnPow(wp, dp.proof.kEF, nthreads)                // CE 2 * N exp
         val rightF: VectorCiphertext = right1 * right2
         val verdictF = (leftF == rightF)
         println("   leftF == rightF ${leftF == rightF}")
@@ -150,8 +150,8 @@ class VerifierV(
         val A: ElementModP = prodPowP(proof.u, this.e, nthreads)                   // CE n exps
         // A.expMul(v, Ap).equals(g.exp(k_A).mul(h.expProd(k_E)));
         val leftA = (A powP v) * proof.Ap                                           // CE 1 exp
-        val genE = prodPowP(generators, proof.k_E, nthreads)                       // CE n exp, 1 acc
-        val rightA = group.gPowP(proof.k_A) * genE
+        val genE = prodPowP(generators, proof.kE, nthreads)                       // CE n exp, 1 acc
+        val rightA = group.gPowP(proof.kA) * genE
         val verdictA = (leftA == rightA)
 
         val verdictB = if (nthreads == 0) verifyB(proof, v)                  // CE 2n exp, n acc
@@ -159,21 +159,21 @@ class VerifierV(
 
         val C: ElementModP = Prod(proof.u) / Prod(generators)
         val leftC = (C powP v) * proof.Cp   // CE 1 exp
-        val rightC = group.gPowP(proof.k_C) // CE 1 acc
+        val rightC = group.gPowP(proof.kC) // CE 1 acc
         val verdictC = (leftC == rightC)
 
         val prode = Prod(this.e)
         val D: ElementModP = proof.B.elems[size - 1] / (h powP prode) // CE 1 exp
         val leftD = (D powP v) * proof.Dp   // CE 1 exp
-        val rightD = group.gPowP(proof.k_D) // CE 1 acc
+        val rightD = group.gPowP(proof.kD) // CE 1 acc
         val verdictD = (leftD == rightD)
 
         //// poe
         val ev = this.e.timesScalar(v)
         val Fv: VectorCiphertext = prodColumnPow(w, ev, nthreads)                            // CE 2 * N exp
         val leftF: VectorCiphertext = Fv * proof.Fp
-        val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, proof.k_F) // CE width * 2 acc
-        val right2: VectorCiphertext = prodColumnPow(wp, proof.k_EF, nthreads)                // CE 2 * N exp
+        val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, proof.kF) // CE width * 2 acc
+        val right2: VectorCiphertext = prodColumnPow(wp, proof.kEF, nthreads)                // CE 2 * N exp
         val rightF: VectorCiphertext = right1 * right2
         val verdictF = (leftF == rightF)
 
@@ -187,7 +187,7 @@ class VerifierV(
         repeat(size) { i ->
             val Bminus1 = if (i == 0) h else proof.B.elems[i - 1]
             val leftB = (proof.B.elems[i] powP v) * proof.Bp.elems[i]                        // CE n exp
-            val rightB = group.gPowP(proof.k_B.elems[i]) * (Bminus1 powP proof.k_E.elems[i]) // CE n exp, n acc
+            val rightB = group.gPowP(proof.kB.elems[i]) * (Bminus1 powP proof.kE.elems[i]) // CE n exp, n acc
             verdictB = verdictB && (leftB == rightB)
         }
         return verdictB
@@ -247,7 +247,7 @@ class PverifyB(
     fun validateB(idx: Int): Boolean {
         val Bminus1 = if (idx == 0) h else proof.B.elems[idx-1]
         val leftB = (proof.B.elems[idx] powP this.challenge) * proof.Bp.elems[idx]                        // CE n exp
-        val rightB = group.gPowP(proof.k_B.elems[idx]) * (Bminus1 powP proof.k_E.elems[idx])          // CE n exp, n acc
+        val rightB = group.gPowP(proof.kB.elems[idx]) * (Bminus1 powP proof.kE.elems[idx])          // CE n exp, n acc
         return (leftB == rightB)
     }
 }

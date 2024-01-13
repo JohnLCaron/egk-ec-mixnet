@@ -18,30 +18,30 @@ data class ProofOfShuffle(
     val Fp: VectorCiphertext, // width
 
     // σ^pos = Reply of the Fiat-Shamir proof.
-    val k_A: ElementModQ,
-    val k_B: VectorQ,
-    val k_C: ElementModQ,
-    val k_D: ElementModQ,
-    val k_E: VectorQ,
-    val k_EF: VectorQ,
-    val k_F: VectorQ, // width
+    val kA: ElementModQ,
+    val kB: VectorQ,
+    val kC: ElementModQ,
+    val kD: ElementModQ,
+    val kE: VectorQ,
+    val kEF: VectorQ,
+    val kF: VectorQ, // width
 ) {
 
     constructor(
         mixname: String,
         pos: ProofCommittment,
-        k_A: ElementModQ,
-        k_B: VectorQ,
-        k_C: ElementModQ,
-        k_D: ElementModQ,
-        k_E: VectorQ,
-        k_EF: VectorQ,
-        k_F: VectorQ, // width
+        kA: ElementModQ,
+        kB: VectorQ,
+        kC: ElementModQ,
+        kD: ElementModQ,
+        kE: VectorQ,
+        kEF: VectorQ,
+        kF: VectorQ, // width
     ) : this(
         mixname,
         pos.u,
         pos.B, pos.Ap, pos.Bp, pos.Cp, pos.Dp, pos.Fp,
-        k_A, k_B, k_C, k_D, k_E, k_EF, k_F
+        kA, kB, kC, kD, kE, kEF, kF
     )
 
 }
