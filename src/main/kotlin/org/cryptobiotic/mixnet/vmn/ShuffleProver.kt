@@ -62,7 +62,7 @@ fun runProof(
     wp: List<VectorCiphertext>, // shuffled (nrows x width)
     rnonces: MatrixQ, // reencryption nonces (nrows x width), corresponding to wp
     psi: PermutationVmn, // nrows
-    nthreads: Int
+    nthreads: Int = 10,
 ): ProofOfShuffle {
     // these are the deterministic nonces and generators that verifier must also be able to generate
     val generators = getGeneratorsVmn(group, w.size, mixName) // CE 1 acc n exp
