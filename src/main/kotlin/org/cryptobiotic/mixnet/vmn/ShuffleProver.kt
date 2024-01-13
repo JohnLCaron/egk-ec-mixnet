@@ -8,6 +8,84 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.cryptobiotic.mixnet.core.*
 
+// PoSTW.prove() line 95
+//    var P: PoSBasicTW
+//    public void prove(
+//                      final PGroupElement pkey,
+//                      final PGroupElementArray w,
+//                      final PGroupElementArray wp,
+//                      final PRingElementArray s) { // rnonces
+//
+//        P.setInstance(pkey, w, wp, s);
+//
+//        // Publish our commitment of a permutation.
+//        if (nizkp != null) {
+//            P.u.toByteTree().unsafeWriteTo(PCfile(nizkp, j));
+//        }
+//
+//        // Generate a seed to the PRG for batching.
+//        ByteTreeContainer challengeData =
+//            new ByteTreeContainer(P.g.toByteTree(),
+//                                  P.h.toByteTree(),
+//                                  P.u.toByteTree(),
+//                                  pkey.toByteTree(),
+//                                  w.toByteTree(),
+//                                  wp.toByteTree());
+//
+//        final byte[] prgSeed =
+//            challenger.challenge(tempLog2,
+//                                 challengeData,
+//                                 8 * prg.minNoSeedBytes(),
+//                                 rbitlen);
+//
+//        // Compute and publish commitment.
+//        final ByteTreeBasic commitment = P.commit(prgSeed);
+//        if (nizkp != null) {
+//            commitment.unsafeWriteTo(PoSCfile(nizkp, j));
+//        }
+//
+//        // Generate a challenge.
+//        challengeData = new ByteTreeContainer(new ByteTree(prgSeed), commitment);
+//        final byte[] challengeBytes = challenger.challenge(tempLog2, challengeData, vbitlen(), rbitlen);
+//        final LargeInteger integerChallenge = LargeInteger.toPositive(challengeBytes);
+//
+//        // Compute and publish reply.
+//        if (nizkp != null) {
+//            reply.unsafeWriteTo(PoSRfile(nizkp, j));
+//        }
+//    }
+fun runProof(
+    group: GroupContext,
+    mixName: String,
+    publicKey: ElGamalPublicKey, // Public key used to re-encrypt
+    w: List<VectorCiphertext>, //  rows (nrows x width)
+    wp: List<VectorCiphertext>, // shuffled (nrows x width)
+    rnonces: MatrixQ, // reencryption nonces (nrows x width), corresponding to wp
+    psi: PermutationVmn, // nrows
+    nthreads: Int
+): ProofOfShuffle {
+    // these are the deterministic nonces and generators that verifier must also be able to generate
+    val generators = getGeneratorsVmn(group, w.size, mixName) // CE 1 acc n exp
+    val (pcommit, pnonces) = permutationCommitmentVmn(group, psi, generators)
+    val (e, challenge) = getBatchingVectorAndChallenge(group, mixName, generators, pcommit, publicKey, w, wp)
+
+    val prover = ProverV(   // CE n acc
+        group,
+        mixName,
+        publicKey,
+        generators,
+        e,
+        pcommit,
+        pnonces,
+        w,
+        wp,
+        rnonces,
+        psi,
+    )
+    val pos = prover.commit(nthreads)
+    return prover.reply(pos, challenge)
+}
+
 /**
  * Implements the TW proof of shuffle. The rows to shuffle are Vectors of ElgamalCiphertext.
  * Mostly follows the Verificatum implementation.
@@ -17,9 +95,12 @@ import org.cryptobiotic.mixnet.core.*
  */
 class ProverV(
     val group: GroupContext,
+    val mixname: String,
     val publicKey: ElGamalPublicKey, // Public key used to re-encrypt
-    val h: ElementModP,
     val generators: VectorP, // nrows
+    val e: VectorQ, // batching exponents
+    val u: VectorP, //pcommit
+    val r: VectorQ, // pnonces
     val w: List<VectorCiphertext>, //  rows (nrows x width)
     val wp: List<VectorCiphertext>, // shuffled (nrows x width)
     val rnonces: MatrixQ, // reencryption nonces (nrows x width), corresponding to wp
@@ -28,15 +109,10 @@ class ProverV(
     /** Size of the set that is permuted. */
     val nrows: Int = w.size
     val width: Int = w[0].nelems
-
-    ////// Public values
-    /** Commitment of a permutation. */
-    val u: VectorP // pcommit
-    val e: VectorQ // random exponents given to the verifier
+    val h = generators.elems[0]
 
     //////// Secret values
     val ipe: VectorQ // permuted e
-    val r: VectorQ // pnonces
     val b: VectorQ
     val alpha: ElementModQ // Randomizer for inner product of r and ipe
     val beta: VectorQ // Randomizer for b.
@@ -46,14 +122,6 @@ class ProverV(
     val phi: VectorQ //  Randomizer for f; width
 
     init {
-        val (pcommit, pnonces) = permutationCommitmentVmn(
-            group,
-            psi,
-            generators
-        )
-        this.u = pcommit
-        this.r = pnonces
-
         alpha = group.randomElementModQ()
         beta = VectorQ.randomQ(group, nrows)
         gamma = group.randomElementModQ()
@@ -62,21 +130,9 @@ class ProverV(
         phi = VectorQ.randomQ(group, width)
         b = VectorQ.randomQ(group, nrows)
 
-        // TODO replace this with deterministic prg
-        e = VectorQ.randomQ(group, nrows)
         //         final Permutation piinv = pi.inv();
         //        ipe = e.permute(piinv);
         ipe = e.invert(psi) // TODO works for A, not for F
-    }
-
-    // does both the commit and the reply
-    fun prove(nthreads: Int): ProofOfShuffle {
-        val pos = commit(nthreads)
-
-        // Generate a challenge. For the moment let it be a random value
-        val challenge = group.randomElementModQ()
-
-        return reply(pos, challenge)
     }
 
     fun proveDebug(): DebugPrivate {
@@ -170,13 +226,13 @@ class ProverV(
         return Pair(B, Bp)
     }
 
-    fun reply(pos: ProofCommittment, v: ElementModQ): ProofOfShuffle {
+    fun reply(poc: ProofCommittment, v: ElementModQ): ProofOfShuffle {
         val a: ElementModQ = r.innerProduct(ipe)
         val c: ElementModQ = r.sum() // = pr.sumQ()
         // val f = innerProductColumn(rnonces, ipe) // width
         val pe = e.permute(psi)
         val f = innerProductColumn(rnonces, pe) // TODO CHANGED innerProduct(s, e) to innerProduct(s, pe), s == rnonces. Possibly rnonces has been permuted differently?
-        val d = pos.d
+        val d = poc.d
 
         // Compute the replies as:
         //   k_A = a * v + \alpha
@@ -202,7 +258,7 @@ class ProverV(
         // val k_F: List<ElementModQ> = phi.mapIndexed { idx, it -> f[idx] * v + it } // width PosMultiTW
         val k_F = f.timesScalar(v) + phi
 
-        return ProofOfShuffle(pos, v, k_A, k_B, k_C, k_D, k_E, k_EF, k_F)
+        return ProofOfShuffle(mixname, poc, k_A, k_B, k_C, k_D, k_E, k_EF, k_F)
     }
 }
 
