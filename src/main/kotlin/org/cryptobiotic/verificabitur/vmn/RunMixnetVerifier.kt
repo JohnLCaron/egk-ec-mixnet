@@ -153,7 +153,6 @@ class MyVerifier(
             reply.kC,
             reply.kD,
             VectorQ(group, reply.kE),
-            VectorQ(group, reply.kE),
             VectorQ(group, reply.kF),
         )
 

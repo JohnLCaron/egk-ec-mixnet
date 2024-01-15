@@ -38,7 +38,6 @@ class ProofOfShuffleJson(
     val kC: ElementModQJson,
     val kD: ElementModQJson,
     val kE: VectorQJson,
-    val kEF: VectorQJson,
     val kF: VectorQJson,
     )
 
@@ -57,7 +56,6 @@ fun ProofOfShuffleJson.import(group: GroupContext) : ProofOfShuffle {
         this.kC.import(group)!!,
         this.kD.import(group)!!,
         this.kE.import(group),
-        this.kEF.import(group),
         this.kF.import(group),
         )
 }
@@ -77,13 +75,12 @@ fun ProofOfShuffle.publishJson() : ProofOfShuffleJson {
         this.kC.publishJson(),
         this.kD.publishJson(),
         this.kE.publishJson(),
-        this.kEF.publishJson(),
         this.kF.publishJson(),
     )
 }
 
 fun readProofOfShuffleJsonFromFile(group: GroupContext, filename: String): Result<ProofOfShuffle, ErrorMessages> {
-    val errs = ErrorMessages("ShuffleProof file '${filename}'")
+    val errs = ErrorMessages("readProofOfShuffleJsonFromFile '${filename}'")
     val filepath = Path.of(filename)
     if (!Files.exists(filepath)) {
         return errs.add("file does not exist")
@@ -151,7 +148,7 @@ fun List<VectorCiphertext>.publishJson() : MatrixCiphertextJson {
 }
 
 fun readMatrixCiphertextJsonFromFile(group: GroupContext, filename: String): Result<List<VectorCiphertext>, ErrorMessages> {
-    val errs = ErrorMessages("ShuffleProof file '${filename}'")
+    val errs = ErrorMessages("readMatrixCiphertextJsonFromFile '${filename}'")
     val filepath = Path.of(filename)
     if (!Files.exists(filepath)) {
         return errs.add("file does not exist")

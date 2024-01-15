@@ -10,7 +10,7 @@ import org.cryptobiotic.mixnet.core.*
 
 /**
  * Shuffle rows (nrows x width) of ElGamalCiphertext.
- * Return shufffled rows (nrows x width), matrix of reencryption nonces (nrows x width), and permutation function.
+ * Return shufffled rows (nrows x width), matrix of reencryption nonces (nrows x width) for W, not Wp, and permutation function.
  * Operation count is 2 * nrows * width accelerated exponentiations = "2N acc".
  */
 fun shuffle(rows: List<VectorCiphertext>, publicKey: ElGamalPublicKey, nthreads: Int = 10):
@@ -27,16 +27,25 @@ fun shuffle(
     publicKey: ElGamalPublicKey,
 ): Triple<List<VectorCiphertext>, MatrixQ, PermutationVmn> {
 
-    val mixed = mutableListOf<VectorCiphertext>()
+    val reencr = mutableListOf<VectorCiphertext>()
     val rnonces = mutableListOf<VectorQ>()
 
     val psi = PermutationVmn.random(rows.size)
+    /*
     repeat(rows.size) { jdx ->
         val idx = psi.of(jdx) //  pe[jdx] = e[ps.of(jdx)]; you have an element in pe, and need to get the corresponding element from e
         val (reencrypt, nonceV) = rows[idx].reencrypt(publicKey)
         mixed.add(reencrypt)
         rnonces.add(nonceV)
     }
+     */
+    repeat(rows.size) { idx ->
+        val (reencrypt, nonceV) = rows[idx].reencrypt(publicKey)
+        reencr.add(reencrypt)
+        rnonces.add(nonceV)
+    }
+    val mixed = psi.invert(reencr) // dunno why using inverse.
+    // note rnonces now correspond to W, not W'
     return Triple(mixed, MatrixQ(rnonces), psi)
 }
 
@@ -59,32 +68,33 @@ fun shuffleWithInverse(
     return Triple(mixed, MatrixQ(rnonces), psi)
 }
 
-// parallel shuffle
+// parallel mixing
 class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
     val group: GroupContext = publicKey.context
     val n = rows.size
-    var mixed = MutableList(n) { VectorCiphertext.empty(group) }
+    var reencr = MutableList(n) { VectorCiphertext.empty(group) }
     var rnonces = MutableList(n) { VectorQ.empty(group) }
-    val psi = PermutationVmn.random(n)
 
     fun shuffle(): Triple<List<VectorCiphertext>, MatrixQ, PermutationVmn> {
         runBlocking {
             val jobs = mutableListOf<Job>()
-            val pairProducer = producer(rows, psi)
+            val pairProducer = producer(rows)
             repeat(nthreads) {
                 jobs.add( launchCalculator(pairProducer) { row -> row.reencrypt(publicKey) })
             }
-            // wait for all calculations to be done, then close everything
+            // wait for all calculations to be done
             joinAll(*jobs.toTypedArray())
         }
-
+        // now we shuffle
+        val psi = PermutationVmn.random(n)
+        val mixed = psi.invert(reencr) // dunno why using inverse.
         return Triple(mixed, MatrixQ(rnonces), psi)
     }
 
-    private fun CoroutineScope.producer(rows: List<VectorCiphertext>, psi: PermutationVmn): ReceiveChannel<Pair<VectorCiphertext, Int>> =
+    private fun CoroutineScope.producer(rows: List<VectorCiphertext>): ReceiveChannel<Pair<VectorCiphertext, Int>> =
         produce {
             rows.forEachIndexed { idx, row ->
-                send(Pair(row, psi.inv(idx)))
+                send(Pair(row, idx))
                 yield()
             }
             channel.close()
@@ -98,11 +108,11 @@ class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey
     ) = launch(Dispatchers.Default) {
 
         for (pair in input) {
-            val (row, jdx) = pair
+            val (row, idx) = pair
             val (reencrypt, nonces) = calculate(row)
             mutex.withLock {
-                mixed[jdx] = reencrypt
-                rnonces[jdx] = nonces
+                reencr[idx] = reencrypt
+                rnonces[idx] = nonces
             }
             yield()
         }

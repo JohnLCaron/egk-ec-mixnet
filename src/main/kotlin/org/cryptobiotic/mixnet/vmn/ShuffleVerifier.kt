@@ -116,33 +116,6 @@ class VerifierV(
     val size = w.size
     val h = generators.elems[0]
 
-    // debug
-    fun verifyF(dp: DebugPrivate): Boolean {
-        val v = this.challenge
-        val enc0: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, dp.phi)  // CE 2 * width acc
-        val ev1 = this.e.timesScalar(v)
-        val Fv1 = prodColumnPow(w, ev1, 0)
-        val leftv = Fv1 * enc0 * prodColumnPow(wp, dp.epsilon) // Fp = enc0 * prodColumnPow(wp, epsilon)
-        val ff = innerProductColumn(dp.rnonces, dp.ipe)
-        val kF = ff.timesScalar(v) + dp.phi
-        val right1v = VectorCiphertext.zeroEncryptNeg(publicKey, kF) // k_F = innerProductColumn(rnonces, ipe).timesScalar(v) + phi
-        val kE = dp.ipe.timesScalar(v) + dp.epsilon
-        val right2v = prodColumnPow(wp, kE, 0) // k_E = ipe.timesScalar(v) + epsilon
-        val rightv = right1v * right2v
-        println("   rightv == leftv ${rightv == leftv}")
-
-        //// poe
-        val ev = this.e.timesScalar(v)
-        val Fv: VectorCiphertext = prodColumnPow(w, ev, nthreads)                            // CE 2 * N exp
-        val leftF: VectorCiphertext = Fv * dp.proof.Fp
-        val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, dp.proof.kF) // CE width * 2 acc
-        val right2: VectorCiphertext = prodColumnPow(wp, dp.proof.kEF, nthreads)                // CE 2 * N exp
-        val rightF: VectorCiphertext = right1 * right2
-        val verdictF = (leftF == rightF)
-        println("   leftF == rightF ${leftF == rightF}")
-        return verdictF
-    }
-
     fun verify(proof: ProofOfShuffle, nthreads: Int = 10): Boolean {
         val v = this.challenge
         //// pos
@@ -173,7 +146,7 @@ class VerifierV(
         val Fv: VectorCiphertext = prodColumnPow(w, ev, nthreads)                            // CE 2 * N exp
         val leftF: VectorCiphertext = Fv * proof.Fp
         val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, proof.kF) // CE width * 2 acc
-        val right2: VectorCiphertext = prodColumnPow(wp, proof.kEF, nthreads)                // CE 2 * N exp
+        val right2: VectorCiphertext = prodColumnPow(wp, proof.kE, nthreads)                // CE 2 * N exp
         val rightF: VectorCiphertext = right1 * right2
         val verdictF = (leftF == rightF)
 
