@@ -23,7 +23,6 @@ data class ProofOfShuffle(
     val kC: ElementModQ,
     val kD: ElementModQ,
     val kE: VectorQ,
-    val kEF: VectorQ,
     val kF: VectorQ, // width
 ) {
 
@@ -35,13 +34,12 @@ data class ProofOfShuffle(
         kC: ElementModQ,
         kD: ElementModQ,
         kE: VectorQ,
-        kEF: VectorQ,
         kF: VectorQ, // width
     ) : this(
         mixname,
         pos.u,
         pos.B, pos.Ap, pos.Bp, pos.Cp, pos.Dp, pos.Fp,
-        kA, kB, kC, kD, kE, kEF, kF
+        kA, kB, kC, kD, kE, kF
     )
 
 }

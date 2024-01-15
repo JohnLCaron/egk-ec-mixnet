@@ -175,6 +175,15 @@ class ShuffleProofTest {
     }
 
     @Test
+    fun testSPVone() {
+        val nrows = 11
+        val width = 7
+        val keypair = elGamalKeyPairFromRandom(group)
+        val ballots = makeBallots(keypair, nrows, width)
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 48)
+    }
+
+    @Test
     fun testSPVpar() {
         val nrows = 3
         val width = 7
@@ -186,11 +195,6 @@ class ShuffleProofTest {
         runShuffleProofAndVerify(nrows, width, keypair, ballots, 1)
         runShuffleProofAndVerify(nrows, width, keypair, ballots, 2)
         runShuffleProofAndVerify(nrows, width, keypair, ballots, 10)
-    }
-
-    @Test
-    fun testSPVone() {
-        runShuffleProofVerifyWithThreads(11, 7)
     }
 
     @Test

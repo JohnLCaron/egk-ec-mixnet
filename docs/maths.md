@@ -1,6 +1,6 @@
 # egk mixnet maths
 
-_John Caron, 1/11/2024_
+_John Caron, 1/13/2024_
 
 Preliminary explorations of mixnet implementations to be used with the ElectionGuard Kotlin library.
 
@@ -26,14 +26,14 @@ Ive tried to avoid notation that is hard to read, preferring for example, multip
 - $ \Z_n^* $ is the multiplicative subgroup of $ \Z_n$ that consists of all invertible elements modulo n. When p is a prime,  $ \Z_p^* = \{1, 2, 3, . . . , p − 1\} $
 -  $ \Z_p^r $ is the set of r-th-residues in $\Z_p^* $ . Formally, $ \Z_p^r = \{y \in \Z_p^* $ for which there exists $x \in \Z_p^*$ where $y = x^r$ mod p}. When p is a prime for which p − 1 = q * r with q a prime that is not a divisor of the integer r, then  $\Z_p^r$ is an order-q cyclic subgroup of $\Z_p^*$ , and for any $y \in \Z_p^* $ , $y \in \Z_p^r $ if and only if $y^q$ mod p = 1.
 
-The ElectionGuard Kotlin library [7] and ElectionGuard 2.0 specification [1] is used for the cryptography primitives, in particular the parameters for $ \Z_p^r $, the variant of ElGamal encryption described next, and the use of HMAC-SHA-256 for hashing. 
+The ElectionGuard Kotlin library [7] and ElectionGuard 2.0 specification [1] is used for the cryptography primitives, in particular the parameters for $ \Z_p^r $, the variant of ElGamal encryption described next, and the use of HMAC-SHA-256 for hashing.
 
 
 
 
 #### Permutations
 
-A *permutation* is a bijective map $\psi: {1..N} \to {1..N}$. We use **px** to mean the permutation of a vector **x**, **px** = $\psi(\textbf x)$, so that $x_i$ = $px_j$, where $i={\psi(j)}$ and $j={\psi^{-1}(i)}$.   $x_i = px_{\psi^{-1}(i)}$,   $px_j = x_{\psi(j)}$, 
+A *permutation* is a bijective map $\psi: {1..N} \to {1..N}$. We use **px** to mean the permutation of a vector **x**, **px** = $\psi(\textbf x)$, so that $x_i$ = $px_j$, where $i={\psi(j)}$ and $j={\psi^{-1}(i)}$.   $x_i = px_{\psi^{-1}(i)}$,   $px_j = x_{\psi(j)}$,
 
 A *permutation* $\psi$ has a *permutation matrix* $B_\psi$ , where $b_{ij}$ = 1 if $\psi(i)$ = j, otherwise 0. Note that $\psi(\textbf x)$ = **px** = B**x** (matrix multiply).
 
@@ -52,38 +52,38 @@ $$
 $$
 \begin{align}
 (2a) \\
-    Encr(m, \xi) = (g^{\xi}, K^{m+\xi}) = (a, b) \\
-    Encr(0, \xi') = (g^{\xi'}, K^{\xi'}) \\
-    \\
+Encr(m, \xi) = (g^{\xi}, K^{m+\xi}) = (a, b) \\
+Encr(0, \xi') = (g^{\xi'}, K^{\xi'}) \\
+\\
 (2b)    \\
-    (a, b)*(a',b') = (a*a', b*b') \\
-    Encr(m, \xi) * Encr(m', \xi') = (g^{\xi+\xi'}, K^{m+m'+\xi+\xi'}) = Encr(m+m', \xi+\xi')\\
-    \\
+(a, b)*(a',b') = (a*a', b*b') \\
+Encr(m, \xi) * Encr(m', \xi') = (g^{\xi+\xi'}, K^{m+m'+\xi+\xi'}) = Encr(m+m', \xi+\xi')\\
+\\
 (2c)    \\
-    (a, b)^k = (a^k, b^k) \\
-    Encr(m, \xi)^k = (g^{\xi*k}, K^{(m*k+\xi*k)}) = Encr(m*k, \xi*k) \\
-    \\
+(a, b)^k = (a^k, b^k) \\
+Encr(m, \xi)^k = (g^{\xi*k}, K^{(m*k+\xi*k)}) = Encr(m*k, \xi*k) \\
+\\
 (2d)   \\
-    \prod_{j=1}^n Encr(m_j, \xi_j) = (g^{\sum_{j=1}^n \xi_j}, K^{\sum_{j=1}^n m_j+ \sum_{j=1}^n \xi_j})
-    = Encr(\sum_{j=1}^n m_j,\sum_{j=1}^n \xi_j) \\
-    \prod_{j=1}^n Encr(m_j, \xi_j)^{k_j} = Encr(\sum_{j=1}^n (m_j*k_j),\sum_{j=1}^n (\xi_j*k_j)) \\
-    \\
+\prod_{j=1}^n Encr(m_j, \xi_j) = (g^{\sum_{j=1}^n \xi_j}, K^{\sum_{j=1}^n m_j+ \sum_{j=1}^n \xi_j})
+= Encr(\sum_{j=1}^n m_j,\sum_{j=1}^n \xi_j) \\
+\prod_{j=1}^n Encr(m_j, \xi_j)^{k_j} = Encr(\sum_{j=1}^n (m_j*k_j),\sum_{j=1}^n (\xi_j*k_j)) \\
+\\
 (2e)     \\
-    ReEncr(m, r) = (g^{\xi+r}, K^{m+\xi+r}) = Encr(0, r) * Encr(m, \xi) \\
-    ReEncr(m, r)^k = Encr(0, r*k) * Encr(m*k, \xi*k) \\
-    \\
+ReEncr(m, r) = (g^{\xi+r}, K^{m+\xi+r}) = Encr(0, r) * Encr(m, \xi) \\
+ReEncr(m, r)^k = Encr(0, r*k) * Encr(m*k, \xi*k) \\
+\\
 (2f)    \\
-    \prod_{j=1}^n ReEncr(e_j, r_j)= (g^{\sum_{j=1}^n (\xi_j+r_j)}, K^{\sum_{j=1}^n (m_j+\xi_j+r_j)}) \\
-    =  ReEncr(\prod_{j=1}^n e_j, \sum_{j=1}^n r_j) \\
+\prod_{j=1}^n ReEncr(e_j, r_j)= (g^{\sum_{j=1}^n (\xi_j+r_j)}, K^{\sum_{j=1}^n (m_j+\xi_j+r_j)}) \\
+=  ReEncr(\prod_{j=1}^n e_j, \sum_{j=1}^n r_j) \\
 (2e)    \\
-    \prod_{j=1}^n ReEncr(m_j, r_j)^{k_j} = \prod_{j=1}^n Encr(0, r_j*k_j) * \prod_{j=1}^n Encr(m_j*k_j, \xi_j*k_j) \\
-    = Encr(0,\sum_{j=1}^n (r_j*k_j)) * \prod_{j=1}^n Encr(m_j, \xi_j)^{k_j} \\
+\prod_{j=1}^n ReEncr(m_j, r_j)^{k_j} = \prod_{j=1}^n Encr(0, r_j*k_j) * \prod_{j=1}^n Encr(m_j*k_j, \xi_j*k_j) \\
+= Encr(0,\sum_{j=1}^n (r_j*k_j)) * \prod_{j=1}^n Encr(m_j, \xi_j)^{k_j} \\
 \end{align}
 $$
 
-Let 
+Let
 
-1. ​	$e_j = Encr(m_j, \xi_j)$ 
+1. ​	$e_j = Encr(m_j, \xi_j)$
 2. ​	$re_j = ReEncr(m_j,r_j) = ReEncr(e_j,r_j) = Encr(0,r_j) * e_j$
 
 Then
@@ -95,6 +95,8 @@ re_j &= Encr(0,r_j) * e_j \\
 \end{align}
 $$
 
+------
+
 ### Verificatum
 
 #### Pedersen Commitments
@@ -102,7 +104,7 @@ $$
 For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Pedersen committment* to $\textbf m$ is
 $$
 \begin{align}
-Commit(\textbf m, cr) = g^{cr} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n} 
+Commit(\textbf m, cr) = g^{cr} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n}
 = g^{cr} * \prod_{i=1}^n h_i^{m_i}
 \end{align}
 $$
@@ -122,83 +124,108 @@ c_j = Commit(\textbf b_j, cr_j) = g^{cr_j} * \prod_{i=1}^n h_i^{b_{ij}} = g^{cr_
 $$
 
 
-#### Proof Construction
+#### Definitions
 Let
 
-- n = number of rows
+- n = number of rows (eg ballots)
 - width = number of ciphertexts in each row
-- $\vec{w}$ = rows of ciphertexts (n x width)
-- $\vec{wp}$ = shuffled and reencrypted rows of ciphertexts (n x width)
-- $\vec{rn}$ = reencryption nonces (n x width). All nonces are $\in \Z_q$
+- $W$ = matrix of ciphertexts (n x width), with entries $w_{i,j}$ ; its row vectors of width ciphertexts are $\vec{w}_i, i=1..n$ ; and its column vectors of n ciphertexts are $\vec{w}_j, j=1..width$
+- $W^\prime$ = matrix of shuffled and reencrypted ciphertexts (n x width), with entries, row vectors and column vectors $w^\prime_{i,j}, \vec{w^\prime}_i, \vec{w^\prime}_j$ respectively
+- $R$ = matrix of reencryption nonces $\in \Z_q$ (unpermuted)
 - $\psi$ = permutation function
-- *ipe* = inverse permutation function = $\psi^{-1}$
-- $h_0, \vec{h}$ = generators of $\Z_p^r$
+- $\psi^{-1}$ = inverse permutation function
+- $\vec{h}$ = generators of $\Z_p^r, h_0 = \vec{h}_1$
 
 
+
+#### **Mix**
+
+Choose R = (n x width) matrix of reencryption random nonces, ie separate nonces for each ciphertext.
+
+$W^{\prime}$ = $\psi^{-1}$(Reencrypt(W, R))
+
+
+
+#### Proof Construction
+
+The Proof equations are reverse engineered from reading the Verificatum code. AFAIK, there is no  documentation of these except in the Verificatum code, in particular not in [6], although likely they are implied in [4] using different notation. In any case, these equations are implemented in the kotlin library *ShuffleProver* and verify with *ShuffleVerifier*. The *ShuffleVerifier* also verifies against the proofs output by Verificatum itself, leading to some confidence that these equations capture the TW algorithm as implemented in Verificatum.
 
 **Commitment to permutation**
 
-Choose *n* random permutation nonces $\vec{pn}$.
-And form permutation commitments $\vec{u}$ that will be public:
+Choose a vector of *n* random permutation nonces $\vec{pn}$.
+Form permutation commitments $\vec{u}$ that will be public:
 $$
-u_j = g^{pn_j} h_i,\ \ \ j = \psi(i)\ \ \ TODO
+u_j = g^{pn_j} \cdot h_i,\ \ \ j = \psi(i)\ \ \ TODO
 $$
 
 **Commitment to shuffle**
 
-Choose *n* random nonces $\vec{e}$ that will be public. Let ${e^\prime}$ = $\psi^{-1}(\vec e)$.
-Choose *n* random nonces $\vec{\epsilon}$ that will be private.
-Choose random nonces $\alpha, \gamma, \delta$ that will be private.
+Compute *n* nonces $\vec{e}$ that will be public. Let ${e^\prime}$ = $\psi^{-1}(\vec e)$.
+Choose vectors of *n* random nonces $\vec{b}, \vec{\beta}, \vec{\epsilon}$ .
+Choose random nonces $\alpha, \gamma, \delta$ .
 
-Form the following values:
+Form the following values $\in \Z_p^r$:
 $$
 \begin{align}
-A^\prime &= g^\alpha \prod_{i=1}^n h_i^{\epsilon_i} \in \Z_p^r \\
-B &= g^\gamma \in (\Z_p^r)^n \ \ \ TODO \\
-B^\prime &= g^\gamma \in (\Z_p^r)^n \ \ \ TODO \\
-C^\prime &= g^\gamma \in \Z_p^r \\
-D^\prime &= g^\delta \in \Z_p^r \\
+A^\prime &= g^\alpha \prod_{i=1}^n h_i^{\epsilon_i} \\
+B_i &= g^{b_i} (B_{i-1})^{e^\prime_i},\ where\ B_0 = h_0,\ i = 1..N\\
+B^\prime_i &= g^{\beta_i} (B_{i-1})^{\epsilon_i},\ where\ B_0 = h_0,\ i = 1..N\\
+C^\prime &= g^\gamma  \\
+D^\prime &= g^\delta  \\
 \end{align}
 $$
 
 **Commitment to exponents**
 
-Choose *width* random nonces $\vec{\phi}$ that will be private.
+Choose *width* random nonces $\vec{\phi}$ .
 
-Form the following values:
+Form the following ciphertext values:
 
 $$
 \begin{align}
-wpcolj &=\ jth\ column\ of\ \vec {wp}  \in ciphertext^{n},\ j=1..width \\
-F^\prime_j &= Encr(0, -{\phi_j}) \cdot \prod_{i=1}^n (wpcolj)_i ^ {\epsilon_i} \in ciphertext,\ j=1..width \\
+F^\prime_j &= Encr(0, -{\phi_j}) \cdot\prod_{i=1}^n (w^\prime_{i,j}) ^ {\epsilon_i} \ ,\ j=1..width \\
 \end{align}
 $$
 
-Note that $F^\prime$ has *width* components, one for each of the columns of $\vec {wp}$. This disambiguates   $\prod_{i=1}^{n} wp^{\epsilon}$, which is interpreted as shorthand for *width* equations, using the column vectors of wp. 
+Note that $\vec{F^\prime}$ has *width* components, one for each of the column vectors of $W^\prime = \vec{w^\prime}_j$. For each column vector, form the product of it exponentiated with $\vec{\epsilon}$. We can use any of the following notations:
+
+$$
+\begin{align}
+&= \prod_{i=1}^n (w^\prime_{i,j}) ^ {\epsilon_i},\ j=1..width \\
+&= \prod_{i=1}^n (\vec{w^\prime}_j)_i ^ {\epsilon_i} \\
+&= \prod_{i=1}^n (W^\prime) ^ {\epsilon} \\
+\end{align}
+$$
+
+This disambiguates the equations in Algorithm 19 of [6], for example:   $\prod w_i^{e_i}$. and   $\prod (w^\prime_i)^{k_{E,i}}$.
 
 
 
 **Reply to challenge v:**
 
-A challenge v $\in \Z_q$ is given, and the following is the reply:
+A challenge v $\in \Z_q$ is given, and the following values $\in \Z_q$ are made as reply:
 $$
 \begin{align}
-k_A &= v\ \cdot <\vec r \cdot \vec e> + \alpha,\ \in \Z_q \\
-\vec{k_B} &= v \cdot \vec b + \beta,\ \in (\Z_q)^n \\
-k_C &= v \cdot \sum_{i=1}^n r_i + \gamma,\ \in \Z_q \\
-k_D &= v \cdot d + \delta,\ \in \Z_q \\
-\vec{k_E} &= v \cdot \vec{e^\prime} + \vec{\epsilon},\ \in (\Z_q)^n \\
+k_A &= v\ \cdot <\vec{pn} \cdot \vec e> + \alpha \\
+\vec{k_B} &= v \cdot \vec b + \vec{\beta} \\
+k_C &= v \cdot \sum_{i=1}^n pn_i + \gamma \\
+k_D &= v \cdot d + \delta \\
+\vec{k_E} &= v \cdot \vec{e^\prime} + \vec{\epsilon} \\
 \end{align}
 $$
 and
 $$
 \begin{align}
-rncolj &=\ jth\ column\ of\ reencryption\ nonces\ \vec {rn},\ j=1..width \\
-k_{F,j} &= v\ \cdot <rncolj, e^{\prime}> + \phi_j \\
+Let\ \vec{R}_j &=\ jth\ column\ of\ reencryption\ nonces\ R \\
+k_{F,j} &= v\ \cdot <\vec{R}_j, \vec{e}^{\prime}> +\ \phi_j\ ,\ j=1..width \\
 \end{align}
 $$
 
-#### Serialization of the TW Proof of Shuffle
+where < , > is the inner product of two vectors.
+
+
+
+#### Proof of Shuffle Data Structure
 
 ```
 data class ProofOfShuffle(
@@ -219,7 +246,6 @@ data class ProofOfShuffle(
     val kC: ElementModQ,
     val kD: ElementModQ,
     val kE: VectorQ,
-    val kEF: VectorQ,
     val kF: VectorQ, // width
 )
 ```
@@ -228,7 +254,7 @@ data class ProofOfShuffle(
 
 #### Proof Verification
 
-The following equations are taken from Algorithm 19 of [6] and checked against the verificatum  implementation. The main ambiguity is in the meaning of  $\prod_{i=1}^{n} w_i^{e_i}$ and  $\prod_{i=1}^{n} wp_i^{k_{E,i}}$ in steps 3 and 5. These are interpreted as a short hand for *width* equations on the column vectors of *w* and *wp*. 
+The following equations are taken from Algorithm 19 of [6] and checked against the Verificatum  implementation. The main ambiguity is in the meaning of  $\prod_{i=1}^{n} w_i^{e_i}$ and  $\prod_{i=1}^{n} wp_i^{k_{E,i}}$ in steps 3 and 5. These are interpreted as a short hand for *width* equations on the column vectors of *w* and *wp*.
 We use one-based array indexing for notational simplicity.
 
 The Verifier is provided with:
@@ -246,37 +272,34 @@ The $\vec h$ (generators), $\vec e$ nonces, and challenge are deterministically 
 
 
 
-The following are computed:
+The following values $\in \Z_p^r$ are computed:
 $$
 \begin{align}
-A &= \prod_{i=1}^n u_i^{e_i} \in \Z_p^r \\
-C &= (\prod_{i=1}^n u_i) / (\prod_{i=1}^n h_i),\ \in \Z_p^r \\
-D &= B_{n} \cdot h_0^{\prod_{i=1}^n e_i} \in \Z_p^r \\
+A &= \prod_{i=1}^n u_i^{e_i} \\
+C &= (\prod_{i=1}^n u_i) / (\prod_{i=1}^n h_i) \\
+D &= B_{n} \cdot h_0^{\prod_{i=1}^n e_i} \\
 \end{align}
 $$
 and
 $$
 \begin{align}
-F_j &= \prod_{i=1}^n (wcolj)_i ^ {e_i} \in ciphertext,\ j=1..width \\
+F_j &= \prod_{i=1}^n (w_{i,j}) ^ {e_i}\ ,\ j=1..width \\
 \end{align}
 $$
-
-where $wcolj$ = jth column of $\vec w$, is an array of ciphertexts of length n
 
 Then the following are checked, and if all are true, the verification succeeds:
 $$
 \begin{align}
 A^v \cdot A^\prime &= g^{k_A} \prod_{i=1}^{n} h_i^{k_{E,i}} \\
-B_i^v \cdot B_i^\prime &= g^{k_{B,i}} B_{i-1}^{k_{E,i}},\ where\ B_0 = h_0,\ i = 1..N\\
-C^v \cdot C^\prime &= g^{k_C} \ \ \ (sum\ of\ each\ row\ of\ \psi\ is\ 1) \\
+B_i^v \cdot B_i^\prime &= g^{k_{B,i}} (B_{i-1})^{k_{E,i}},\ where\ B_0 = h_0,\ i = 1..n\\
+C^v \cdot C^\prime &= g^{k_C} \\
 D^v \cdot D^\prime &= g^{k_D} \\
 \end{align}
 $$
 and
 $$
 \begin{align}
-F_j^v F_j^\prime &= Encr(0, -k_{F,i}) \prod_{i=1}^{n} (wpcolj)^{k_{E,i}},\ j=1..width \\
-where\ wpcolj &=\ jth\ column\ of\ \vec {wp}  \in ciphertext^{n} \\
+F_j^v F_j^\prime &= Encr(0, -k_{F,j}) \prod_{i=1}^{n} (w^\prime_{i,j})^{k_{E,i}},\ j=1..width \\
 \end{align}
 $$
 
@@ -284,11 +307,13 @@ $$
 
 #### issues
 
-**Calculation of   $\vec h$ (generators) , $\vec e$ and the challenge nonces** are highly dependent on the VMN implementation. The verifier is expected to independently generate, ie they are not part of the ProofOfShuffle output).
+**Calculation of   $\vec h$ (generators) , $\vec e$ and the challenge nonces** are highly dependent on the VMN implementation. The verifier is expected to independently generate, ie they are not part of the ProofOfShuffle output.
 
 **generators** may need to be carefully chosen, see section 6.8 of vmnv: "In particular, it is not acceptable to derive exponents x1 , . . . , xN in Zq and then define hi = g^xi"
 
 
+
+------
 
 ### ChVote
 
@@ -299,7 +324,7 @@ This follows Haenni et. al. [2], which has a good explanation of TW, sans vector
 For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Extended Pedersen committment* to $\textbf m$ is
 $$
 \begin{align}
-Commit(\textbf m, cr) = g^{cr} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n} 
+Commit(\textbf m, cr) = g^{cr} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n}
 = g^{cr} * \prod_{i=1}^n h_i^{m_i}
 \end{align}
 $$
@@ -322,7 +347,7 @@ $$
 
 #### Proof of permutation
 
-Let **c** = $Commit(\psi, \textbf r)$ = $(c_1, c_2, .. c_N)$, with randomization vector **cr** = $(cr_1, cr_2, .. cr_N)$, and $crbar = \sum_{i=1}^n cr_i$. 
+Let **c** = $Commit(\psi, \textbf r)$ = $(c_1, c_2, .. c_N)$, with randomization vector **cr** = $(cr_1, cr_2, .. cr_N)$, and $crbar = \sum_{i=1}^n cr_i$.
 
 $Condition$ 1 implies that
 $$
@@ -331,7 +356,7 @@ $$
 
 Let $\textbf u = (u_1 .. u_n)$ be arbitrary values  $\in \Zeta_q, \textbf {pu}$ its permutation by $\psi$, and  $cru=\sum_{j=1}^N {cr_j u_j}$.
 
- $Condition$ 2 implies that:
+$Condition$ 2 implies that:
 $$
 \prod_{i=1}^n u_i = \prod_{j=1}^n pu_j\ \ \ (5.3)
 $$
@@ -396,7 +421,7 @@ The $Encr(0, ..)$ is because we use exponential ElGamal, so is fine. Their use o
 
 #### Simple
 
-Much of the literature assumes that each row to be mixed consists of a single ciphertext. In our application we need the possibility that each row consists of a vector of ciphertexts. 
+Much of the literature assumes that each row to be mixed consists of a single ciphertext. In our application we need the possibility that each row consists of a vector of ciphertexts.
 So for each row i, we now have a vector of *w = width* ciphertexts:
 $$
 \textbf {e}_i = (e_{i,1},.. e_{i,w}) = \{e_{i,k}\},\ k=1..w
@@ -422,7 +447,7 @@ Then eq 5.5 is changed to
 $$
 \prod_{j=1}^n \prod_{k=1}^w pre_{j,k}^{pu_j} = Encr(0,sumru') * \prod_{i=1}^n \prod_{k=1}^w e_{i,k}^{u_i}
 $$
-where, now 
+where, now
 $$
 sumru' &= \sum_{j=1}^n width * (pr_j*pu_j)\ \ \ (case 1) \\
 &= \sum_{j=1}^n \sum_{k=1}^n (pr_{j,k}*pu_j)\ \ \ (case 2).
@@ -470,8 +495,8 @@ Let **ω** be width random nonces, **ω'** = permuted **ω**, and $\textbf {pe}_
 
 $$
 \textbf t_4 &= ReEnc(\prod_i^n \textbf {pe}_i^{\textbf ω^\prime_i}, − \textbf {ω}_4 ) \\
- &= (ReEnc(\prod_i^n \textbf {pe}_i^{\textbf ω^\prime_i}, − \textbf {ω}_{4,1} ),..
- (ReEnc(\prod_i^n \textbf {pe}_i^{\textbf ω^\prime_i}, − \textbf {ω}_{4,w} )) \\
+&= (ReEnc(\prod_i^n \textbf {pe}_i^{\textbf ω^\prime_i}, − \textbf {ω}_{4,1} ),..
+(ReEnc(\prod_i^n \textbf {pe}_i^{\textbf ω^\prime_i}, − \textbf {ω}_{4,w} )) \\
 $$
 
 where
@@ -485,7 +510,7 @@ $$
 \textbf t_4 = \{ Rencr( \prod_i^n \textbf {pe}_{i,k}^{\textbf ω^\prime_i}, − \textbf {ω}_4 ) \}, k = 1.. width
 $$
 
-#### (quite a bit more complicated than "our simplest thing to do" above)
+(quite a bit more complicated than "our simplest thing to do" above)
 
 
 
@@ -501,12 +526,14 @@ $$
 
 
 
-### Timings (preliminary)
+------
 
-Environment used for testing: 
+### Timings vs Verificatum (preliminary)
+
+Environment used for testing:
 * Ubuntu 22.04.3
 * HP Z840 Workstation, Intel Xeon CPU E5-2680 v3 @ 2.50GHz
-* 24-cores, two threads per core. 
+* 24-cores, two threads per core.
 
 
 
@@ -535,7 +562,7 @@ exp/acc = 3.01007326007326
 | regular exps     | 0       | 4 * n                 | 2 * N        | 4*N + 4 * n + 4 |
 | accelerated exps | 2 * N   | 3 * n + 2 * width + 4 | 0            | n + 2*width + 3 |
 
-Even though N dominates, width is bound but nrows can get arbitrarily big. 
+Even though N dominates, width is bound but nrows can get arbitrarily big.
 
 Could break into batches of 100-1000 ballots each and do each batch in parallel. The advantage here is that there would be complete parallelization.
 
@@ -605,13 +632,13 @@ Time egk-mixnet
 
 Vmn proof 27/(17.4+5.4) = 1.18 is 18% slower
 
-Vmn has verifier 33355/12123 = 2.75 faster, TODO: investigate if theres an algorithm improvement there. Possibly related to the "wide integer" representation, eg see 
+Vmn has verifier 33355/12123 = 2.75 faster, TODO: investigate if theres an algorithm improvement there. Possibly related to the "wide integer" representation, eg see
 
 ```
 LargeInteger.modPowProd(LargeInteger[] bases, LargeInteger[] exponents, LargeInteger modulus)
 ```
 
-More likely there are parallelization being done, eg in the same  routine. So to compare, we have to run vmn and see what parelization it gets. 
+More likely there are parallelization being done, eg in the same  routine. So to compare, we have to run vmn and see what parelization it gets.
 
 Also note LargeInteger.magic that allows use of VMGJ.
 
@@ -623,7 +650,7 @@ SO why doesnt same speedup apply to proof?
 
 ### References
 
-1. Josh Benaloh and Michael Naehrig, *ElectionGuard Design Specification, Version 2.0.0*, Microsoft Research, August 18, 2023, https://github.com/microsoft/electionguard/releases/download/v2.0/EG_Spec_2_0.pdf 
+1. Josh Benaloh and Michael Naehrig, *ElectionGuard Design Specification, Version 2.0.0*, Microsoft Research, August 18, 2023, https://github.com/microsoft/electionguard/releases/download/v2.0/EG_Spec_2_0.pdf
 2. Rolf Haenni, Reto E. Koenig, Philipp Locher, Eric Dubuis. *CHVote Protocol Specification Version 3.5*, Bern University of Applied Sciences, February 28th, 2023, https://eprint.iacr.org/2017/325.pdf
 3. R. Haenni, P. Locher, R. E. Koenig, and E. Dubuis. *Pseudo-code algorithms for verifiable re-encryption mix-nets*. In M. Brenner, K. Rohloff, J. Bonneau, A. Miller, P. Y. A.Ryan, V. Teague, A. Bracciali, M. Sala, F. Pintore, and M. Jakobsson, editors, FC’17, 21st International Conference on Financial Cryptography, LNCS 10323, pages 370–384, Silema, Malta, 2017.
 4. B. Terelius and D. Wikström. *Proofs of restricted shuffles*, In D. J. Bernstein and T. Lange, editors, AFRICACRYPT’10, 3rd International Conference on Cryptology inAfrica, LNCS 6055, pages 100–113, Stellenbosch, South Africa, 2010.
