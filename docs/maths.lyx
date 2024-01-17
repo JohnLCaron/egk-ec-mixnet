@@ -1,0 +1,2792 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+% Options for packages loaded elsewhere
+
+
+%
+\usepackage{ifxetex}
+\usepackage{ifluatex}\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage{textcomp}% provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+\defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+
+\urlstyle{same} % disable monospaced font for URLs
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+ % remove section numbering
+
+\author{John Caron}
+\end_preamble
+\use_default_options false
+\maintain_unincluded_children false
+\language english
+\language_package none
+\inputencoding utf8
+\fontencoding T1
+\font_roman "lmodern" "default"
+\font_sans "default" "default"
+\font_typewriter "lmodern" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks false
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder false
+\pdf_colorlinks false
+\pdf_backref section
+\pdf_pdfusetitle false
+\pdf_quoted_options "hidelinks,pdfcreator={LaTeX via pandoc}"
+\papersize default
+\use_geometry false
+\use_package amsmath 2
+\use_package amssymb 2
+\use_package cancel 0
+\use_package esint 1
+\use_package mathdots 0
+\use_package mathtools 0
+\use_package mhchem 0
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date true
+\justification true
+\use_refstyle 0
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth -1
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+egk mixnet maths
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+John Caron, 1/13/2024
+\end_layout
+
+\begin_layout Standard
+Preliminary explorations of mixnet implementations to be used with the ElectionG
+uard Kotlin library.
+\end_layout
+
+\begin_layout Standard
+The ElectionGuard Kotlin library [7] is used for the cryptography primitives.
+ This library closely follows the ElectionGuard 2.0 specification [1].
+\end_layout
+
+\begin_layout Standard
+The math here mostly recapitulates the work of Wikström [6]; Haenni et.
+ al.
+ [2], [3] in explaining the Terelius / Wikström (TW) mixnet algorithm [4],
+ [5]; and the work of Haines [9] that gives a formal proof of security of
+ TW when the shuffle involves vectors of ciphertexts.
+\end_layout
+
+\begin_layout Standard
+Instead of psuedocode, the kotlin code acts as the implementation of the
+ math described here.
+ It can act as a reference and comparison for ports to other languages.
+\end_layout
+
+\begin_layout Standard
+Ive tried to avoid notation that is hard to read, preferring for example,
+ multiple character symbols like 
+\begin_inset Formula $pr$
+\end_inset
+
+ instead of r̃ or r̂ , since the glyphs can get too small to read when they
+ are used in exponents or subscripts, and can be hard to replicate in places
+ other than high quality Tex or PDF renderers.
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Subsubsection
+Definitions
+\end_layout
+
+\begin_layout Paragraph
+The ElectionGuard Group
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $Z=\{...,−3,−2,−1,0,1,2,3,...\}$
+\end_inset
+
+ is the set of integers.
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $Z_{n}=\{0,1,2,...,n−1\}$
+\end_inset
+
+ is the ring of integers modulo n.
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $Z_{n}^{*}$
+\end_inset
+
+ is the multiplicative subgroup of 
+\begin_inset Formula $Z_{n}$
+\end_inset
+
+ that consists of all invertible elements modulo n.
+ When p is a prime, 
+\begin_inset Formula $Z_{p}^{*}=\{1,2,3,...,p−1\}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $Z_{p}^{r}$
+\end_inset
+
+ is the set of r-th-residues in 
+\begin_inset Formula $Z_{p}^{*}$
+\end_inset
+
+ .
+ Formally, 
+\begin_inset Formula $Z_{p}^{r}=\{y\in Z_{p}^{*}$
+\end_inset
+
+ for which there exists 
+\begin_inset Formula $x\in Z_{p}^{*}$
+\end_inset
+
+ where 
+\begin_inset Formula $y=x^{r}$
+\end_inset
+
+ mod p}.
+ When p is a prime for which p − 1 = q * r with q a prime that is not a
+ divisor of the integer r, then 
+\begin_inset Formula $Z_{p}^{r}$
+\end_inset
+
+ is an order-q cyclic subgroup of 
+\begin_inset Formula $Z_{p}^{*}$
+\end_inset
+
+ , and for any 
+\begin_inset Formula $y\in Z_{p}^{*}$
+\end_inset
+
+ , 
+\begin_inset Formula $y\in Z_{p}^{r}$
+\end_inset
+
+ if and only if 
+\begin_inset Formula $y^{q}$
+\end_inset
+
+ mod p = 1.
+ 
+\end_layout
+
+\begin_layout Standard
+The ElectionGuard Kotlin library [7] and ElectionGuard 2.0 specification
+ [1] is used for the cryptography primitives, in particular the parameters
+ for 
+\begin_inset Formula $Z_{p}^{r}$
+\end_inset
+
+, the variant of ElGamal encryption described next, and the use of HMAC-SHA-256
+ for hashing
+\end_layout
+
+\begin_layout Paragraph
+Permutations
+\end_layout
+
+\begin_layout Standard
+A 
+\emph on
+permutation
+\emph default
+ is a bijective map 
+\begin_inset Formula $\psi:{1..N}\to{1..N}$
+\end_inset
+
+.
+ We use 
+\series bold
+px
+\series default
+ to mean the permutation of a vector 
+\series bold
+x
+\series default
+, 
+\series bold
+px
+\series default
+ = 
+\begin_inset Formula $\psi(\textbf{x})$
+\end_inset
+
+, so that 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ = 
+\begin_inset Formula $px_{j}$
+\end_inset
+
+, where 
+\begin_inset Formula $i={\psi(j)}$
+\end_inset
+
+ and 
+\begin_inset Formula $j={\psi^{-1}(i)}$
+\end_inset
+
+.
+ 
+\begin_inset Formula $x_{i}=px_{\psi^{-1}(i)}$
+\end_inset
+
+, 
+\begin_inset Formula $px_{j}=x_{\psi(j)}$
+\end_inset
+
+,
+\end_layout
+
+\begin_layout Standard
+A 
+\emph on
+permutation
+\emph default
+ 
+\begin_inset Formula $\psi$
+\end_inset
+
+ has a 
+\emph on
+permutation matrix
+\emph default
+ 
+\begin_inset Formula $B_{\psi}$
+\end_inset
+
+ , where 
+\begin_inset Formula $b_{ij}$
+\end_inset
+
+ = 1 if 
+\begin_inset Formula $\psi(i)$
+\end_inset
+
+ = j, otherwise 0.
+ Note that 
+\begin_inset Formula $\psi(\textbf{x})$
+\end_inset
+
+ = 
+\series bold
+px
+\series default
+ = B
+\series bold
+x
+\series default
+ (matrix multiply).
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $B_{\psi}$
+\end_inset
+
+ = (
+\begin_inset Formula $b_{ij}$
+\end_inset
+
+) is an n-by-n matrix over
+\begin_inset Formula $Z_{q}$
+\end_inset
+
+ and 
+\series bold
+x
+\series default
+ = 
+\begin_inset Formula $(x_{1},...,x_{n})$
+\end_inset
+
+ a vector of N independent variables, then 
+\begin_inset Formula $B_{\psi}$
+\end_inset
+
+ is a permutation matrix if and only
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\sum_{i=1}^{n}b_{ij} &= 1, for\ all\ j\ \ \ \ (Equation\ 1) \\
+\sum_{i=1}^{n}\sum_{j=1}^{n}b_{ij}x_{i} &= \sum_{i=1}^{n}x_{i}\ \ \ \ (Equation\ 2)
+\end{align*}
+\end_insetS
+\end_layout
+
+\begin_layout Paragraph
+ElGamal Encryption and Reencryption
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+(2a) \\
+Encr(m,\xi)=(g^{\xi},K^{m+\xi})=(a,b) \\
+Encr(0,\xi')=(g^{\xi'},K^{\xi'}) \\
+\\
+(2b) \\
+(a,b)*(a',b')=(a*a',b*b')\\
+Encr(m,\xi)*Encr(m',\xi')=(g^{\xi+\xi'},K^{m+m'+\xi+\xi'})=Encr(m+m',\xi+\xi')\\
+\\
+(2c)\\
+(a,b)^{k}=(a^{k},b^{k})\\
+Encr(m,\xi)^{k}=(g^{\xi*k},K^{(m*k+\xi*k)})=Encr(m*k,\xi*k)\\
+\\
+(2d)\\
+\prod_{j=1}^{n}Encr(m_{j},\xi_{j})=(g^{\sum_{j=1}^{n}\xi_{j}},K^{\sum_{j=1}^{n}m_{j}+\sum_{j=1}^{n}\xi_{j}})=Encr(\sum_{j=1}^{n}m_{j},\sum_{j=1}^{n}\xi_{j})\\
+\prod_{j=1}^{n}Encr(m_{j},\xi_{j})^{k_{j}}=Encr(\sum_{j=1}^{n}(m_{j}*k_{j}),\sum_{j=1}^{n}(\xi_{j}*k_{j}))\\
+\\
+(2e)\\
+ReEncr(m,r)=(g^{\xi+r},K^{m+\xi+r})=Encr(0,r)*Encr(m,\xi)\\
+ReEncr(m,r)^{k}=Encr(0,r*k)*Encr(m*k,\xi*k)\\
+\\
+(2f)\\
+\prod_{j=1}^{n}ReEncr(e_{j},r_{j})=(g^{\sum_{j=1}^{n}(\xi_{j}+r_{j})},K^{\sum_{j=1}^{n}(m_{j}+\xi_{j}+r_{j})})\\
+=ReEncr(\prod_{j=1}^{n}e_{j},\sum_{j=1}^{n}r_{j})\\
+(2e)\\
+\prod_{j=1}^{n}ReEncr(m_{j},r_{j})^{k_{j}}=\prod_{j=1}^{n}Encr(0,r_{j}*k_{j})*\prod_{j=1}^{n}Encr(m_{j}*k_{j},\xi_{j}*k_{j})\\
+=Encr(0,\sum_{j=1}^{n}(r_{j}*k_{j}))*\prod_{j=1}^{n}Encr(m_{j},\xi_{j})^{k_{j}}\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $e_{j}=Encr(m_{j},\xi_{j})$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $re_{j}=ReEncr(m_{j},r_{j})=ReEncr(e_{j},r_{j})=Encr(0,r_{j})*e_{j}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+Then
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+re_{j} &= Encr(0,r_{j})*e_{j}\\
+\prod_{j=1}^{n}re_{j}^{k_{j}} &= \prod_{j=1}^{n}Encr(0,r_{j})^{k_{j}}*\prod_{j=1}^{n}e_{j}^{k_{j}}\\
+ &= Encr(0,\sum_{j=1}^{n}(r_{j}*k_{j}))*\prod_{j=1}^{n}e_{j}^{k_{j}},\ \ \ \ (Equation\ 1)\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset CommandInset line
+LatexCommand rule
+width "50line%"
+height "0.5pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Verificatum
+\end_layout
+
+\begin_layout Paragraph
+Pedersen Commitments
+\end_layout
+
+\begin_layout Standard
+For a set of messages 
+\begin_inset Formula $\textbf{m}=(m_{1}..m_{n})\in Z_{q}$
+\end_inset
+
+, the 
+\emph on
+Pedersen committment
+\emph default
+ to 
+\begin_inset Formula $\textbf{m}$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+Commit(\textbf{m},cr)=g^{cr}*h_{1}^{m_{1}}*h_{2}^{m_{2}}*..h_{n}^{m_{n}}=g^{cr}*\prod_{i=1}^{n}h_{i}^{m_{i}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where (
+\begin_inset Formula $g,\textbf{h}$
+\end_inset
+
+) are generators of 
+\begin_inset Formula $Z_{p}^{r}$
+\end_inset
+
+ with randomization nonce 
+\begin_inset Formula $cr\in Z_{q}$
+\end_inset
+
+.
+ (section 1.2 of [4])
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $\textbf{b}_{i}$
+\end_inset
+
+ is the 
+\begin_inset Formula $i^{th}$
+\end_inset
+
+ column of 
+\begin_inset Formula $B_{\psi}$
+\end_inset
+
+, then the 
+\emph on
+permutation commitment to 
+\begin_inset Formula $\psi$
+\end_inset
+
+
+\emph default
+ is defined as the vector of committments to its columns:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Commit(\psi,\textbf{cr})=(Commit(\textbf{b}_{1},cr_{1}),Commit(\textbf{b}_{2},cr_{2}),..Commit(\textbf{b}_{N},cr_{N}))=
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+c_{j}=Commit(\textbf{b}_{j},cr_{j})=g^{cr_{j}}*\prod_{i=1}^{n}h_{i}^{b_{ij}}=g^{cr_{j}}*h_{i},\ for\ i=ψ^{-1}(j)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph
+Definitions
+\end_layout
+
+\begin_layout Standard
+Let
+\end_layout
+
+\begin_layout Itemize
+n = number of rows (eg ballots) 
+\end_layout
+
+\begin_layout Itemize
+width = number of ciphertexts in each row 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $W$
+\end_inset
+
+ = matrix of ciphertexts (n x width), with entries 
+\begin_inset Formula $w_{i,j}$
+\end_inset
+
+ ; its row vectors of width ciphertexts are 
+\begin_inset Formula $\vec{w}_{i},i=1..n$
+\end_inset
+
+ ; and its column vectors of n ciphertexts are 
+\begin_inset Formula $\vec{w}_{j},j=1..width$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $W^{\prime}$
+\end_inset
+
+ = matrix of shuffled and reencrypted ciphertexts (n x width), with entries,
+ row vectors and column vectors 
+\begin_inset Formula $w_{i,j}^{\prime},\vec{w^{\prime}}_{i},\vec{w^{\prime}}_{j}$
+\end_inset
+
+ respectively 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $R$
+\end_inset
+
+ = matrix of reencryption nonces 
+\begin_inset Formula $\in Z_{q}$
+\end_inset
+
+ (unpermuted) 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\psi$
+\end_inset
+
+ = permutation function 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\psi^{-1}$
+\end_inset
+
+ = inverse permutation function 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\vec{h}$
+\end_inset
+
+ = generators of 
+\begin_inset Formula $Z_{p}^{r},h_{0}=\vec{h}_{1}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+We use one-based array indexing for notational simplicity.
+\end_layout
+
+\begin_layout Paragraph
+
+\series bold
+Mix
+\end_layout
+
+\begin_layout Standard
+Choose R = (n x width) matrix of reencryption random nonces, ie separate
+ nonces for each ciphertext.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $W^{\prime}$
+\end_inset
+
+ = 
+\begin_inset Formula $\psi^{-1}$
+\end_inset
+
+(Reencrypt(W, R))
+\end_layout
+
+\begin_layout Paragraph
+Proof Construction
+\end_layout
+
+\begin_layout Standard
+The Proof equations are reverse engineered from reading the Verificatum
+ code.
+ AFAIK, there is no documentation of these except in the Verificatum code,
+ in particular not in [6], although likely they are implied in [4] using
+ different notation.
+ In any case, these equations are implemented in the kotlin library 
+\emph on
+ShuffleProver
+\emph default
+ and verify with 
+\emph on
+ShuffleVerifier
+\emph default
+.
+ The 
+\emph on
+ShuffleVerifier
+\emph default
+ also verifies against the proofs output by Verificatum itself, leading
+ to some confidence that these equations capture the TW algorithm as implemented
+ in Verificatum.
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Commitment to permutation
+\end_layout
+
+\begin_layout Standard
+Choose a vector of 
+\emph on
+n
+\emph default
+ random permutation nonces 
+\begin_inset Formula $\vec{pn}$
+\end_inset
+
+.
+\begin_inset Newline newline
+\end_inset
+
+ Form permutation commitments 
+\begin_inset Formula $\vec{u}$
+\end_inset
+
+ that will be public:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+u_{j}=g^{pn_{j}}\cdot h_{i},\ \ \ j=\psi(i)\ \ \ TODO
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Commitment to shuffle
+\end_layout
+
+\begin_layout Standard
+Compute 
+\emph on
+n
+\emph default
+ nonces 
+\begin_inset Formula $\vec{e}$
+\end_inset
+
+ that will be public.
+ Let 
+\begin_inset Formula ${e^{\prime}}$
+\end_inset
+
+ = 
+\begin_inset Formula $\psi^{-1}(\vec{e})$
+\end_inset
+
+.
+\begin_inset Newline newline
+\end_inset
+
+ Choose vectors of 
+\emph on
+n
+\emph default
+ random nonces 
+\begin_inset Formula $\vec{b},\vec{\beta},\vec{eps}$
+\end_inset
+
+ .
+\begin_inset Newline newline
+\end_inset
+
+ Choose random nonces 
+\begin_inset Formula $\alpha,\gamma,\delta$
+\end_inset
+
+ .
+\end_layout
+
+\begin_layout Standard
+Form the following values 
+\begin_inset Formula $\in Z_{p}^{r}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+A^{\prime} & =g^{\alpha}\prod_{i=1}^{n}h_{i}^{eps_{i}}\\
+B_{i} & =g^{b_{i}}(B_{i-1})^{e_{i}^{\prime}},\ where\ B_{0}=h_{0},\ i=1..N\\
+B_{i}^{\prime} & =g^{\beta_{i}}(B_{i-1})^{eps_{i}},\ where\ B_{0}=h_{0},\ i=1..N\\
+C^{\prime} & =g^{\gamma}\\
+D^{\prime} & =g^{\delta}\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Commitment to exponents
+\end_layout
+
+\begin_layout Standard
+Choose 
+\emph on
+width
+\emph default
+ random nonces 
+\begin_inset Formula $\vec{\phi}$
+\end_inset
+
+ .
+\end_layout
+
+\begin_layout Standard
+Form the following ciphertext values:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+F_{j}^{\prime} & =Encr(0,-{\phi_{j}})\cdot\prod_{i=1}^{n}(w_{i,j}^{\prime})^{eps_{i}}\ ,\ j=1..width\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that 
+\begin_inset Formula $\vec{F^{\prime}}$
+\end_inset
+
+ has 
+\emph on
+width
+\emph default
+ components, one for each of the column vectors of 
+\begin_inset Formula $W^{\prime}=\vec{w^{\prime}}_{j}$
+\end_inset
+
+.
+ For each column vector, form the component-wise product of it exponentiated
+ with 
+\begin_inset Formula $\vec{eps}$
+\end_inset
+
+.
+ We can use any of the following notations:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+ & =\prod_{i=1}^{n}(w_{i,j}^{\prime})^{eps_{i}},\ j=1..width\\
+ & =\prod_{i=1}^{n}(\vec{w^{\prime}}_{j})_{i}^{eps_{i}}\\
+ & =\prod_{i=1}^{n}(W^{\prime})^{eps}\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This disambiguates the equations in Algorithm 19 of [6], for example: 
+\begin_inset Formula $\prod w_{i}^{e_{i}}$
+\end_inset
+
+.
+ and 
+\begin_inset Formula $\prod(w_{i}^{\prime})^{k_{E,i}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Reply to challenge v:
+\end_layout
+
+\begin_layout Standard
+A challenge v 
+\begin_inset Formula $\in Z_{q}$
+\end_inset
+
+ is given, and the following values 
+\begin_inset Formula $\in Z_{q}$
+\end_inset
+
+ are made as reply:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+k_{A} & =v\ \cdot<\vec{pn},\vec{e}>+\alpha\\
+\vec{k_{B}} & =v\cdot\vec{b}+\vec{\beta}\\
+k_{C} & =v\cdot\sum_{i=1}^{n}pn_{i}+\gamma\\
+k_{D} & =v\cdot d+\delta\\
+\vec{k_{E}} & =v\cdot\vec{e^{\prime}}+\vec{eps}\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+Let\ \vec{R}_{j} & =\ jth\ column\ of\ reencryption\ nonces\ R\\
+k_{F,j} & =v\ \cdot<\vec{R}_{j},\vec{e}^{\prime}>+\ \phi_{j}\ ,\ j=1..width\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where < , > is the inner product of two vectors.
+\end_layout
+
+\begin_layout Paragraph
+Proof of Shuffle Data Structure
+\end_layout
+
+\begin_layout Verbatim
+data class ProofOfShuffle(
+\end_layout
+
+\begin_layout Verbatim
+    val mixname: String,
+\end_layout
+
+\begin_layout Verbatim
+    val u: VectorP, // permutation commitment
+\end_layout
+
+\begin_layout Verbatim
+
+\end_layout
+
+\begin_layout Verbatim
+    // Commitment of the Fiat-Shamir proof.
+\end_layout
+
+\begin_layout Verbatim
+    val B: VectorP, 
+\end_layout
+
+\begin_layout Verbatim
+    val Ap: ElementModP, 
+\end_layout
+
+\begin_layout Verbatim
+    val Bp: VectorP, 
+\end_layout
+
+\begin_layout Verbatim
+    val Cp: ElementModP, 
+\end_layout
+
+\begin_layout Verbatim
+    val Dp: ElementModP, 
+\end_layout
+
+\begin_layout Verbatim
+    val Fp: VectorCiphertext, // width
+\end_layout
+
+\begin_layout Verbatim
+
+\end_layout
+
+\begin_layout Verbatim
+    // Reply of the Fiat-Shamir proof.
+\end_layout
+
+\begin_layout Verbatim
+    val kA: ElementModQ,
+\end_layout
+
+\begin_layout Verbatim
+    val kB: VectorQ,
+\end_layout
+
+\begin_layout Verbatim
+    val kC: ElementModQ,
+\end_layout
+
+\begin_layout Verbatim
+    val kD: ElementModQ,
+\end_layout
+
+\begin_layout Verbatim
+    val kE: VectorQ,
+\end_layout
+
+\begin_layout Verbatim
+    val kF: VectorQ, // width
+\end_layout
+
+\begin_layout Verbatim
+)
+\end_layout
+
+\begin_layout Paragraph
+Proof Verification
+\end_layout
+
+\begin_layout Standard
+The following equations are taken from Algorithm 19 of [6] and checked against
+ the Verificatum implementation.
+ The main ambiguity is in the meaning of 
+\begin_inset Formula $\prod_{i=1}^{n}w_{i}^{e_{i}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\prod_{i=1}^{n}(w_{i}^{\prime})^{k_{E,i}}$
+\end_inset
+
+ in steps 3 and 5.
+ These are interpreted as a short hand for 
+\emph on
+width
+\emph default
+ equations on the column vectors of 
+\begin_inset Formula $W$
+\end_inset
+
+ and 
+\begin_inset Formula $W^{\prime}$
+\end_inset
+
+, respectively, as detailed in 
+\emph on
+committment to exponents
+\emph default
+ section above.
+\end_layout
+
+\begin_layout Standard
+The Verifier is provided with:
+\end_layout
+
+\begin_layout Itemize
+n = number of rows 
+\end_layout
+
+\begin_layout Itemize
+width = number of ciphertexts in each row 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $W$
+\end_inset
+
+ = rows of ciphertexts (n x width) 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $W^{\prime}$
+\end_inset
+
+ = shuffled and reencrypted rows of ciphertexts (n x width) 
+\end_layout
+
+\begin_layout Itemize
+The ProofOfShuffle 
+\end_layout
+
+\begin_layout Standard
+The 
+\begin_inset Formula $\vec{h}$
+\end_inset
+
+ (generators), 
+\begin_inset Formula $\vec{e}$
+\end_inset
+
+ nonces, and challenge are deterministically recalculated.
+ This prevents those from being carefully chosen to subvert the proof.
+\end_layout
+
+\begin_layout Standard
+The following values 
+\begin_inset Formula $\in Z_{p}^{r}$
+\end_inset
+
+ are computed:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+A & =\prod_{i=1}^{n}u_{i}^{e_{i}}\\
+C & =(\prod_{i=1}^{n}u_{i})/(\prod_{i=1}^{n}h_{i})\\
+D & =B_{n}\cdot h_{0}^{\prod_{i=1}^{n}e_{i}}\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+F_{j} & =\prod_{i=1}^{n}(w_{i,j})^{e_{i}}\ ,\ j=1..width\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then the following are checked, and if all are true, the verification succeeds:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+A^{v}\cdot A^{\prime} & =g^{k_{A}}\prod_{i=1}^{n}h_{i}^{k_{E,i}}\\
+B_{i}^{v}\cdot B_{i}^{\prime} & =g^{k_{B,i}}(B_{i-1})^{k_{E,i}},\ where\ B_{0}=h_{0},\ i=1..n\\
+C^{v}\cdot C^{\prime} & =g^{k_{C}}\\
+D^{v}\cdot D^{\prime} & =g^{k_{D}}\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+F_{j}^{v}F_{j}^{\prime} & =Encr(0,-k_{F,j})\prod_{i=1}^{n}(w_{i,j}^{\prime})^{k_{E,i}},\ j=1..width\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph
+issues
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Calculation of 
+\begin_inset Formula $\vec{h}$
+\end_inset
+
+ (generators) , 
+\begin_inset Formula $\vec{e}$
+\end_inset
+
+ and the challenge nonces
+\series default
+ are highly dependent on the VMN implementation.
+ The verifier is expected to independently generate, ie they are not part
+ of the ProofOfShuffle output.
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+generators
+\series default
+ may need to be carefully chosen, see section 6.8 of vmnv: 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+In particular, it is not acceptable to derive exponents x1 , .
+ .
+ .
+ , xN in Zq and then define hi = g˖̂xi
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset CommandInset line
+LatexCommand rule
+width "50line%"
+height "0.5pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+ChVote
+\end_layout
+
+\begin_layout Standard
+This follows Haenni et.
+ al.
+ [2], which has a good explanation of TW, except with width = 1, so we use
+ vectors instead of matrices.
+ Otherwise we switch notation to as above, to make it easier to compare.
+\end_layout
+
+\begin_layout Paragraph
+Pedersen Commitments
+\end_layout
+
+\begin_layout Standard
+For a set of messages 
+\begin_inset Formula $\textbf{m}=(m_{1}..m_{n})\in Z_{q}$
+\end_inset
+
+, the 
+\emph on
+Extended Pedersen committment
+\emph default
+ to 
+\begin_inset Formula $\textbf{m}$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+Commit(\textbf{m},pn)=g^{pn}*h_{1}^{m_{1}}*h_{2}^{m_{2}}*..h_{n}^{m_{n}}=g^{pn}*\prod_{i=1}^{n}h_{i}^{m_{i}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where (
+\begin_inset Formula $g,\textbf{h}$
+\end_inset
+
+) are generators of 
+\begin_inset Formula $Z_{p}^{r}$
+\end_inset
+
+ and 
+\begin_inset Formula $pn$
+\end_inset
+
+ is the randomization nonce 
+\begin_inset Formula $\in Z_{q}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $\textbf{b}_{i}$
+\end_inset
+
+ is the 
+\begin_inset Formula $i^{th}$
+\end_inset
+
+ column of 
+\begin_inset Formula $B_{\psi}$
+\end_inset
+
+, then the 
+\emph on
+permutation commitment to 
+\begin_inset Formula $\psi$
+\end_inset
+
+
+\emph default
+ is defined as the vector of committments to its columns:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Commit(\psi,\vec{pn})=(Commit(\textbf{b}_{1},pn_{1}),Commit(\textbf{b}_{2},pn_{2}),..Commit(\textbf{b}_{N},pn_{N}))=
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+c_{j}=Commit(\textbf{b}_{j},pn_{j})=g^{pn_{j}}*\prod_{i=1}^{n}h_{i}^{b_{ij}}=g^{pn_{j}}*h_{i},\ for\ i=ψ^{-1}(j)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph
+Mix
+\end_layout
+
+\begin_layout Standard
+Choose a random permutation 
+\begin_inset Formula $\psi$
+\end_inset
+
+ : (1..n) (1..n).
+\end_layout
+
+\begin_layout Standard
+Then a mix is a permutation of rencryptions:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w_{j}^{\prime}=Rencrypt(w_{i},r_{i}),\ j=\psi(i)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+or
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\vec{w}^{\prime}=\psi(Reencrypt(\vec{w},\vec{r}))
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph
+Proof of permutation
+\end_layout
+
+\begin_layout Standard
+Let 
+\series bold
+u
+\series default
+ = 
+\begin_inset Formula $Commit(\psi,\vec{pn})$
+\end_inset
+
+ = 
+\begin_inset Formula $(u_{1},u_{2},..u_{N})$
+\end_inset
+
+, with randomization vector 
+\begin_inset Formula $\vec{pn}$
+\end_inset
+
+ = 
+\begin_inset Formula $(pn_{1},pn_{2},..pn_{N})$
+\end_inset
+
+, and define 
+\begin_inset Formula $pnbar=\sum_{i=1}^{n}pn_{i}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $Condition$
+\end_inset
+
+ 1 implies that
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\prod_{j=1}^{n}u_{j}=\prod_{j=1}^{n}g^{pn_{j}}\prod_{i=1}^{n}h_{i}^{b_{ij}}=g^{pnbar}\prod_{i=1}^{n}h_{i}\ =Commit(\textbf{1},pnbar).\ \ \ (5.2)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\vec{e}=(e_{1}..e_{n})$
+\end_inset
+
+ be arbitrary values 
+\begin_inset Formula $\in Z_{q},\ \vec{e^{\prime}}$
+\end_inset
+
+ its permutation by 
+\begin_inset Formula $\psi$
+\end_inset
+
+, and 
+\begin_inset Formula $pne=\sum_{j=1}^{N}{pn_{j}\cdot e_{j}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $Condition$
+\end_inset
+
+ 2 implies that:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\prod_{i=1}^{n}e_{i}=\prod_{j=1}^{n}e_{i}^{\prime}\ \ \ (5.3)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\prod_{j=1}^{n}u_{j}^{e_{j}}=\prod_{j=1}^{n}(g^{pn_{j}}\prod_{i=1}^{n}h_{i}^{b_{ij}})^{e_{j}}=g^{pne}\prod_{i=1}^{n}h_{i}^{pe_{i}}\ =Commit(\vec{e^{\prime}},pne)\ \ \ (5.4)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Which constitutes proof that condition 1 and 2 are true, so that u is a
+ commitment to a permutation matrix.
+\end_layout
+
+\begin_layout Paragraph
+Proof of equal exponents
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\vec{m}$
+\end_inset
+
+ be a vector of messages, 
+\begin_inset Formula $\vec{w}$
+\end_inset
+
+ their encryptions = Encr(
+\begin_inset Formula $\vec{m}$
+\end_inset
+
+), and Reencrypt(
+\begin_inset Formula $\vec{w},\vec{r}$
+\end_inset
+
+) their reencryptions with nonces 
+\begin_inset Formula $\vec{r}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\vec{w^{\prime}}=\psi(Reencr(\vec{w},\vec{r}))
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where, for j = 
+\begin_inset Formula $\psi(i)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+w_{j}^{\prime}=ReEncr(w_{i},r_{i})=Encr(0,r_{i})\cdot w_{i}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As above, let 
+\begin_inset Formula $\vec{e}=(e_{1}..e_{n})$
+\end_inset
+
+ be arbitrary values 
+\begin_inset Formula $\in Z_{q}$
+\end_inset
+
+, and 
+\begin_inset Formula $\vec{e^{\prime}}$
+\end_inset
+
+ its permutation by 
+\begin_inset Formula $\psi$
+\end_inset
+
+.
+ Note that 
+\begin_inset Formula $e_{j}^{\prime}=e_{i}$
+\end_inset
+
+ for j = 
+\begin_inset Formula $\psi(i)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+If the shuffle is valid, then
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\prod_{j=1}^{n}(w_{j}^{\prime})^{e_{j}^{\prime}} & =\prod_{j=1}^{n}(Encr(0,r_{i})\cdot w_{i})^{e_{j}^{\prime}},\ i=\psi^{-1}(j)\\
+ & =\prod_{j=1}^{n}(Encr(0,r_{i})\cdot w_{i})^{e_{i}}\ \ \ \ \ (from\ e_{j}^{\prime}=e_{i})\\
+ & =Encr(0,\sum_{j=1}^{n}(r_{i}\cdot e_{i}))\prod_{j=1}^{n}w_{i}^{e_{i}}\ \ \ \ (from\ Equation\ 1)\\
+ & =Encr(0,sumre)\cdot\prod_{j=1}^{n}w_{i}^{e_{i}}\ \ \ \ (5.5)\\
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $sumre=\sum_{j=1}^{n}(r_{i}\cdot e_{i})$
+\end_inset
+
+ = 
+\begin_inset Formula $\sum_{i=1}^{n}(r_{i}\cdot e_{i})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Shuffling vectors
+\end_layout
+
+\begin_layout Paragraph
+Simple
+\end_layout
+
+\begin_layout Standard
+Much of the literature assumes that each row to be mixed consists of a single
+ ciphertext.
+ In our application we need the possibility that each row consists of a
+ vector of ciphertexts.
+\begin_inset Newline newline
+\end_inset
+
+ So for each row i, we now have a vector of 
+\emph on
+w = width
+\emph default
+ ciphertexts:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\textbf{e}_{i}=(e_{i,1},..e_{i,w})=\{e_{i,k}\},\ k=1..w
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The main work is to modify the proof of equal exponents for this case.
+\end_layout
+
+\begin_layout Standard
+Suppose we are looking for the simplest generalization of 5.5:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\prod_{j=1}^{n}pre_{j}^{pu_{j}}=Encr(0,sumru)\cdot\prod_{i=1}^{n}e_{i}^{u_{i}}\ \ \ (5.5)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+one could use the same nonce for all the ciphertexts in each row when reencrypti
+ng:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\textbf{r}=\{r_{j}\},j=1..nre_{j,k}=ReEncr(e_{j,k},r_{j})=Encr(0,r_{j})\cdot e_{j,k}\ \ \ (case1)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+or generate N = nrows * width nonces, one for each ciphertext:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\textbf{r}=\{r_{j,k}\},\ j=1..n,\ k=1..wre_{j,k}=ReEncr(e_{j,k},r_{j,k})=Encr(0,r_{j,k})\cdot e_{j,k}\ \ \ (case2)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then eq 5.5 is changed to
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\prod_{j=1}^{n}\prod_{k=1}^{w}pre_{j,k}^{pu_{j}}=Encr(0,sumru')*\prod_{i=1}^{n}\prod_{k=1}^{w}e_{i,k}^{u_{i}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where, now
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+sumru'=\sum_{j=1}^{n}width*(pr_{j}*pu_{j})\ \ \ (case1)=\sum_{j=1}^{n}\sum_{k=1}^{n}(pr_{j,k}*pu_{j})\ \ \ (case2).
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In algorithms 8.4, 8.5 of [2], the challenge includes a list of all the ciphertext
+s and their reencryptions in their hash function:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\textbf{u}=Hash(...,\textbf{e},\textbf{pe},pcommit,pkq,i,...)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Here we just flatten the list of lists of ciphertexts for 
+\begin_inset Formula $\textbf{e},\textbf{pe}$
+\end_inset
+
+, so that all are included in the hash.
+ Since the hash is dependent on the ordering of the hash elements, this
+ should preclude an attack that switches ciphertexts within a row.
+\end_layout
+
+\begin_layout Paragraph
+Haines Proof of vector shuffling
+\end_layout
+
+\begin_layout Standard
+Haines [9] gives a formal proof of security of TW when the shuffle involves
+ vectors of ciphertexts.
+\end_layout
+
+\begin_layout Standard
+We will use the notation above for case 2, using a separate nonce for each
+ ciphertext:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\textbf{r}=\{r_{j,k}\},\ j=1..n,\ k=1..wre_{j,k}=ReEncr(e_{j,k},r_{j,k})=Encr(0,r_{j,k})\cdot e_{j,k}\ \ \ (case2)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This gives an nrows x width matrix R of reencryption nonces.
+ The vector notation is a shorthand for component-wise operations:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+R=(\textbf{r}_{1},..\textbf{r}_{n})Encr(\textbf{e}_{i})=(Encr(e_{i,1}),..Encr(e_{i,w}))ReEncr(\textbf{e}_{i},\textbf{r}_{i})=(ReEncr(e_{i,1},r_{i,1}),..ReEncr(e_{i,1},r_{i,w}))
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+so now we have vector equations for rencryption:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\textbf{re}_{i}=ReEncr(\textbf{e}_{i},\textbf{r}_{i})=Encr(0,\textbf{r}_{i})*\textbf{e}_{i}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and the permuted form, as is returned by the shuffle:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\textbf{pre}_{j}=ReEncr(\textbf{pe}_{j},\textbf{pr}_{j})=Encr(0,\textbf{pr}_{j})*\textbf{e}_{j}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which corresponds to ntnu equation (p 3) of [9]:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\textbf{e}_{i}^{\prime}=ReEnc(\textbf{e}_{π(i)},R_{π(i)}),π=π_{M}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\omega$
+\end_inset
+
+ be width random nonces, 
+\series bold
+omega'
+\series default
+ = permuted 
+\series bold
+omega
+\series default
+, and 
+\begin_inset Formula $\textbf{pe}_{i}$
+\end_inset
+
+ = permuted 
+\begin_inset Formula $\textbf{e}_{i}=\textbf{e}_{i}^{\prime}$
+\end_inset
+
+ as before.
+ Then the 
+\begin_inset Formula $t_{4}$
+\end_inset
+
+ equation (p 3, paragraph 2 of [9]) is a vector of width components:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\textbf{t}_{4}=ReEnc(\prod_{i}^{n}\textbf{pe}_{i}^{\textbf{\omega}_{i}^{\prime}},−\textbf{\omega}_{4})=(ReEnc(\prod_{i}^{n}\textbf{pe}_{i}^{\textbf{\omega}_{i}^{\prime}},−\textbf{\omega}_{4,1}),..(ReEnc(\prod_{i}^{n}\textbf{pe}_{i}^{\textbf{\omega}_{i}^{\prime}},−\textbf{\omega}_{4,w}))
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\prod_{i}^{n}\textbf{pe}_{i}^{\textbf{\omega}_{i}^{\prime}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+must be the product over rows of the 
+\begin_inset Formula $k_{th}$
+\end_inset
+
+ ciphertext in each row:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+(\prod_{i}^{n}\textbf{pe}_{i,1}^{\textbf{\omega}_{i}^{\prime}},..\prod_{i}^{n}\textbf{pe}_{i,w}^{\textbf{\omega}_{i}^{\prime}})=\{\prod_{i}^{n}\textbf{pe}_{i,k}^{\textbf{\omega}_{i}^{\prime}}\},k=1..width\textbf{t}_{4}=\{Rencr(\prod_{i}^{n}\textbf{pe}_{i,k}^{\textbf{\omega}_{i}^{\prime}},−\textbf{\omega}_{4})\},k=1..width
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+(quite a bit more complicated than our simplest thing to do above)
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+extra
+\end_layout
+
+\begin_layout Standard
+to go back to (2f) and unravel this:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\prod_{j=1}^{n}ReEncr(e_{j},r_{j})=ReEncr(\prod_{j=1}^{n}e_{j},\sum_{j=1}^{n}r_{j})\ \ \ (2f)\prod_{j=1}^{n}ReEncr(\textbf{pe}_{i}^{\textbf{\omega}_{i}^{\prime}},r_{j})=ReEncr(\prod_{j=1}^{n}\textbf{pe}_{i}^{\textbf{\omega}_{i}^{\prime}},\sum_{j=1}^{n}r_{j})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset CommandInset line
+LatexCommand rule
+width "50line%"
+height "0.5pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Timings vs Verificatum (preliminary)
+\end_layout
+
+\begin_layout Standard
+Environment used for testing:
+\end_layout
+
+\begin_layout Itemize
+Ubuntu 22.04.3 
+\end_layout
+
+\begin_layout Itemize
+HP Z840 Workstation, Intel Xeon CPU E5-2680 v3 @ 2.50GHz 
+\end_layout
+
+\begin_layout Itemize
+24-cores, two threads per core.
+ 
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Regular vs accelerated exponentiation time
+\end_layout
+
+\begin_layout Standard
+Regular exponentiation is about 3 times slower after the acceleration cache
+ warms up:
+\end_layout
+
+\begin_layout Verbatim
+acc took 15288 msec for 20000 = 0.7644 msec per acc
+\end_layout
+
+\begin_layout Verbatim
+exp took 46018 msec for 20000 = 2.3009 msec per exp
+\end_layout
+
+\begin_layout Verbatim
+exp/acc = 3.01007326007326
+\end_layout
+
+\begin_layout Paragraph
+VMN
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Operation counts
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+n
+\emph default
+ = number of rows, eg ballots or contests 
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+width
+\emph default
+ = number of ciphertexts per row 
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+N
+\emph default
+ = nrows * width = total number of ciphertexts to be mixed 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="5">
+<features booktabs="true" islongtable="true" longtabularalignment="center">
+<column alignment="none" valignment="top" special="@{}l">
+<column alignment="left" valignment="top">
+<column alignment="left" valignment="top">
+<column alignment="left" valignment="top">
+<column alignment="none" valignment="top" special="l@{}">
+<row endhead="true">
+<cell alignment="none" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+shuffle 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+proof of shuffle 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+proof of exp 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="none" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+verify
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="none" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+regular exps 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4 * n 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2 * N 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="none" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4*N + 4 * n + 4
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="none" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+accelerated exps 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2 * N 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+3 * n + 2 * width + 4 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="none" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+n + 2*width + 3
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Even though N dominates, width is bound but nrows can get arbitrarily big.
+\end_layout
+
+\begin_layout Standard
+The proof of shuffle could be done 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+offline
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+, though intermediate values would have to be kept private (I think).
+\end_layout
+
+\begin_layout Standard
+Could break into batches of 100-1000 ballots each and do each batch in parallel.
+ The advantage here is that there would be complete parallelization.
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Timing results
+\end_layout
+
+\begin_layout Standard
+See 
+\begin_inset CommandInset href
+LatexCommand href
+name "VMN spreadsheets"
+target "https://docs.google.com/spreadsheets/d/1Sny1xXxU9vjPnqo2K1QPeBHQwPVWhJOHdlXocMimt88/edit?usp=sharing"
+literal "false"
+
+\end_inset
+
+for graphs of timing results (work in progress).
+\end_layout
+
+\begin_layout Paragraph
+OpenChVote
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+operations count
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="4">
+<features booktabs="true" islongtable="true" longtabularalignment="center">
+<column alignment="none" valignment="top" special="@{}l">
+<column alignment="left" valignment="top">
+<column alignment="left" valignment="top">
+<column alignment="none" valignment="top" special="l@{}">
+<row endhead="true">
+<cell alignment="none" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+shuffle 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+proof 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="none" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+verify
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="none" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+regular exps 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+6 * n 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="none" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+6*n + 6
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="none" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+accelerated exps 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2 * N 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+3*n + 6 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="none" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+n + 6
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+wallclock time vs verificatum
+\end_layout
+
+\begin_layout Standard
+nrows = 1000, width = 34, N=3400
+\end_layout
+
+\begin_layout Verbatim
+Time verificatum as used by rave
+\end_layout
+
+\begin_layout Verbatim
+
+\end_layout
+
+\begin_layout Verbatim
+RunMixnet elapsed time = 67598 msecs
+\end_layout
+
+\begin_layout Verbatim
+RunMixnet elapsed time = 67853 msecs)
+\end_layout
+
+\begin_layout Verbatim
+RunMixnetVerifier elapsed time = 68855 msecs
+\end_layout
+
+\begin_layout Verbatim
+RunMixnetVerifier elapsed time = 68738 msecs
+\end_layout
+
+\begin_layout Verbatim
+nrows=1000, width= 34 per row, N=34000, nthreads=24
+\end_layout
+
+\begin_layout Verbatim
+
+\end_layout
+
+\begin_layout Verbatim
+shuffle: took 5511 msecs
+\end_layout
+
+\begin_layout Verbatim
+proof: took 12944 msecs
+\end_layout
+
+\begin_layout Verbatim
+verify: took 27983 msecs
+\end_layout
+
+\begin_layout Verbatim
+total: took 46438 msecs
+\end_layout
+
+\begin_layout Standard
+nrows = 100, width = 34, N=3400
+\end_layout
+
+\begin_layout Verbatim
+Time verificatum as used by rave
+\end_layout
+
+\begin_layout Verbatim
+
+\end_layout
+
+\begin_layout Verbatim
+RunMixnet elapsed time = 27831 msecs
+\end_layout
+
+\begin_layout Verbatim
+RunMixnet elapsed time = 26464 msecs)
+\end_layout
+
+\begin_layout Verbatim
+RunMixnetVerifier elapsed time = 12123 msecs
+\end_layout
+
+\begin_layout Verbatim
+RunMixnetVerifier elapsed time = 12893 msecs
+\end_layout
+
+\begin_layout Verbatim
+
+\end_layout
+
+\begin_layout Verbatim
+total = 79.311 secs
+\end_layout
+
+\begin_layout Verbatim
+Time egk-mixnet
+\end_layout
+
+\begin_layout Verbatim
+
+\end_layout
+
+\begin_layout Verbatim
+  shuffle1 took 5505
+\end_layout
+
+\begin_layout Verbatim
+  shuffleProof1 took 17592
+\end_layout
+
+\begin_layout Verbatim
+  shuffleVerify1 took 33355
+\end_layout
+
+\begin_layout Verbatim
+  shuffle2 took 5400
+\end_layout
+
+\begin_layout Verbatim
+  shuffleProof2 took 17213
+\end_layout
+
+\begin_layout Verbatim
+  shuffleVerify1 took 33446
+\end_layout
+
+\begin_layout Verbatim
+  
+\end_layout
+
+\begin_layout Verbatim
+  total: 119.711 secs, N=3400 perN=35 msecs
+\end_layout
+
+\begin_layout Standard
+Vmn proof 27/(17.4+5.4) = 1.18 is 18% slower
+\end_layout
+
+\begin_layout Standard
+Vmn has verifier 33355/12123 = 2.75 faster, TODO: investigate if theres an
+ algorithm improvement there.
+ Possibly related to the 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+wide integer
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+ representation, eg see
+\end_layout
+
+\begin_layout Verbatim
+LargeInteger.modPowProd(LargeInteger[] bases, LargeInteger[] exponents, LargeInte
+ger modulus)
+\end_layout
+
+\begin_layout Standard
+More likely there are parallelization being done, eg in the same routine.
+ So to compare, we have to run vmn and see what parelization it gets.
+\end_layout
+
+\begin_layout Standard
+Also note LargeInteger.magic that allows use of VMGJ.
+\end_layout
+
+\begin_layout Standard
+Vmn in pure Java mode, using BigInteger.
+ TODO: Find out how much speedup using VMGJ gets.
+\end_layout
+
+\begin_layout Standard
+SO why doesnt same speedup apply to proof?
+\end_layout
+
+\begin_layout Subsubsection
+References
+\end_layout
+
+\begin_layout Enumerate
+Josh Benaloh and Michael Naehrig, 
+\emph on
+ElectionGuard Design Specification, Version 2.0.0
+\emph default
+, Microsoft Research, August 18, 2023, 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/microsoft/electionguard/releases/download/v2.0/EG_Spec_2_0.pdf
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+Rolf Haenni, Reto E.
+ Koenig, Philipp Locher, Eric Dubuis.
+ 
+\emph on
+CHVote Protocol Specification Version 3.5
+\emph default
+, Bern University of Applied Sciences, February 28th, 2023, 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://eprint.iacr.org/2017/325.pdf
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+R.
+ Haenni, P.
+ Locher, R.
+ E.
+ Koenig, and E.
+ Dubuis.
+ 
+\emph on
+Pseudo-code algorithms for verifiable re-encryption mix-nets
+\emph default
+.
+ In M.
+ Brenner, K.
+ Rohloff, J.
+ Bonneau, A.
+ Miller, P.
+ Y.
+ A.Ryan, V.
+ Teague, A.
+ Bracciali, M.
+ Sala, F.
+ Pintore, and M.
+ Jakobsson, editors, FC'17, 21st International Conference on Financial Cryptogra
+phy, LNCS 10323, pages 370–384, Silema, Malta, 2017.
+ 
+\end_layout
+
+\begin_layout Enumerate
+B.
+ Terelius and D.
+ Wikström.
+ 
+\emph on
+Proofs of restricted shuffles
+\emph default
+, In D.
+ J.
+ Bernstein and T.
+ Lange, editors, AFRICACRYPT'10, 3rd International Conference on Cryptology
+ inAfrica, LNCS 6055, pages 100–113, Stellenbosch, South Africa, 2010.
+ 
+\end_layout
+
+\begin_layout Enumerate
+D.
+ Wikström.
+ 
+\emph on
+A commitment-consistent proof of a shuffle.
+
+\emph default
+ In C.
+ Boyd and J.
+ González Nieto, editors, ACISP'09, 14th Australasian Conference on Information
+ Security and Privacy, LNCS 5594, pages 407–421, Brisbane, Australia, 2009.
+ 
+\end_layout
+
+\begin_layout Enumerate
+D.
+ Wikström.
+ 
+\emph on
+How to Implement a Stand-alone Verifier for the Verificatum Mix-Net VMN
+ Version 3.1.0
+\emph default
+, 2022-09-10, 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://www.verificatum.org/files/vmnv-3.1.0.pdf
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+John Caron, Dan Wallach, 
+\emph on
+ElectionGuard Kotlin library
+\emph default
+, 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/votingworks/electionguard-kotlin-multiplatform
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+E-Voting Group, Institute for Cybersecurity and Engineering, Bern University
+ of Applied Sciences, 
+\emph on
+OpenCHVote
+\emph default
+, 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://gitlab.com/openchvote/cryptographic-protocol
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+Thomas Haines, 
+\emph on
+A Description and Proof of a Generalised and Optimised Variant of Wikström's
+ Mixnet
+\emph default
+, arXiv:1901.08371v1 [cs.CR], 24 Jan 2019 
+\end_layout
+
+\end_body
+\end_document
