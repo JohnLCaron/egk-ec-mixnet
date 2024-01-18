@@ -62,7 +62,7 @@ fun Prod(vp: VectorP): ElementModP {
 
 fun prodPowP(generators: VectorP, exps: VectorQ, nthreads: Int = 10): ElementModP {
     return if (nthreads == 0) Prod(generators powP exps)           // CE n exp, 1 acc
-    else PProdPowP(generators, exps, nthreads).calc()
+           else PProdPowP(generators, exps, nthreads).calc()
 }
 
 class PProdPowP(val vp: VectorP, val exp: VectorQ, val nthreads: Int = 10) {

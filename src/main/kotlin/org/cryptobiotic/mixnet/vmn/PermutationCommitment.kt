@@ -1,7 +1,6 @@
 package org.cryptobiotic.mixnet.vmn
 
 import electionguard.core.*
-import org.cryptobiotic.mixnet.core.PermutationVmn
 import org.cryptobiotic.mixnet.core.VectorP
 import org.cryptobiotic.mixnet.core.VectorQ
 
