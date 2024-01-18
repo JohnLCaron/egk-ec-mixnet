@@ -6,8 +6,8 @@ import org.cryptobiotic.mixnet.core.*
 private val debug1 = false
 private val debug2 = false
 
-// TODO revert to single ciphertext
-private fun shufflePrep(
+// revert to single ciphertext
+private fun shufflePrepS(
     group: GroupContext,
     U: String,
     seed: ElementModQ,
@@ -15,7 +15,7 @@ private fun shufflePrep(
     psi: Permutation, // permutation = psi
     ciphertexts: List<ElGamalCiphertext>, // ciphertexts = bold_e
     shuffled: List<ElGamalCiphertext>, // shuffled ciphertexts = bold_e_tilde
-): ShufflePrep {
+): ShufflePrepS {
     // create independent, deterministic group generators, from a seed and a string.
     val (h, generators) = getGenerators(group, psi.n, U, seed) // List<ElementModP> = bold_h
 
@@ -32,10 +32,10 @@ private fun shufflePrep(
     //  5. Pick random rbold_hat in Zq = { r̂i }
     //  6. compute cbold_hat = { ĉi }, ĉi = g^r̂i * ĉ_i-1^ũi, ĉ0 = h
     val (cchallenges, ccnonces) = committmentChain(group, h, ctilde) // cbold_hat, rbold_hat
-    return ShufflePrep(h, generators, pcommit, pnonces, challenges, ctilde, cchallenges, ccnonces)
+    return ShufflePrepS(h, generators, pcommit, pnonces, challenges, ctilde, cchallenges, ccnonces)
 }
 
-private data class ShufflePrep(
+private data class ShufflePrepS(
     val h: ElementModP,
     val generators: List<ElementModP>,
     val pcommit: List<ElementModP>, // permutation commitment = cbold
@@ -47,22 +47,20 @@ private data class ShufflePrep(
     val ccnonces: List<ElementModQ>,    // chained challenges nonces = rbold_hat
 )
 
-fun shuffleProof(
+fun shuffleProofS(
     group: GroupContext,
     U: String,
     seed: ElementModQ,
     publicKey: ElGamalPublicKey, // public key = pk
     psi: Permutation, // permutation = psi
-    rows: List<MultiText>, // ciphertexts = bold_e
-    shuffledBallots: List<MultiText>, // shuffled ciphertexts = bold_e_tilde
+    rows: List<ElGamalCiphertext>, // ciphertexts = bold_e
+    shuffled: List<ElGamalCiphertext>, // shuffled ciphertexts = bold_e_tilde
     rnonces: List<ElementModQ>, // re-encryption nonces = pr
     nthreads: Int = 10,
 ): ShuffleProof{
     val nrows = rows.size
-    val ciphertexts = rows.flatMap { it.ciphertexts }
-    val shuffled = shuffledBallots.flatMap { it.ciphertexts }
 
-    val prep = shufflePrep(group, U, seed, publicKey, psi, ciphertexts, shuffled)
+    val prep = shufflePrepS(group, U, seed, publicKey, psi, rows, shuffled)
 
     val bold_omega_hat = List(nrows) { group.randomElementModQ(minimum = 1) }
     val bold_omega_tilde = List(nrows) { group.randomElementModQ(minimum = 1) }
@@ -117,11 +115,11 @@ fun shuffleProof(
 
     val omega_4: ElementModQ = group.randomElementModQ(minimum = 1)
 
-    val t41 = group.prodPowA( shuffledBallots, bold_omega_tilde) / (publicKey powP omega_4)
-    val t42 = group.prodPowB(shuffledBallots, bold_omega_tilde) / group.gPowP(omega_4)
+    val t41 = group.prodPowA(shuffled, bold_omega_tilde) / (publicKey powP omega_4)
+    val t42 = group.prodPowB(shuffled, bold_omega_tilde) / group.gPowP(omega_4)
 
     val t = listOf(t_1, t_2, t_3, t41, t42, bold_t_hat)
-    val y = listOf(ciphertexts, shuffled, prep.pcommit, prep.cchallenges, publicKey)
+    val y = listOf(rows, shuffled, prep.pcommit, prep.cchallenges, publicKey)
     val c = getChallenge(group, y, t)
 
     // var r_bar = ZZ_q.sum(bold_r);
@@ -137,8 +135,7 @@ fun shuffleProof(
     val s3 = omega_3 - c * innerProduct(prep.u, prep.pnonces)
 
     //  var s_4 = ZZ_q.subtract(omega_4, ZZ_q.multiply(c, r_tilde));
-    val width = rows[0].ciphertexts.size
-    val s4 = computeS4(group, width, rnonces, prep.pu, omega_4, c)
+    val s4 = computeS4(rnonces, prep.u, omega_4, c)
 
     //// loop2
     val bold_s_hat = List(nrows) { bold_omega_hat[it] - c * prep.ccnonces[it] }
@@ -152,7 +149,7 @@ fun shuffleProof(
 }
 
 //  10. rhat_utilde = Sumi(r̂i * (Prodj(ũj), j=i+1..N), i=1..N) = r̂
-private fun computeS2(group: GroupContext, N: Int, prep: ShufflePrep, omega_2: ElementModQ, c:ElementModQ): ElementModQ {
+private fun computeS2(group: GroupContext, N: Int, prep: ShufflePrepS, omega_2: ElementModQ, c:ElementModQ): ElementModQ {
     // var v_i = BigInteger.ONE;
     // for (int i = N; i >= 1; i--) {
     //    builder_bold_v.setValue(i, v_i);
@@ -171,55 +168,30 @@ private fun computeS2(group: GroupContext, N: Int, prep: ShufflePrep, omega_2: E
     return s2
 }
 
-// TODO heres where the width comes in.
-// TODO note ctilde has length N, so rnonces needs to be length N. So we are restricted to all being the same width
-private fun computeS4(group: GroupContext, width:Int, rnonces: List<ElementModQ>, pu: List<ElementModQ>, omega_4: ElementModQ, c:ElementModQ): ElementModQ {
-    // NOT var r_tilde = ZZ_q.sumProd(bold_r_tilde, bold_u);
-    // NOT val rtilde_u = group.sumProd(rbold_tilde, ubold); line 141 GenShuffleProof
-    // ubold = challenges, but need permuted challenges
-    val rtilde_u = width.toElementModQ(group) * innerProduct(rnonces, pu)
+private fun computeS4(rnonces: List<ElementModQ>, u: List<ElementModQ>, omega_4: ElementModQ, c:ElementModQ): ElementModQ {
+    val rtilde_u = innerProduct(rnonces, u)
 
     //  var s_4 = ZZ_q.subtract(omega_4, ZZ_q.multiply(c, r_tilde));
     val s4 = omega_4 - (c * rtilde_u)
     return s4
 }
 
-data class ShuffleProof(
-    val U: String,
-    val seed: ElementModQ,
-    val pcommit: List<ElementModP>,     // permutation committment = cbold
-    val cchallenges: List<ElementModP>, // chained challenges = cbold_hat
-
-    val c: ElementModQ, // challenge
-    val s1: ElementModQ,
-    val s2: ElementModQ,
-    val s3: ElementModQ,
-    val s4: ElementModQ,
-    val bold_s_hat: List<ElementModQ>,
-    val bold_s_tilde: List<ElementModQ>,
-    val bold_omega_hat: List<ElementModQ>,
-    val bold_omega_tilde: List<ElementModQ>,
-    val omega: List<ElementModQ>, // size 4
-)
-
-fun verifyShuffleProof(
+fun verifyShuffleProofS(
     group: GroupContext,
     U: String,
     seed: ElementModQ,
     pk: ElGamalPublicKey,
-    ballots: List<MultiText>, // ciphertexts
-    shuffledBallots: List<MultiText>, // shuffled
+    rows: List<ElGamalCiphertext>, // ciphertexts
+    shuffled: List<ElGamalCiphertext>, // shuffled
     proof: ShuffleProof,
     nthreads: Int = 10,
 ): Boolean {
-    val nrows = ballots.size
+    val nrows = rows.size
 
     // create independent, deterministic group generators, from a seed and a string.
     val (h, generators) = getGenerators(group, nrows, U, seed) // List<ElementModP> = bold_h
 
-    val ciphertexts = ballots.flatMap { it.ciphertexts }
-    val shuffled = shuffledBallots.flatMap { it.ciphertexts }
-    val bold_u = getChallenges(group, nrows, listOf(ciphertexts, shuffled, proof.pcommit, pk))
+    val bold_u = getChallenges(group, nrows, listOf(rows, shuffled, proof.pcommit, pk))
     val u = group.prod(bold_u)
 
     // val c_bar = ZZPlus_p.divide(ZZPlus_p.prod(bold_c), ZZPlus_p.prod(bold_h))
@@ -228,17 +200,8 @@ fun verifyShuffleProof(
     val c_hat = proof.cchallenges [nrows - 1] / (h powP u)
     val c_tilde = group.prodPow(proof.pcommit, bold_u)
 
-    val a_tilde = group.prodPowA(ballots, bold_u)
-    val b_tilde = group.prodPowB(ballots, bold_u)
-
-    /*
-    val (a_tilde, b_tilde) = if (nthreads == 1) {
-        Pair(group.prodPowA(ballots, bold_u), group.prodPowB(ballots, bold_u))
-    } else {
-        PcalcProdPow(group, nthreads).calcProdPow(ballots, bold_u)
-    }
-
-     */
+    val a_tilde = group.prodPowA(rows, bold_u)
+    val b_tilde = group.prodPowB(rows, bold_u)
 
     val bold_t_hat = mutableListOf<ElementModP>()
     repeat(nrows) { i ->
@@ -250,26 +213,11 @@ fun verifyShuffleProof(
     val t_2 = (c_hat powP proof.c) * group.gPowP(proof.s2)
     val t_3 = (c_tilde powP proof.c) * (group.gPowP(proof.s3) * group.prodPow(generators, proof.bold_s_tilde))
 
-    val t41 = (a_tilde powP proof.c) * group.prodPowA(shuffledBallots, proof.bold_s_tilde) / (pk powP proof.s4)
-    val t42 = (b_tilde powP proof.c) * group.prodPowB(shuffledBallots, proof.bold_s_tilde) / group.gPowP(proof.s4)
-
-    /*
-    val (t41, t42) = if (nthreads == 1) {
-        val t_41 = (a_tilde powP proof.c) * group.prodPowA(shuffledBallots, proof.bold_s_tilde) / (pk powP proof.s4)
-        val t_42 = (b_tilde powP proof.c) * group.prodPowB(shuffledBallots, proof.bold_s_tilde) / group.gPowP(proof.s4)
-        Pair(t_41, t_42)
-    } else {
-        // parellel calculation here
-        val (t1sum, t2sum) = PcalcProdPow(group, nthreads).calcProdPow(shuffledBallots, proof.bold_s_tilde)
-        val t_41 = (a_tilde powP proof.c) * t1sum / (pk powP proof.s4)
-        val t_42 = (b_tilde powP proof.c) * t2sum / group.gPowP(proof.s4)
-        Pair(t_41, t_42)
-    }
-
-     */
+    val t41 = (a_tilde powP proof.c) * group.prodPowA(shuffled, proof.bold_s_tilde) / (pk powP proof.s4)
+    val t42 = (b_tilde powP proof.c) * group.prodPowB(shuffled, proof.bold_s_tilde) / group.gPowP(proof.s4)
 
     val t = listOf(t_1, t_2, t_3, t41, t42, bold_t_hat)
-    val y = listOf(ciphertexts, shuffled, proof.pcommit, proof.cchallenges, pk)
+    val y = listOf(rows, shuffled, proof.pcommit, proof.cchallenges, pk)
     val challenge_prime = getChallenge(group, y, t)
 
     return proof.c.equals(challenge_prime)

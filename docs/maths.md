@@ -12,9 +12,7 @@ Instead of psuedocode, the kotlin code acts as the implementation of the math de
 
 Ive tried to avoid notation that is hard to read, preferring for example, multiple character symbols like $pr$ instead of  r̃ or r̂ , since the glyphs can get too small to read when they are used in exponents or subscripts, and can be hard to replicate in places other than high quality Tex or PDF renderers.
 
-### Table of Contents
 
-[TOC]
 
 ### Definitions
 
@@ -136,6 +134,7 @@ Let
 - $\psi^{-1}$ = inverse permutation function
 - $\vec{h}$ = generators of $\Z_p^r, h_0 = \vec{h}_1$
 
+We use one-based array indexing for notational simplicity.
 
 
 #### **Mix**
@@ -161,15 +160,15 @@ $$
 **Commitment to shuffle**
 
 Compute *n* nonces $\vec{e}$ that will be public. Let ${e^\prime}$ = $\psi^{-1}(\vec e)$.
-Choose vectors of *n* random nonces $\vec{b}, \vec{\beta}, \vec{\epsilon}$ .
+Choose vectors of *n* random nonces $\vec{b}, \vec{\beta}, \vec{eps}$ .
 Choose random nonces $\alpha, \gamma, \delta$ .
 
 Form the following values $\in \Z_p^r$:
 $$
 \begin{align}
-A^\prime &= g^\alpha \prod_{i=1}^n h_i^{\epsilon_i} \\
+A^\prime &= g^\alpha \prod_{i=1}^n h_i^{eps_i} \\
 B_i &= g^{b_i} (B_{i-1})^{e^\prime_i},\ where\ B_0 = h_0,\ i = 1..N\\
-B^\prime_i &= g^{\beta_i} (B_{i-1})^{\epsilon_i},\ where\ B_0 = h_0,\ i = 1..N\\
+B^\prime_i &= g^{\beta_i} (B_{i-1})^{eps_i},\ where\ B_0 = h_0,\ i = 1..N\\
 C^\prime &= g^\gamma  \\
 D^\prime &= g^\delta  \\
 \end{align}
@@ -183,17 +182,17 @@ Form the following ciphertext values:
 
 $$
 \begin{align}
-F^\prime_j &= Encr(0, -{\phi_j}) \cdot\prod_{i=1}^n (w^\prime_{i,j}) ^ {\epsilon_i} \ ,\ j=1..width \\
+F^\prime_j &= Encr(0, -{\phi_j}) \cdot\prod_{i=1}^n (w^\prime_{i,j}) ^ {eps_i} \ ,\ j=1..width \\
 \end{align}
 $$
 
-Note that $\vec{F^\prime}$ has *width* components, one for each of the column vectors of $W^\prime = \vec{w^\prime}_j$. For each column vector, form the product of it exponentiated with $\vec{\epsilon}$. We can use any of the following notations:
+Note that $\vec{F^\prime}$ has *width* components, one for each of the column vectors of $W^\prime = \vec{w^\prime}_j$. For each column vector, form the component-wise product of it exponentiated with $\vec{eps}$. We can use any of the following notations:
 
 $$
 \begin{align}
-&= \prod_{i=1}^n (w^\prime_{i,j}) ^ {\epsilon_i},\ j=1..width \\
-&= \prod_{i=1}^n (\vec{w^\prime}_j)_i ^ {\epsilon_i} \\
-&= \prod_{i=1}^n (W^\prime) ^ {\epsilon} \\
+&= \prod_{i=1}^n (w^\prime_{i,j}) ^ {eps_i},\ j=1..width \\
+&= \prod_{i=1}^n (\vec{w^\prime}_j)_i ^ {eps_i} \\
+&= \prod_{i=1}^n (W^\prime) ^ {eps} \\
 \end{align}
 $$
 
@@ -210,7 +209,7 @@ k_A &= v\ \cdot <\vec{pn} \cdot \vec e> + \alpha \\
 \vec{k_B} &= v \cdot \vec b + \vec{\beta} \\
 k_C &= v \cdot \sum_{i=1}^n pn_i + \gamma \\
 k_D &= v \cdot d + \delta \\
-\vec{k_E} &= v \cdot \vec{e^\prime} + \vec{\epsilon} \\
+\vec{k_E} &= v \cdot \vec{e^\prime} + \vec{eps} \\
 \end{align}
 $$
 and
@@ -254,17 +253,15 @@ data class ProofOfShuffle(
 
 #### Proof Verification
 
-The following equations are taken from Algorithm 19 of [6] and checked against the Verificatum  implementation. The main ambiguity is in the meaning of  $\prod_{i=1}^{n} w_i^{e_i}$ and  $\prod_{i=1}^{n} wp_i^{k_{E,i}}$ in steps 3 and 5. These are interpreted as a short hand for *width* equations on the column vectors of *w* and *wp*.
-We use one-based array indexing for notational simplicity.
+The following equations are taken from Algorithm 19 of [6] and checked against the Verificatum  implementation. The main ambiguity is in the meaning of  $\prod_{i=1}^{n} w_i^{e_i}$ and  $\prod_{i=1}^{n} (w^\prime_i)^{k_{E,i}}$ in steps 3 and 5. These are interpreted as a short hand for *width* equations on the column vectors of $W$ and $W^\prime$, respectively, as detailed in *committment to exponents* section above.
 
 The Verifier is provided with:
 
 - n = number of rows
 - width = number of ciphertexts in each row
-- $\vec{w}$ = rows of ciphertexts (n x width)
-- $\vec{wp}$ = shuffled and reencrypted rows of ciphertexts (n x width)
-- $h_0, \vec{h}$ = generators of $\Z_p^r$
-- *ProofOfShuffle* and *Reply*
+- $W$ = rows of ciphertexts (n x width)
+- $W^\prime$ = shuffled and reencrypted rows of ciphertexts (n x width)
+- The ProofOfShuffle
 
 
 
@@ -317,103 +314,97 @@ $$
 
 ### ChVote
 
-This follows Haenni et. al. [2], which has a good explanation of TW, sans vectors.
+This follows Haenni et. al. [2], which has a good explanation of TW, except with width = 1, so we use vectors instead of matrices. Otherwise we switch notation to as above, to make it easier to compare.
 
 #### Pedersen Commitments
 
 For a set of messages $\textbf m = (m_1 .. m_n) \in \Zeta_q$, the *Extended Pedersen committment* to $\textbf m$ is
 $$
 \begin{align}
-Commit(\textbf m, cr) = g^{cr} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n}
-= g^{cr} * \prod_{i=1}^n h_i^{m_i}
+Commit(\textbf m, pn) = g^{pn} * h_1^{m_1} * h_2^{m_2} * .. h_n^{m_n}
+= g^{pn} * \prod_{i=1}^n h_i^{m_i}
 \end{align}
 $$
-where ($ g, \textbf h $) are generators of  $ \Z_p^r $ with randomization nonce $ cr \in Z_q $.
+where ($ g, \textbf h $) are generators of  $ \Z_p^r $ and $pn$ is the randomization nonce $\in Z_q $.
 
 
 
 If $\textbf b_i$ is the $i^{th}$ column of $B_\psi$, then the *permutation commitment to $\psi$* is defined as the vector of committments to its columns:
 $$
-Commit(\psi, \textbf {cr}) = (Commit(\textbf b_1, cr_1), Commit(\textbf b_2, cr_2),..Commit(\textbf b_N, cr_N)) =
+Commit(\psi, \vec{pn}) = (Commit(\textbf b_1, pn_1), Commit(\textbf b_2, pn_2),..Commit(\textbf b_N, pn_N)) =
 $$
-where
+and 
 $$
 \begin{align}
-c_j = Commit(\textbf b_j, cr_j) = g^{cr_j} * \prod_{i=1}^n h_i^{b_{ij}} = g^{cr_j} * h_i ,\ for\ i=ψ^{-1}(j)
+c_j = Commit(\textbf b_j, pn_j) = g^{pn_j} * \prod_{i=1}^n h_i^{b_{ij}} = g^{pn_j} * h_i ,\ for\ i=ψ^{-1}(j)
 \end{align}
 $$
 
+#### Mix
+
+Choose a random permutation $\psi$ : (1..n) -> (1..n). 
+
+Then a mix is a permutation of rencryptions:
+
+$$
+w^\prime_j = Rencrypt(w_i, r_i),\ j = \psi(i)
+$$
+or
+$$
+\vec w^{\prime} = \psi(Reencrypt(\vec w, \vec r))
+$$
 
 
 #### Proof of permutation
 
-Let **c** = $Commit(\psi, \textbf r)$ = $(c_1, c_2, .. c_N)$, with randomization vector **cr** = $(cr_1, cr_2, .. cr_N)$, and $crbar = \sum_{i=1}^n cr_i$.
+Let **u** = $Commit(\psi, \vec{pn})$ = $(u_1, u_2, .. u_N)$, with randomization vector $\vec{pn}$ = $(pn_1, pn_2, .. pn_N)$, and define $pnbar = \sum_{i=1}^n pn_i$.
 
 $Condition$ 1 implies that
 $$
-\prod_{j=1}^n c_j = \prod_{j=1}^n g^{cr_j} \prod_{i=1}^n h_i^{b_{ij}} = g^{crbar} \prod_{i=1}^n h_i\ = Commit(\textbf 1, crbar).\ \ \ (5.2)
+\prod_{j=1}^n u_j = \prod_{j=1}^n g^{pn_j} \prod_{i=1}^n h_i^{b_{ij}} = g^{pnbar} \prod_{i=1}^n h_i\ = Commit(\textbf 1, pnbar).\ \ \ (5.2)
 $$
 
-Let $\textbf u = (u_1 .. u_n)$ be arbitrary values  $\in \Zeta_q, \textbf {pu}$ its permutation by $\psi$, and  $cru=\sum_{j=1}^N {cr_j u_j}$.
+Let $\vec e = (e_1 .. e_n)$ be arbitrary values  $\in \Zeta_q,\ \vec {e^\prime}$ its permutation by $\psi$, and  $pne=\sum_{j=1}^N {pn_j \cdot e_j}$.
 
 $Condition$ 2 implies that:
 $$
-\prod_{i=1}^n u_i = \prod_{j=1}^n pu_j\ \ \ (5.3)
+\prod_{i=1}^n e_i = \prod_{j=1}^n e^\prime_i\ \ \ (5.3)
 $$
 
 $$
-\prod_{j=1}^n c_j^{u_j} = \prod_{j=1}^n (g^{cr_j} \prod_{i=1}^n h_i^{b_{ij}})^{u_j} = g^{cru} \prod_{i=1}^n h_i^{pu_i}\ = Commit(\textbf {pu}, cru)\ \ \ (5.4)
+\prod_{j=1}^n u_j^{e_j} = \prod_{j=1}^n (g^{pn_j} \prod_{i=1}^n h_i^{b_{ij}})^{e_j} = g^{pne} \prod_{i=1}^n h_i^{pe_i}\ = Commit(\vec {e^\prime}, pne)\ \ \ (5.4)
 $$
 
-Which constitutes proof that condition 1 and 2 are true, so that c is a commitment to a permutation matrix.
+Which constitutes proof that condition 1 and 2 are true, so that u is a commitment to a permutation matrix.
 
 
 
 #### Proof of equal exponents
 
-Let $\textbf m$ be a vector of messages, $\textbf e$ their encryptions **e** = Encr($\textbf m$), and **re(e, r)** their reenryptions with nonces **r**.  A shuffle operation both reencrypts and permutes, so $shuffle(\textbf{e}, \textbf{r}) \to (\textbf{pre}, \textbf{pr})$, where **pre** is the permutation of **re ** by $\psi$, and **pr** the permutation of **r ** by $\psi$.
-$$
-re_i = ReEncr(e_i, r_i) =  Encr(0, r_i) * e_i \\
-$$
+Let $\vec m$ be a vector of messages, $\vec w$ their encryptions = Encr($\vec m$), and Reencrypt($\vec w, \vec r$) their reencryptions with nonces $\vec r$.
 
 $$
-pre_j = ReEncr(pe_j, pr_j) =  Encr(0,pr_j) * e_j \\
+\vec{w^\prime} = \psi(Reencr(\vec w, \vec r))
+$$
+where, for j = $\psi(i)$
+$$
+w^\prime_j = ReEncr(w_i, r_i) =  Encr(0, r_i) \cdot  w_i \\
 $$
 
+As above, let $\vec e = (e_1 .. e_n)$ be arbitrary values  $\in \Zeta_q$, and $\vec {e^\prime}$ its permutation by $\psi$. Note that $e^\prime_j = e_i$ for j = $\psi(i)$.
 
-Let **u** be arbitrary values $\in \Z_q$ (to be specified later) and **pu** its permutation.
-
-If the shuffle is valid, then it follows from $Equation\ 1$ above that
+If the shuffle is valid, then 
 
 
 $$
 \begin{align}
-\prod_{j=1}^n pre_j^{pu_j} &= \prod_{j=1}^n (Encr(0,pr_j) * e_j)^{pu_j} \\
-&= Encr(0,\sum_{j=1}^n (pr_j*pu_j)) * \prod_{j=1}^n e_j^{pu_j} \ \ \ \ (Equation\ 1)\\
-&= Encr(0,sumru) * \prod_{j=1}^n e_j^{pu_j} \\
+\prod_{j=1}^n (w^\prime_j)^{e^\prime_j} &= \prod_{j=1}^n (Encr(0, r_i) \cdot  w_i)^{e^\prime_j},\ i = \psi^{-1}(j) \\
+&= \prod_{j=1}^n (Encr(0, r_i) \cdot  w_i)^{e_i}\ \ \ \ \ (from\ e^\prime_j = e_i) \\
+&= Encr(0,\sum_{j=1}^n (r_i \cdot e_i)) \prod_{j=1}^n w_i^{e_i} \ \ \ \ (from\ Equation\ 1)\\
+&= Encr(0,sumre) \cdot \prod_{j=1}^n w_i^{e_i}\ \ \ \ (5.5) \\
 \end{align}
 $$
-where $sumru = \sum_{j=1}^n (pr_j*pu_j)$.
-
-
-
-However, $e_j^{pu_j} = e_i^{u_i}$ for some i, so $\prod_{j=1}^n e_j^{pu_j} = \prod_{i=1}^n e_i^{u_j}$, and we have:
-$$
-\prod_{j=1}^n pre_j^{pu_j} = Encr(0,sumru) * \prod_{i=1}^n e_i^{u_i}\ \ \ (5.5)
-$$
-
-
-
-**Note** that (5.5) from [2] and line 141 of the code in *GenShuffleProof* in [8] has
-$$
-Encr(1,\tilde r),\ where\ \tilde r  = \sum_{j=1}^n pr_j * u_j
-$$
-whereas we have
-$$
-Encr(0,\tilde r),\ where\ \tilde r  = \sum_{j=1}^n pr_j * pu_j
-$$
-
-The $Encr(0, ..)$ is because we use exponential ElGamal, so is fine. Their use of $u_j$ instead of $pu_j$ appears to be a mistake. Its also possible there is a difference in notation that I didnt catch.
+where $sumre = \sum_{j=1}^n (r_i \cdot e_i)$ = $\sum_{i=1}^n (r_i \cdot e_i)$.
 
 
 
@@ -564,6 +555,8 @@ exp/acc = 3.01007326007326
 
 Even though N dominates, width is bound but nrows can get arbitrarily big.
 
+The proof of shuffle could be done "offline", though intermediate values would have to be kept private (I think).
+
 Could break into batches of 100-1000 ballots each and do each batch in parallel. The advantage here is that there would be complete parallelization.
 
 **Timing results**
@@ -576,10 +569,10 @@ See [VMN spreadsheets](https://docs.google.com/spreadsheets/d/1Sny1xXxU9vjPnqo2K
 
 **operations count**
 
-|                  | shuffle | proof       | verify          |
-| ---------------- | ------- | ----------- | --------------- |
-| regular exps     | 0       | 2*N + 5*n   | 4*N + 4*n + 6   |
-| accelerated exps | 2 * N   | 2*N + 3*n   | 8               |
+|                  | shuffle | proof   | verify  |
+| ---------------- | ------- |---------|---------|
+| regular exps     | 0       | 6 * n   | 6*n + 6 |
+| accelerated exps | 2 * N   | 3*n + 6 | n + 6   |
 
 
 

@@ -1,29 +1,15 @@
 package org.cryptobiotic.mixnet.ch
 
-import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
-import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.unwrap
 import electionguard.core.*
-import electionguard.json2.ElGamalCiphertextJson
-import electionguard.json2.import
-import electionguard.json2.publishJson
-import electionguard.util.ErrorMessages
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromStream
-import kotlinx.serialization.json.encodeToStream
 import org.cryptobiotic.mixnet.core.*
 import org.junit.jupiter.api.Test
-import java.io.FileOutputStream
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-// single vector, not multitext
-class WorkflowTest {
+class WorkflowMultiTest {
     val filenameBallots = "testOut/workflow/ballots.json"
 
     val filenameProof1 = "testOut/workflow/shuffleProof1.json"
@@ -36,19 +22,21 @@ class WorkflowTest {
 
     @Test
     // just run through the workflow and write serializations
-    fun testTwoMixes() {
+    fun testShuffleJson() {
         val keypair = elGamalKeyPairFromRandom(group)
         val nrows = 3
+        val width = 4
 
-        val ballots: List<ElGamalCiphertext> = List(nrows) {
-            Random.nextInt(11).encrypt(keypair)
+        val ballots: List<MultiText> = List(nrows) {
+            val ciphertexts = List(width) { Random.nextInt(11).encrypt(keypair) }
+            MultiText(ciphertexts)
         }
 
         // shuffle 1
         val (shuffleProof1, shuffle1) = runShuffleProofVerify(group, keypair.publicKey, ballots, 1)
         writeShuffleProofToFile(filenameProof1, shuffleProof1)
-        writeCipherTextToFile(filenameBallots, ballots)
-        writeCipherTextToFile(filenameShuffle1, shuffle1)
+        writeMultiTextToFile(filenameBallots, ballots)
+        writeMultiTextToFile(filenameShuffle1, shuffle1)
 
         val roundtripResult1 = readShuffleProofFromFile(group, filenameProof1)
         assertTrue(roundtripResult1 is Ok)
@@ -57,20 +45,21 @@ class WorkflowTest {
         // shuffle 2
         val (shuffleProof2, shuffle2) = runShuffleProofVerify(group, keypair.publicKey, shuffle1, 2)
         writeShuffleProofToFile(filenameProof2, shuffleProof2)
-        writeCipherTextToFile(filenameShuffle2, shuffle2)
+        writeMultiTextToFile(filenameShuffle2, shuffle2)
 
         val roundtripResult2 = readShuffleProofFromFile(group, filenameProof2)
         assertTrue(roundtripResult2 is Ok)
         assertEquals(shuffleProof2, roundtripResult2.unwrap())
     }
 
-    fun runShuffleProofVerify(group: GroupContext, publicKey: ElGamalPublicKey, rows: List<ElGamalCiphertext>, proofno: Int): Pair<ShuffleProof, List<ElGamalCiphertext>> {
+    fun runShuffleProofVerify(group: GroupContext, publicKey: ElGamalPublicKey, rows: List<MultiText>, proofno: Int): Pair<ShuffleProof, List<MultiText>> {
 
-        val (mixedBallots, rnonces, permutation) = shuffle(rows, publicKey)
+        val (mixedBallots, rnonces, permutation) = shuffleMultiText(rows, publicKey)
+        // val (mixedBallots, rnonces, permutation) = PShuffleMultiText(group, rows, publicKey, nthreads).shuffle()
 
         val U = "shuffleProof$proofno"
         val seed = group.randomElementModQ()
-        val proof = shuffleProofS(
+        val proof = shuffleProof(
             group,
             U,
             seed,
@@ -81,7 +70,7 @@ class WorkflowTest {
             rnonces,
         )
 
-        val valid = verifyShuffleProofS(
+        val valid = verifyShuffleProof(
             group,
             U,
             seed,
@@ -98,32 +87,34 @@ class WorkflowTest {
     @Test
     // run through the workflow and write serializations and read back and verify
     fun testShuffleAndVerifyJson() {
-        runShuffleAndVerifyJson(100, 34)
+        //runShuffleAndVerifyJson(100, 34, 16)
         //runShuffleAndVerifyJson(100, 34, 8)
         //runShuffleAndVerifyJson(100, 34, 4)
         //runShuffleAndVerifyJson(100, 34, 2)
-        // runShuffleAndVerifyJson(100, 34)
+        runShuffleAndVerifyJson(100, 34, 1)
     }
 
     // run through the workflow and write serializations and read back and verify
-    fun runShuffleAndVerifyJson(nrows: Int, nthreads: Int) {
+    fun runShuffleAndVerifyJson(nrows: Int, width: Int, nthreads: Int) {
         val startingAll = getSystemTimeInMillis()
-        println("testShuffleVerifyJson: nthreads = $nthreads nrows=$nrows")
+        val N = nrows * width
+        println("testShuffleVerifyJson: nthreads = $nthreads nrows=$nrows, width=$width N=$N")
 
         val keypair = elGamalKeyPairFromRandom(group)
-        val ballots: List<ElGamalCiphertext> = List(nrows) {
-            Random.nextInt(11).encrypt(keypair)
+        val ballots: List<MultiText> = List(nrows) {
+            val ciphertexts = List(width) { Random.nextInt(11).encrypt(keypair) }
+            MultiText(ciphertexts)
         }
 
         // shuffle 1
         val (shuffleProof1, shuffle1) = runShuffle(group, keypair.publicKey, ballots, 1, nthreads)
         writeShuffleProofToFile(filenameProof1, shuffleProof1)
-        writeCipherTextToFile(filenameBallots, ballots)
-        writeCipherTextToFile(filenameShuffle1, shuffle1)
+        writeMultiTextToFile(filenameBallots, ballots)
+        writeMultiTextToFile(filenameShuffle1, shuffle1)
 
         // verify 1
-        val input1 = readCipherTextFromFile(group, filenameBallots).unwrap()
-        val shuffled1 = readCipherTextFromFile(group, filenameShuffle1).unwrap()
+        val input1 = readMultiTextFromFile(group, filenameBallots).unwrap()
+        val shuffled1 = readMultiTextFromFile(group, filenameShuffle1).unwrap()
         val proof1 = readShuffleProofFromFile(group, filenameProof1).unwrap()
         assertTrue(runShuffleVerify(
             group,
@@ -139,11 +130,11 @@ class WorkflowTest {
         // shuffle 2
         val (shuffleProof2, shuffle2) = runShuffle(group, keypair.publicKey, shuffled1, 2, nthreads)
         writeShuffleProofToFile(filenameProof2, shuffleProof2)
-        writeCipherTextToFile(filenameShuffle2, shuffle2)
+        writeMultiTextToFile(filenameShuffle2, shuffle2)
 
         // verify 2
-        val input2 = readCipherTextFromFile(group, filenameShuffle1).unwrap()
-        val shuffled2 = readCipherTextFromFile(group, filenameShuffle2).unwrap()
+        val input2 = readMultiTextFromFile(group, filenameShuffle1).unwrap()
+        val shuffled2 = readMultiTextFromFile(group, filenameShuffle2).unwrap()
         val proof2 = readShuffleProofFromFile(group, filenameProof2).unwrap()
         assertTrue(runShuffleVerify(
             group,
@@ -156,22 +147,26 @@ class WorkflowTest {
         ))
 
         val ending = getSystemTimeInMillis() - startingAll
-        val perRow = ending / nrows
-        println("  after 2 shuffles: $ending msecs, perRow=$perRow msecs")
+        val perN = ending / N
+        println("  after 2 shuffles: $ending msecs, N=$N perN=$perN msecs")
     }
 
-    fun runShuffle(group: GroupContext, publicKey: ElGamalPublicKey, rows: List<ElGamalCiphertext>, proofno: Int, nthreads: Int): Pair<ShuffleProof, List<ElGamalCiphertext>> {
+    fun runShuffle(group: GroupContext, publicKey: ElGamalPublicKey, rows: List<MultiText>, proofno: Int, nthreads: Int): Pair<ShuffleProof, List<MultiText>> {
         var startingTime = getSystemTimeInMillis()
         var endingTime: Long
 
-        val (shuffled, rnonces, permutation) = shuffle(rows, publicKey)
+        val (shuffled, rnonces, permutation) = if (nthreads == 1) {
+            shuffleMultiText(rows, publicKey)
+        } else {
+            PShuffleMultiText(group, rows, publicKey, nthreads).shuffle()
+        }
         endingTime = getSystemTimeInMillis()
         println("  shuffle$proofno took ${endingTime - startingTime}")
         startingTime = endingTime
 
         val U = "shuffleProof$proofno"
         val seed = group.randomElementModQ()
-        val proof = shuffleProofS(
+        val proof = shuffleProof(
             group,
             U,
             seed,
@@ -190,14 +185,14 @@ class WorkflowTest {
 
     fun runShuffleVerify(group: GroupContext,
                          publicKey: ElGamalPublicKey,
-                         rows: List<ElGamalCiphertext>,
-                         shuffled: List<ElGamalCiphertext>,
+                         rows: List<MultiText>,
+                         shuffled: List<MultiText>,
                          proof: ShuffleProof,
                          proofno:Int, nthreads: Int): Boolean{
 
         val startingTime = getSystemTimeInMillis()
 
-        val result =  verifyShuffleProofS(
+        val result =  verifyShuffleProof(
             group,
             proof.U,
             proof.seed,
@@ -213,40 +208,4 @@ class WorkflowTest {
         return result
     }
 
-}
-
-fun readCipherTextFromFile(group: GroupContext, filename: String): Result<List<ElGamalCiphertext>, ErrorMessages> {
-    val errs = ErrorMessages("readCipherTextFromFile '${filename}'")
-    val filepath = Path.of(filename)
-    if (!Files.exists(filepath)) {
-        return errs.add("file does not exist")
-    }
-    val jsonReader = Json { explicitNulls = false; ignoreUnknownKeys = true }
-
-    return try {
-        Files.newInputStream(filepath, StandardOpenOption.READ).use { inp ->
-            val json = jsonReader.decodeFromStream<List<ElGamalCiphertextJson>>(inp)
-            val rows = json.importListCiphertext(group)
-            if (errs.hasErrors()) Err(errs) else Ok(rows)
-        }
-    } catch (t: Throwable) {
-        errs.add("Exception= ${t.message} ${t.stackTraceToString()}")
-    }
-}
-
-fun writeCipherTextToFile(filename: String, rows: List<ElGamalCiphertext>) {
-    val json = rows.publishJson()
-    val jsonReader = Json { explicitNulls = false; ignoreUnknownKeys = true; prettyPrint = true }
-    FileOutputStream(filename).use { out ->
-        jsonReader.encodeToStream(json, out)
-        out.close()
-    }
-}
-
-fun List<ElGamalCiphertextJson>.importListCiphertext(group: GroupContext) : List<ElGamalCiphertext> {
-    return this.map { it.import(group)!! }
-}
-
-fun List<ElGamalCiphertext>.publishJson() : List<ElGamalCiphertextJson> {
-    return this.map { it.publishJson() }
 }

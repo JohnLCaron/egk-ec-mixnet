@@ -1,6 +1,7 @@
 package org.cryptobiotic.mixnet.core
 
 import electionguard.core.*
+import org.cryptobiotic.mixnet.ch.MultiText
 
 // Sum ( term1 * term2 )
 fun innerProduct(term1: List<ElementModQ>, term2: List<ElementModQ>) : ElementModQ {
@@ -20,6 +21,24 @@ fun prodPow(term1: List<ElGamalCiphertext>, exp: List<ElementModQ>) : ElGamalCip
     require(term1.size == exp.size)
     val products = term1.mapIndexed { idx, it -> ElGamalCiphertext(it.pad powP exp[idx], it.data powP exp[idx]) }
     return products.encryptedSum()!!
+}
+
+fun GroupContext.prodPowA(rows: List<ElGamalCiphertext>, exp: List<ElementModQ>) : ElementModP {
+    require(rows.size == exp.size)
+    val products = rows.mapIndexed { idx, row ->
+        val expi = exp[idx]
+        row.data powP expi
+    }
+    return with (this) { products.multP()}
+}
+
+fun GroupContext.prodPowB(rows: List<ElGamalCiphertext>, exp: List<ElementModQ>) : ElementModP {
+    require(rows.size == exp.size)
+    val products = rows.mapIndexed { idx, row ->
+        val expi = exp[idx]
+        row.pad powP expi
+    }
+    return with (this) { products.multP()}
 }
 
 fun multiply(term1: ElGamalCiphertext, term2: ElGamalCiphertext) : ElGamalCiphertext {

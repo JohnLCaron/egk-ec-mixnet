@@ -31,14 +31,6 @@ fun shuffle(
     val rnonces = mutableListOf<VectorQ>()
 
     val psi = PermutationVmn.random(rows.size)
-    /*
-    repeat(rows.size) { jdx ->
-        val idx = psi.of(jdx) //  pe[jdx] = e[ps.of(jdx)]; you have an element in pe, and need to get the corresponding element from e
-        val (reencrypt, nonceV) = rows[idx].reencrypt(publicKey)
-        mixed.add(reencrypt)
-        rnonces.add(nonceV)
-    }
-     */
     repeat(rows.size) { idx ->
         val (reencrypt, nonceV) = rows[idx].reencrypt(publicKey)
         reencr.add(reencrypt)

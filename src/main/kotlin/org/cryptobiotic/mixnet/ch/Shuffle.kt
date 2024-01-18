@@ -120,9 +120,9 @@ class PShuffleMultiText(val group: GroupContext,  val rows: List<MultiText>, val
 }
 
 //////////////////////////////////////////////////
-// one list of ciphertexts to be shuffled.
+// one list of ciphertexts to be shuffled, ie width = 1
 
-fun shuffle(
+fun shuffleOld(
     ciphertext: List<ElGamalCiphertext>,
     publicKey: ElGamalPublicKey,
 ): Triple<List<ElGamalCiphertext>, List<ElementModQ>, Permutation> {
@@ -140,4 +140,24 @@ fun shuffle(
         nonces.add(nonce)
     }
     return Triple(reencryptions, nonces, psi)
+}
+
+fun shuffle(
+    rows: List<ElGamalCiphertext>,
+    publicKey: ElGamalPublicKey,
+): Triple<List<ElGamalCiphertext>, List<ElementModQ>, Permutation> {
+
+    val reencr = mutableListOf<ElGamalCiphertext>()
+    val rnonces = mutableListOf<ElementModQ>()
+
+    repeat(rows.size) { idx ->
+        val (reencrypt, nonceV) = rows[idx].reencrypt(publicKey)
+        reencr.add(reencrypt)
+        rnonces.add(nonceV)
+    }
+
+    val psi = Permutation.random(rows.size)
+    val mixed = psi.permute(reencr)
+    // rnonces are unpermuted
+    return Triple(mixed, rnonces, psi)
 }
