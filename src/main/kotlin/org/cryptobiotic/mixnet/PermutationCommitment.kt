@@ -15,7 +15,6 @@ fun permutationCommitmentVmn(group: GroupContext,
                              psi: Permutation,
                              generators: VectorP) : Pair<VectorP, VectorQ> {
 
-    //  this.r = pRing.randomElementArray(size, randomSource, rbitlen);
     val pnonces = Array(psi.n) { group.randomElementModQ() }
     val commit = pnonces.mapIndexed { idx, it ->
         // tmp1 = g.exp(r);

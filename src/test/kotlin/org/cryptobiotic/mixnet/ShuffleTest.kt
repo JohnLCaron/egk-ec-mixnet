@@ -164,4 +164,8 @@ class ShuffleTest {
         stats.show("shuffle")
     }
 
+    fun multiply(term1: ElGamalCiphertext, term2: ElGamalCiphertext) : ElGamalCiphertext {
+        return term1 + term2
+    }
+
 }

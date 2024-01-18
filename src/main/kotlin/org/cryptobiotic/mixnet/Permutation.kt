@@ -10,7 +10,6 @@ import java.security.SecureRandom
 
    (ie)  <- invert (e) permute -> (pe)
    (ie) permute -> (e)  <- invert (pe)
-
  */
 
 data class Permutation(private val psi: IntArray) {

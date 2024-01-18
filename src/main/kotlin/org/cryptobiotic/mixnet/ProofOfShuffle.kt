@@ -3,7 +3,7 @@ package org.cryptobiotic.mixnet
 import electionguard.core.ElementModP
 import electionguard.core.ElementModQ
 
-// Non-interactive proof that is the input to the Verifier.
+// Non-interactive proof, output from the Prover, input to the Verifier.
 data class ProofOfShuffle(
     val mixname: String,
     val u: VectorP, // permutation commitment
