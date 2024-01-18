@@ -128,27 +128,6 @@ class ShuffleTest {
     }
 
     @Test
-    fun testPermutationInverse() {
-        val nrows = 11
-        val width = 1
-        val keypair = elGamalKeyPairFromRandom(group)
-        val publicKey = keypair.publicKey
-
-        val rows: List<VectorCiphertext> = List(nrows) {
-            val ciphertexts = List(width) { Random.nextInt(width).encrypt(keypair) }
-            VectorCiphertext(group, ciphertexts)
-        }
-
-        val (mixed, rnonces, psi) = shuffleWithInverse(rows, publicKey)
-        mixed.forEachIndexed { idx, it ->
-            val enc0: ElGamalCiphertext = 0.encrypt(publicKey, rnonces.elem(idx, 0))
-            val wp: ElGamalCiphertext = it.elems[0]
-            val w : ElGamalCiphertext = rows[psi.inv(idx)].elems[0]
-            println("mixed = inverse = ${wp ==  multiply(enc0, w)}")
-        }
-    }
-
-    @Test
     fun testShuffle() {
         val nrows = 100
         val width = 100

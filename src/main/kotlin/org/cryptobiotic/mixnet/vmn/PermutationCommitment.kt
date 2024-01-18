@@ -1,6 +1,7 @@
 package org.cryptobiotic.mixnet.vmn
 
 import electionguard.core.*
+import org.cryptobiotic.mixnet.core.Permutation
 import org.cryptobiotic.mixnet.core.VectorP
 import org.cryptobiotic.mixnet.core.VectorQ
 
@@ -14,7 +15,7 @@ import org.cryptobiotic.mixnet.core.VectorQ
 //        final PGroupElementArray tmp2 = h.mul(tmp1);
 //        u = tmp2.permute(pi);
 fun permutationCommitmentVmn(group: GroupContext,
-                             psi: PermutationVmn,
+                             psi: Permutation,
                              generators: VectorP) : Pair<VectorP, VectorQ> {
 
     //  this.r = pRing.randomElementArray(size, randomSource, rbitlen);
@@ -25,7 +26,7 @@ fun permutationCommitmentVmn(group: GroupContext,
         // tmp2 = h.mul(tmp1);
         tmp1 * generators.elems[idx]
     }
-    val pcommit = psi.permute(commit)
+    val pcommit = psi.invert(commit)
 
     return Pair(VectorP(group, pcommit), VectorQ(group, pnonces.toList()))
 }
