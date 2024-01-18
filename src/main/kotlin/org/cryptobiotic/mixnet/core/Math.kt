@@ -1,7 +1,6 @@
 package org.cryptobiotic.mixnet.core
 
 import electionguard.core.*
-import org.cryptobiotic.mixnet.ch.MultiText
 
 // Sum ( term1 * term2 )
 fun innerProduct(term1: List<ElementModQ>, term2: List<ElementModQ>) : ElementModQ {

@@ -1,10 +1,8 @@
 package org.cryptobiotic.verificabitur.vmn
 
-import com.verificatum.arithm.PGroupElementArray
-import com.verificatum.arithm.Permutation
 import com.verificatum.arithm.PermutationIM
 import com.verificatum.crypto.RandomDevice
-import org.cryptobiotic.mixnet.core.PermutationVmn
+import org.cryptobiotic.mixnet.vmn.PermutationVmn
 import kotlin.test.Test
 
 class PermutationTest {

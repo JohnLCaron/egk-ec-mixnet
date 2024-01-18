@@ -40,14 +40,3 @@ fun Prod(vc: VectorCiphertext): ElGamalCiphertext {
     return vc.elems.encryptedSum()!!
 }
 
-// TODO put this into ElGamalCiphertext
-fun ElGamalCiphertext.reencrypt(publicKey: ElGamalPublicKey, nonce: ElementModQ): ElGamalCiphertext {
-    // Encr(m) = (g^ξ, K^(m+ξ)) = (a, b)
-    // ReEncr(m)  = (g^(ξ+ξ'), K^(m+ξ+ξ')) = (a * g^ξ', b * K^ξ')
-    // Encr(0) = (g^ξ', K^ξ') = (a', b'), so ReEncr(m) = (a * a', b * b') =  Encr(0) * Encr(m)
-
-    val group = publicKey.context
-    val ap = group.gPowP(nonce)
-    val bp = publicKey.key powP nonce
-    return ElGamalCiphertext(this.pad * ap, this.data * bp)
-}
