@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.mixnet
 
 import electionguard.core.*
 import kotlinx.coroutines.*
@@ -6,7 +6,6 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.cryptobiotic.mixnet.core.*
 
 fun runVerify(
     group: GroupContext,
@@ -31,70 +30,6 @@ fun runVerify(
     )
     return verifier.verify(pos, nthreads)
 }
-
-//     public boolean verify(
-//                          final PGroupElement pkey,
-//                          final PGroupElementArray w,
-//                          final PGroupElementArray wp) {
-//
-//        V.setInstance(pkey, w, wp);
-//
-//        // Read and set the permutation commitment of the prover.
-//        V.setPermutationCommitment(permutationCommitmentReader);
-//        if (nizkp != null) {
-//            V.u.toByteTree().unsafeWriteTo(PCfile(nizkp, l));
-//        }
-//
-//        // Generate a seed to the PRG for batching.
-//        ByteTreeContainer challengeData =
-//            new ByteTreeContainer(V.g.toByteTree(),
-//                                  V.h.toByteTree(),
-//                                  V.u.toByteTree(),
-//                                  pkey.toByteTree(),
-//                                  w.toByteTree(),
-//                                  wp.toByteTree());
-//
-//        final byte[] prgSeed = challenger.challenge(tempLog2,
-//                                                    challengeData,
-//                                                    8 * prg.minNoSeedBytes(),
-//                                                    rbitlen);
-//
-//        V.setBatchVector(prgSeed);
-//
-//        // We can compute A and F in parallel with the prover
-//        // computing the rest of the proof.
-//        V.computeAF();
-//
-//        // Read and set the commitment of the prover.
-//        final ByteTreeReader commitmentReader =
-//            bullBoard.waitFor(l, "Commitment", tempLog);
-//        final ByteTreeBasic commitment = V.setCommitment(commitmentReader);
-//        if (nizkp != null) {
-//            commitment.unsafeWriteTo(PoSCfile(nizkp, l));
-//        }
-//
-//        // Generate a challenge
-//        challengeData =
-//            new ByteTreeContainer(new ByteTree(prgSeed), commitment);
-//        final byte[] challengeBytes =
-//            challenger.challenge(tempLog2, challengeData, vbitlen(), rbitlen);
-//        final LargeInteger integerChallenge =
-//            LargeInteger.toPositive(challengeBytes);
-//
-//        // Set the commitment and challenge.
-//        V.setChallenge(integerChallenge);
-//
-//        // Read and verify reply.
-//        final ByteTreeReader replyReader =
-//            bullBoard.waitFor(l, "Reply", tempLog);
-//        final boolean verdict = V.verify(replyReader);
-//
-//        if (verdict && nizkp != null) {
-//            V.getReply().unsafeWriteTo(PoSRfile(nizkp, l));
-//        }
-//
-//        return verdict;
-//    }
 
 /**
  * Verifies the TW proof of shuffle.

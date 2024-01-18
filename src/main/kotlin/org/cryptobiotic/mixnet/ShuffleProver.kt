@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.mixnet
 
 import electionguard.core.*
 import kotlinx.coroutines.*
@@ -6,54 +6,7 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.cryptobiotic.mixnet.core.*
 
-// PoSTW.prove() line 95
-//    var P: PoSBasicTW
-//    public void prove(
-//                      final PGroupElement pkey,
-//                      final PGroupElementArray w,
-//                      final PGroupElementArray wp,
-//                      final PRingElementArray s) { // rnonces
-//
-//        P.setInstance(pkey, w, wp, s);
-//
-//        // Publish our commitment of a permutation.
-//        if (nizkp != null) {
-//            P.u.toByteTree().unsafeWriteTo(PCfile(nizkp, j));
-//        }
-//
-//        // Generate a seed to the PRG for batching.
-//        ByteTreeContainer challengeData =
-//            new ByteTreeContainer(P.g.toByteTree(),
-//                                  P.h.toByteTree(),
-//                                  P.u.toByteTree(),
-//                                  pkey.toByteTree(),
-//                                  w.toByteTree(),
-//                                  wp.toByteTree());
-//
-//        final byte[] prgSeed =
-//            challenger.challenge(tempLog2,
-//                                 challengeData,
-//                                 8 * prg.minNoSeedBytes(),
-//                                 rbitlen);
-//
-//        // Compute and publish commitment.
-//        final ByteTreeBasic commitment = P.commit(prgSeed);
-//        if (nizkp != null) {
-//            commitment.unsafeWriteTo(PoSCfile(nizkp, j));
-//        }
-//
-//        // Generate a challenge.
-//        challengeData = new ByteTreeContainer(new ByteTree(prgSeed), commitment);
-//        final byte[] challengeBytes = challenger.challenge(tempLog2, challengeData, vbitlen(), rbitlen);
-//        final LargeInteger integerChallenge = LargeInteger.toPositive(challengeBytes);
-//
-//        // Compute and publish reply.
-//        if (nizkp != null) {
-//            reply.unsafeWriteTo(PoSRfile(nizkp, j));
-//        }
-//    }
 fun runProof(
     group: GroupContext,
     mixName: String,

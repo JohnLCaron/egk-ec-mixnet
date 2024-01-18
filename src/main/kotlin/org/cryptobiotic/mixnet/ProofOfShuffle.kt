@@ -1,8 +1,7 @@
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.mixnet
 
 import electionguard.core.ElementModP
 import electionguard.core.ElementModQ
-import org.cryptobiotic.mixnet.core.*
 
 // Non-interactive proof that is the input to the Verifier.
 data class ProofOfShuffle(

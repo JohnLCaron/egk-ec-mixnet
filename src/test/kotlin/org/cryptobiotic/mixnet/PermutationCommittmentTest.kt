@@ -1,7 +1,6 @@
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.mixnet
 
 import electionguard.core.*
-import org.cryptobiotic.mixnet.core.*
 import org.junit.jupiter.api.Test
 
 class PermutationCommittmentTest {

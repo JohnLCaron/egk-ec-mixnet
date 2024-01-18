@@ -1,10 +1,7 @@
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.mixnet
 
 import electionguard.ballot.parameterBaseHash
 import electionguard.core.*
-import org.cryptobiotic.mixnet.core.VectorCiphertext
-import org.cryptobiotic.mixnet.core.VectorP
-import org.cryptobiotic.mixnet.core.VectorQ
 
 fun getBatchingVectorAndChallenge(
     group: GroupContext,

@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.core
+package org.cryptobiotic.mixnet
 
 import electionguard.core.*
 import kotlinx.coroutines.*
@@ -27,10 +27,6 @@ data class VectorP(val group: GroupContext, val elems: List<ElementModP> ) {
         return VectorP(group,  List( nelems) { elems[it] powP scalar })
     }
 
-    fun timesScalarP(scalar: ElementModP): VectorP {
-        return VectorP(group,  List( nelems) { elems[it] * scalar })
-    }
-
     fun product(): ElementModP {
         if (elems.isEmpty()) {
             group.ONE_MOD_Q
@@ -39,10 +35,6 @@ data class VectorP(val group: GroupContext, val elems: List<ElementModP> ) {
             return elems[0]
         }
         return elems.reduce { a, b -> (a * b) }
-    }
-
-    fun shiftPush(elem0: ElementModP): VectorP {
-        return VectorP(group, List (this.nelems) { if (it == 0) elem0 else this.elems[it - 1] })
     }
 
     fun show() = buildString {
