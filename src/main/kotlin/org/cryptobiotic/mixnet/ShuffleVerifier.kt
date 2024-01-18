@@ -15,7 +15,7 @@ fun runVerify(
     pos: ProofOfShuffle,
     nthreads: Int = 10,
 ):Boolean {
-    // these are the deterministic nonces and generators that verifier must also be able to generate
+    // these are the deterministic nonces and generators that prover must also be able to generate
     val generators = getGeneratorsVmn(group, w.size, pos.mixname) // CE 1 acc n exp
     val (e, challenge) = getBatchingVectorAndChallenge(group, pos.mixname, generators, pos.u, publicKey, w, wp)
 
