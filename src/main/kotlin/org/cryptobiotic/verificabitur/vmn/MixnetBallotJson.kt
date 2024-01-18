@@ -12,7 +12,7 @@ import electionguard.core.fileReadText
 import electionguard.util.Indent
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import org.cryptobiotic.mixnet.core.VectorCiphertext
+import org.cryptobiotic.mixnet.VectorCiphertext
 
 @Serializable
 data class MixnetBallotJson(

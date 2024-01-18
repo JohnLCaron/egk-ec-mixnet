@@ -1,7 +1,7 @@
 package org.cryptobiotic.verificabitur.vmn
 
 import electionguard.core.*
-import org.cryptobiotic.mixnet.core.Permutation
+import org.cryptobiotic.mixnet.Permutation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.random.Random

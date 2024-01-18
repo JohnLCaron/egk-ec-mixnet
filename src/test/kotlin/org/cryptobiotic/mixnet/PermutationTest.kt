@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.core
+package org.cryptobiotic.mixnet
 
 import electionguard.core.*
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -11,7 +11,7 @@ class PermutationTest {
 
     @Test
     fun testPermutation() {
-        val n = 7
+        val n = 42
         val psi = Permutation.random(n)
         println("psi = $psi")
         val psinv = psi.inverse()

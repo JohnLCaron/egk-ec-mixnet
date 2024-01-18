@@ -1,7 +1,7 @@
 package org.cryptobiotic.verificabitur.vmn
 
-import org.cryptobiotic.mixnet.core.MatrixQ
-import org.cryptobiotic.mixnet.core.VectorQ
+import org.cryptobiotic.mixnet.MatrixQ
+import org.cryptobiotic.mixnet.VectorQ
 import java.security.SecureRandom
 
 // port from vmn code, for testing

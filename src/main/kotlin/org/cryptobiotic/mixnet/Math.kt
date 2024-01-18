@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.core
+package org.cryptobiotic.mixnet
 
 import electionguard.core.*
 

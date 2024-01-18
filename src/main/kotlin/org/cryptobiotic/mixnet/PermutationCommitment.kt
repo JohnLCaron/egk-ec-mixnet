@@ -1,9 +1,6 @@
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.mixnet
 
 import electionguard.core.*
-import org.cryptobiotic.mixnet.core.Permutation
-import org.cryptobiotic.mixnet.core.VectorP
-import org.cryptobiotic.mixnet.core.VectorQ
 
 // pcommit = u, part of the ProofOfShuffle
 // PoSBasicTW line 452

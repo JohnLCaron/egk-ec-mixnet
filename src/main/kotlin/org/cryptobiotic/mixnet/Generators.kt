@@ -1,8 +1,7 @@
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.mixnet
 
 import electionguard.ballot.parameterBaseHash
 import electionguard.core.*
-import org.cryptobiotic.mixnet.core.VectorP
 
 // generate a set of n independent generators
 

@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.mixnet
 
 import electionguard.core.*
 import kotlinx.coroutines.*
@@ -6,7 +6,6 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.cryptobiotic.mixnet.core.*
 
 /**
  * Shuffle rows (nrows x width) of ElGamalCiphertext.
@@ -41,7 +40,7 @@ fun shuffle(
     return Triple(mixed, MatrixQ(rnonces), psi)
 }
 
-// parallel mixing
+// parallel shuffle
 class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey, val nthreads: Int = 10) {
     val group: GroupContext = publicKey.context
     val n = rows.size

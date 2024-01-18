@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalSerializationApi::class)
 
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.mixnet
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -13,9 +13,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
-import org.cryptobiotic.mixnet.core.VectorCiphertext
-import org.cryptobiotic.mixnet.core.VectorP
-import org.cryptobiotic.mixnet.core.VectorQ
 import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.Path

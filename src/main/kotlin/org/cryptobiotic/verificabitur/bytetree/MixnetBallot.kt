@@ -1,7 +1,7 @@
 package org.cryptobiotic.verificabitur.bytetree
 
 import electionguard.core.*
-import org.cryptobiotic.mixnet.core.VectorCiphertext
+import org.cryptobiotic.mixnet.VectorCiphertext
 import org.cryptobiotic.verificabitur.reader.convertP
 
 fun readMixnetBallotFromFile(group: GroupContext, filename: String): List<VectorCiphertext> {

@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.core
+package org.cryptobiotic.mixnet
 
 import electionguard.core.*
 
@@ -59,10 +59,6 @@ data class VectorQ(val group: GroupContext, val elems: List<ElementModQ> ) {
 
     fun timesScalar(scalar: ElementModQ): VectorQ {
         return VectorQ(group, List(nelems) { elems[it] * scalar })
-    }
-
-    fun plusScalar(scalar: ElementModQ): VectorQ {
-        return VectorQ(group, List(nelems) { elems[it] + scalar })
     }
 
     fun powScalar(scalar: ElementModP): VectorP {
