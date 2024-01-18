@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet.vmn
+package org.cryptobiotic.verificabitur.vmn
 
 import org.cryptobiotic.mixnet.core.MatrixQ
 import org.cryptobiotic.mixnet.core.VectorQ
@@ -83,7 +83,7 @@ data class PermutationVmn(private val inverse: IntArray) {
     }
 }
 
-fun MatrixQ.invert(psi: PermutationVmn) = MatrixQ(psi.invert(this.elems))
+fun MatrixQ.invertVmn(psi: PermutationVmn) = MatrixQ(psi.invert(this.elems))
 
 fun VectorQ.permute(psi: PermutationVmn) = VectorQ(group, psi.permute(elems))
 fun VectorQ.invert(psi: PermutationVmn) = VectorQ(group, psi.invert(elems))

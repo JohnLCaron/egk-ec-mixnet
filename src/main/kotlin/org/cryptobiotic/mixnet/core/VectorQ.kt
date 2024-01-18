@@ -15,6 +15,10 @@ data class MatrixQ(val elems: List<VectorQ> ) {
         require(colv.nelems == width)
         return elems.map{ row -> row.innerProduct(colv) }
     }
+
+    fun invert(psi: Permutation) = MatrixQ(psi.invert(this.elems))
+    fun permute(psi: Permutation) = MatrixQ(psi.permute(this.elems))
+
 }
 
 data class VectorQ(val group: GroupContext, val elems: List<ElementModQ> ) {

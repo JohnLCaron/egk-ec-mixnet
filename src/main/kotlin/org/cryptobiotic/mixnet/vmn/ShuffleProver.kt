@@ -61,7 +61,7 @@ fun runProof(
     w: List<VectorCiphertext>, //  rows (nrows x width)
     wp: List<VectorCiphertext>, // shuffled (nrows x width)
     rnonces: MatrixQ, // reencryption nonces (nrows x width), corresponding to W
-    psi: PermutationVmn, // nrows
+    psi: Permutation, // nrows
     nthreads: Int = 10,
 ): ProofOfShuffle {
     // these are the deterministic nonces and generators that verifier must also be able to generate
@@ -104,7 +104,7 @@ class ProverV(
     val w: List<VectorCiphertext>, //  rows (nrows x width)
     val wp: List<VectorCiphertext>, // shuffled (nrows x width)
     val rnonces: MatrixQ, // reencryption nonces (nrows x width), corresponding to wp
-    val psi: PermutationVmn, // nrows
+    val psi: Permutation, // nrows
 ) {
     /** Size of the set that is permuted. */
     val nrows: Int = wp.size
@@ -132,7 +132,7 @@ class ProverV(
 
         //         final Permutation piinv = pi.inv();
         //        ipe = e.permute(piinv);
-        ipe = e.invert(psi) // TODO works for A, not for F
+        ipe = e.permute(psi)
     }
 
     fun commit(nthreads: Int): ProofCommittment {
