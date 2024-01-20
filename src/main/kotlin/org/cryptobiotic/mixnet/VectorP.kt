@@ -37,6 +37,10 @@ data class VectorP(val group: GroupContext, val elems: List<ElementModP> ) {
         return elems.reduce { a, b -> (a * b) }
     }
 
+    fun shiftPush(elem0: ElementModP): VectorP {
+        return VectorP(group, List (this.nelems) { if (it == 0) elem0 else this.elems[it - 1] })
+    }
+
     fun show() = buildString {
         elems.forEach {
             append( it.toStringShort())

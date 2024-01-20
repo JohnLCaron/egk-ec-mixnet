@@ -7,6 +7,8 @@ import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+private val useRegularB = true
+
 fun runProof(
     group: GroupContext,
     mixName: String,
@@ -18,7 +20,7 @@ fun runProof(
     nthreads: Int = 10,
 ): ProofOfShuffle {
     // these are the deterministic nonces and generators that verifier must also be able to generate
-    val generators = getGeneratorsVmn(group, w.size, mixName) // CE 1 acc n exp
+    val generators = getGeneratorsVmn(group, w.size, mixName) // CE n + 1 acc
     val (pcommit, pnonces) = permutationCommitmentVmn(group, psi, generators)
     val (e, challenge) = getBatchingVectorAndChallenge(group, mixName, generators, pcommit, publicKey, w, wp)
 
@@ -30,7 +32,6 @@ fun runProof(
         e,
         pcommit,
         pnonces,
-        w,
         wp,
         rnonces,
         psi,
@@ -42,9 +43,6 @@ fun runProof(
 /**
  * Implements the TW proof of shuffle. The rows to shuffle are Vectors of ElgamalCiphertext.
  * Mostly follows the Verificatum implementation.
- * Operation count is
- *   "Proof of shuffle" = (2 * nrows) exp, (3 * nrows + 2 * width + 4)  acc.
- *   "Proof of exponent" = (2 * nrows * width) exp.
  */
 class ProverV(
     val group: GroupContext,
@@ -54,7 +52,6 @@ class ProverV(
     val e: VectorQ, // batching exponents
     val u: VectorP, //pcommit
     val r: VectorQ, // pnonces
-    val w: List<VectorCiphertext>, //  rows (nrows x width)
     val wp: List<VectorCiphertext>, // shuffled (nrows x width)
     val rnonces: MatrixQ, // reencryption nonces (nrows x width), corresponding to wp
     val psi: Permutation, // nrows
@@ -88,89 +85,110 @@ class ProverV(
         ipe = e.permute(psi)
     }
 
+    // CE 2N + 3n exp, 2n + 2*w + 4 acc
     fun commit(nthreads: Int): ProofCommittment {
-        //// pos
-        //         Ap = g.exp(alpha).mul(h.expProd(epsilon));
-        val genEps = prodPowP(generators, epsilon, nthreads)    // CE n exp, 1 acc
-        val Ap = group.gPowP(alpha) * genEps  // CE 1 acc
+       // println("  start commit: ${group.showAndClearCountPowP()}")
 
-        val x: VectorQ = recLin(b, ipe)
-        val d = x.elems[nrows - 1]
-        val y: VectorQ = ipe.aggProd()
-        val (B, Bp) = if (nthreads == 0)  computeB(x, y)   // CE 2n exp, 2n acc
-                         else PcomputeB(x, y, h0, beta, epsilon, nthreads).calc()
-        val Balt = computeBalt(b, ipe)
-        require(B == Balt)
-        val Bpalt = computeBpalt(B, beta, epsilon)
-        require(Bp == Bpalt)
+        //         Ap = g.exp(alpha).mul(h.expProd(epsilon));
+        val genEps = prodPowP(generators, epsilon, nthreads)    // CE n-1 exp, 1 acc
+        val Ap = group.gPowP(alpha) * genEps                    // CE 1 acc
+        //println("  Ap: ${group.showAndClearCountPowP()}")
+
+        // B_0 = g^{b_0} * h0^{e_0'} (1)
+        // B_i = g^{b_i} * B_{i-1}^{e_i'} (2)
+        // minimize the number of exps by pre-adding the exponent values
+        // this reduces each row to 2 acc exps (g and h0 are accelerated) for B and 2 acc for Bp
+        // B_i = g^{gexps_i} * h0^{hexps_i} (3)
+        val gexps: VectorQ = gexpsCalc(b, ipe)
+        val d = gexps.elems[nrows - 1]
+        val hexps: VectorQ = hexpsCalc(ipe)
+        val (B, Bp) = if (nthreads == 0) {
+            if (useRegularB) computeBreg(b, ipe) else computeBalt(gexps, hexps) // CE 2n acc, 2n exp else CE 4n acc
+        }
+            else PcomputeB(gexps, hexps, h0, beta, epsilon, nthreads).calc()
+        //println("  Bp: ${group.showAndClearCountPowP()}")
 
         val Cp = group.gPowP(gamma) // CE 1 acc
         val Dp = group.gPowP(delta) // CE 1 acc
+       // println("  Dp: ${group.showAndClearCountPowP()}")
 
         //// poe
         //        Fp = pkey.exp(phi.neg()).mul(wp.expProd(epsilon));
         val enc0: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, phi)  // CE 2 * width acc
         val wp_eps: VectorCiphertext = prodColumnPow(wp, epsilon, nthreads)  // CE 2 * N exp
         val Fp = enc0 * wp_eps
+       // println("  Fp: ${group.showAndClearCountPowP()}")
 
         return ProofCommittment(u, d, e, B, Ap, Bp, Cp, Dp, Fp)
     }
 
     // Compute aggregated products:
     // e_0, e_0*e_1, e_0*e_1*e_2, ...
-    fun VectorQ.aggProd(): VectorQ {
+    fun hexpsCalc(e: VectorQ): VectorQ {
         var accum = group.ONE_MOD_Q
-        val agge: List<ElementModQ> = this.elems.map {
+        val hexps: List<ElementModQ> = e.elems.map {
             accum = accum * it
             accum
         }
-        return VectorQ(group, agge)
+        return VectorQ(group, hexps)
     }
 
-    // ElementModQ[] bs = b.elements();
-    // ElementModQ[] ipes = ipe.elements();
-    // ElementModQ[] xs = new ElementModQ[size];
-    // xs[0] = bs[0];
-    // for (int i = 1; i < size; i++) {
-    //   xs[i] = xs[i - 1].mul(ipes[i]).add(bs[i]);
-    // }
-    // List<ElementModQ> x = pRing.toElementArray(xs);
-    // d = xs[size-1];
-    fun recLin(b: VectorQ, ipe: VectorQ): VectorQ {
-        val xs = mutableListOf<ElementModQ>()
-        xs.add(b.elems[0])
+
+    fun gexpsCalc(b: VectorQ, e: VectorQ): VectorQ {
+        val gexps = mutableListOf<ElementModQ>()
+        gexps.add(b.elems[0])
         for (idx in 1..b.nelems - 1) {
-            xs.add(xs[idx - 1] * ipe.elems[idx] + b.elems[idx])
+            gexps.add(b.elems[idx] + gexps[idx - 1] * e.elems[idx])
         }
-        return VectorQ(b.group, xs)
+        return VectorQ(b.group, gexps)
     }
 
-    // CE 2n exp, 2n acc
-    fun computeB(x: VectorQ, y: VectorQ): Pair<VectorP, VectorP> {
-        val g_exp_x: VectorP = x.gPowP()                            // CE n acc
+    // CE 4n acc
+    fun computeBalt(gexps: VectorQ, hexps: VectorQ): Pair<VectorP, VectorP> {
+        // B_0 = g^{b_0} * h0^{e_0'} (1)
+        // B_i = g^{b_i} * B_{i-1}^{e_i'} (2)
+        // minimize the number of exps by pre-adding the exponent values
+        // this reduces each row to 2 acc exps (g and h0 are accelerated) for B and 2 acc for Bp
+        // B_i = g^{gexps_i} * h0^{hexps_i} (3)
+        val g_exp_x: VectorP = gexps.gPowP()                            // CE n acc
+        val h0_exp_y: VectorP = hexps.powScalar(h0)                     // CE n acc
+        val B = g_exp_x * h0_exp_y      // B_i = g^{gexps_i} * h0^{hexps_i}
 
-        val h0_exp_y: VectorP = y.powScalar(h0)                      // CE n exp
+        // B'_0 = g^{beta_0} * h0^{eps_0}
+        // B'_i = g^{beta_i + gexps_i-1 * eps_i} * h^{ hexps_i-1 * eps_i}
+        val Bp = mutableListOf<ElementModP>()
+        val B0 = group.gPowP(beta.elems[0]) * (h0 powP epsilon.elems[0])
+        Bp.add(B0)
+        for (idx in 1..nrows - 1) {
+            val Bi1 = group.gPowP(beta.elems[idx] + gexps.elems[idx-1] * epsilon.elems[idx]) // CE n acc
+            val Bi2 = (h0 powP (hexps.elems[idx-1] * epsilon.elems[idx]))                       // CE n acc
+            Bp.add(Bi1 * Bi2)
+        }
 
-        val B = g_exp_x * h0_exp_y  // g.exp(x) *  h0.exp(y)
+        return Pair(B, VectorP(group, Bp))
+    }
 
-        val xp = x.shiftPush(group.ZERO_MOD_Q)
-        val yp = y.shiftPush(group.ONE_MOD_Q)
+    // how vmn does it
+    fun computeBold(gexps: VectorQ, hexps: VectorQ): Pair<VectorP, VectorP> {
+        val g_exp_x: VectorP = gexps.gPowP()                            // CE n acc
+        val h0_exp_y: VectorP = hexps.powScalar(h0)                     // CE n acc
+        val B = g_exp_x * h0_exp_y      // B_i = g^{gexps_i} * h0^{hexps_i}
+
+        val xp = gexps.shiftPush(group.ZERO_MOD_Q)
+        val yp = hexps.shiftPush(group.ONE_MOD_Q)
         val xp_mul_epsilon = xp * epsilon
-
         val beta_add_prod = beta + xp_mul_epsilon
-
         val g_exp_beta_add_prod = beta_add_prod.gPowP()                 // CE n acc
-
         val yp_mul_epsilon = yp * epsilon
-
-        val h0_exp_yp_mul_epsilon = yp_mul_epsilon.powScalar(h0)         // CE n exp
-
+        val h0_exp_yp_mul_epsilon = yp_mul_epsilon.powScalar(h0)         // CE n exp // TODO accelerate h0
         val Bp = g_exp_beta_add_prod * h0_exp_yp_mul_epsilon
 
         return Pair(B, Bp)
     }
 
-    fun computeBalt(b: VectorQ, ipe: VectorQ): VectorP {
+
+    // CE 2n exp, 2n acc
+    fun computeBreg(b: VectorQ, ipe: VectorQ): Pair<VectorP, VectorP>  {
         // The array of bridging commitments is of the form:
         //
         // B_0 = g^{b_0} * h0^{e_0'} (1)
@@ -181,22 +199,21 @@ class ProverV(
             Bprev = Belem
             Belem
         }
-        return VectorP(group, Balt)
-    }
 
-    fun computeBpalt(B: VectorP, beta: VectorQ, epsilon: VectorQ): VectorP {
         // The array of bridging commitments is of the form:
         //
-        // B_0 = g^{b_0} * h0^{e_0'} (1)
-        // B_i = g^{b_i} * B_{i-1}^{e_i'} (2)
-        var Bprev: ElementModP = h0
-        val Balt = List(beta.nelems) { idx ->
-            val Belem : ElementModP = group.gPowP(beta.elems[idx]) * (Bprev powP epsilon.elems[idx])
-            Bprev = B.elems[idx]
+        // B_0 = g^{beta_0} * h0^{eps_0'} (1)
+        // B_i = g^{beta_i} * B_{i-1}^{eps_i'} (2)
+        var Bpprev: ElementModP = h0
+        val Bpalt = List(beta.nelems) { idx ->
+            val Belem : ElementModP = group.gPowP(beta.elems[idx]) * (Bpprev powP epsilon.elems[idx])
+            Bpprev = Balt[idx]
             Belem
         }
-        return VectorP(group, Balt)
+
+        return Pair(VectorP(group, Balt), VectorP(group, Bpalt))
     }
+
 
     fun reply(poc: ProofCommittment, v: ElementModQ): ProofOfShuffle {
         val a: ElementModQ = r.innerProduct(ipe)
@@ -344,16 +361,15 @@ class PprodColumnPow(val rows: List<VectorCiphertext>, val exps: VectorQ, val nt
 
 // parallel computation of B and Bp
 class PcomputeB(
-    val x: VectorQ,
-    val y: VectorQ,
-    val h : ElementModP,
+    val gexps: VectorQ,
+    val hexps: VectorQ,
+    val h0 : ElementModP,
     val beta : VectorQ,
     val epsilon: VectorQ,
     val nthreads: Int = 10,
 ) {
-
-    val group = x.group
-    val nrows = x.nelems
+    val group = gexps.group
+    val nrows = gexps.nelems
 
     val result = mutableMapOf<Int, Triple<ElementModP, ElementModP, Int>>()
 
@@ -362,7 +378,7 @@ class PcomputeB(
             val jobs = mutableListOf<Job>()
             val producer = producer(nrows)
             repeat(nthreads) {
-                jobs.add( launchCalculator(producer) { idx -> computeBp(idx) } )
+                jobs.add( launchCalculator(producer) { idx -> computeBalt(idx) } )
             }
             // wait for all calculations to be done, then close everything
             joinAll(*jobs.toTypedArray())
@@ -397,34 +413,23 @@ class PcomputeB(
         }
     }
 
-    fun computeBp(idx: Int): Triple<ElementModP, ElementModP, Int> {
-        // val g_exp_x: VectorP = x.gPowP()
-        // val h0_exp_y: VectorP = y.powScalar(h)                      // CE n exp
-        // val B = g_exp_x * h0_exp_y  // g.exp(x) *  h0.exp(y)
-        val g_exp_x = group.gPowP(x.elems[idx])
-        val h0_exp_y = h powP y.elems[idx]
+    fun computeBalt(idx: Int): Triple<ElementModP, ElementModP, Int> {
+        // B_0 = g^{b_0} * h0^{e_0'} (1)
+        // B_i = g^{b_i} * B_{i-1}^{e_i'} (2)
+        // minimize the number of exps by pre-adding the exponent values
+        // this reduces each row to 2 acc exps (g and h0 are accelerated) for B and 2 acc for Bp
+        // B_i = g^{gexps_i} * h0^{hexps_i} (3)
+        val g_exp_x = group.gPowP(gexps.elems[idx])
+        val h0_exp_y = h0 powP hexps.elems[idx]
         val B = g_exp_x * h0_exp_y
 
-        // val xp = x.shiftPush(group.ZERO_MOD_Q)
-        val xp = if (idx == 0) group.ZERO_MOD_Q else x.elems[idx-1]
-
-        // val yp = y.shiftPush(group.ONE_MOD_Q)
-        val yp = if (idx == 0) group.ONE_MOD_Q else y.elems[idx-1]
-
-        val xp_mul_epsilon = xp * epsilon.elems[idx]
-        val beta_add_prod = beta.elems[idx] + xp_mul_epsilon
-
-        // val g_exp_beta_add_prod = beta_add_prod.gPowP()                 // CE n acc
-        val g_exp_beta_add_prod = group.gPowP(beta_add_prod)
-
-        //        final PRingElementArray yp_mul_epsilon = yp.mul(epsilon);
-        val yp_mul_epsilon = yp * epsilon.elems[idx]
-
-        // val h0_exp_yp_mul_epsilon = yp_mul_epsilon.powScalar(h)         // CE n exp
-        val h0_exp_yp_mul_epsilon = h powP yp_mul_epsilon
-
-        //        Bp = g_exp_beta_add_prod.mul(h0_exp_yp_mul_epsilon);
-        val Bp = g_exp_beta_add_prod * h0_exp_yp_mul_epsilon
+        // B'_0 = g^{beta_0} * h0^{eps_0}
+        // B'_i = g^{beta_i + gexps_i-1 * eps_i} * h^{ hexps_i-1 * eps_i}
+        val Bp = if (idx == 0) group.gPowP(beta.elems[0]) * (h0 powP epsilon.elems[0]) else {
+            val Bi1 = group.gPowP(beta.elems[idx] + gexps.elems[idx-1] * epsilon.elems[idx])
+            val Bi2 = (h0 powP (hexps.elems[idx-1] * epsilon.elems[idx]))
+            Bi1 * Bi2
+        }
 
         return Triple(B, Bp, idx)
     }

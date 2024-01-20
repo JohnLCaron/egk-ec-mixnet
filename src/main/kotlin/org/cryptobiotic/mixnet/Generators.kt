@@ -11,9 +11,9 @@ fun getGeneratorsVmn(group: GroupContext, n: Int, U: String): VectorP {
     val prgSeed = hashFunction(baseHash.bytes, 0x102.toByte(), U)
 
     // not sure if this is good enough, except for testing
-    val nonces = Nonces(prgSeed.toElementModQ(group), U).take(n+1)
-    val h = group.gPowP(nonces[0]) // TODO make h accelerated
-    val generators = List(n) { h powP nonces[it+1] } // CE n exp
+    val nonces = Nonces(prgSeed.toElementModQ(group), U).take(n)
+    val h0 = group.gPowP(nonces[0]).acceleratePow() // LOOK accelerated
+    val generators = List(n) { if (it == 0) h0 else ( h0 powP nonces[it]) } // CE n acc
     return VectorP(group, generators)
 }
 
