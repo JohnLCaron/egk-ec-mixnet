@@ -1,115 +1,37 @@
-%% LyX 2.3.6 created this file.  For more info, see http://www.lyx.org/.
-%% Do not edit unless you really know what you are doing.
 \documentclass{article}
-\usepackage{lmodern}
-\usepackage{lmodern}
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\setcounter{secnumdepth}{-1}
-\usepackage{longtable}
-\usepackage{booktabs}
-\usepackage{textcomp}
-\usepackage{url}
+% \usepackage[document]{ragged2e}
+% \usepackage[margin=1in]{geometry}
+
+\usepackage{graphicx} % Required for inserting images
 \usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage[unicode=true,
- bookmarks=false,
- breaklinks=false,pdfborder={0 0 1},backref=section,colorlinks=false]
- {hyperref}
-\hypersetup{
- hidelinks,pdfcreator={LaTeX via pandoc}}
+\usepackage{longtable}
 
-\makeatletter
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
-%% Because html converters don't know tabularnewline
-\providecommand{\tabularnewline}{\\}
-
-\@ifundefined{date}{}{\date{}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
-% Options for packages loaded elsewhere
-
-
-%
-\usepackage{ifxetex}
-\usepackage{ifluatex}\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
-  \usepackage{textcomp}% provide euro and other symbols
-\else % if luatex or xetex
-  \usepackage{unicode-math}
-\defaultfontfeatures{Scale=MatchLowercase}
-  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
-\fi
-% Use upquote if available, for straight quotes in verbatim environments
-\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
-\IfFileExists{microtype.sty}{% use microtype if available
-  \usepackage[]{microtype}
-  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
-}{}
-
-\@ifundefined{KOMAClassName}{% if non-KOMA class
-  \IfFileExists{parskip.sty}{%
-    \usepackage{parskip}
-  }{% else
-    \setlength{\parindent}{0pt}
-    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
-}{% if KOMA class
-  \KOMAoptions{parskip=half}}
-
-\usepackage{xcolor}
-\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
-\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
-
-\urlstyle{same} % disable monospaced font for URLs
-% Correct order of tables after \paragraph or \subparagraph
-\usepackage{etoolbox}
-
-\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
-
-% Allow footnotes in longtable head/foot
-\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
-\makesavenoteenv{longtable}
-\setlength{\emergencystretch}{3em} % prevent overfull lines
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
- % remove section numbering
-
+\title{egk-mixnet-maths DRAFT}
 \author{John Caron}
-
-\makeatother
+\date{1/17/2024}
 
 \begin{document}
 
-\section{egk mixnet maths}
-
-\emph{John Caron, 1/13/2024}
+\maketitle
 
 Preliminary explorations of mixnet implementations to be used with
-the ElectionGuard Kotlin library.
+the ElectionGuard Kotlin library \cite{Caron23}. \par
 
-The ElectionGuard Kotlin library {[}7{]} is used for the cryptography
-primitives. This library closely follows the ElectionGuard 2.0 specification
-{[}1{]}.
-
-The math here mostly recapitulates the work of Wikström {[}6{]}; Haenni
-et. al. {[}2{]}, {[}3{]} in explaining the Terelius / Wikström (TW)
-mixnet algorithm {[}4{]}, {[}5{]}; and the work of Haines {[}9{]}
+The math here mostly recapitulates the work of Wikström \cite{Wikstr22}; Haenni
+et. al. \cite{Haenni23} \cite{Haenni17}, in explaining the Terelius / Wikström (TW)
+mixnet algorithm\cite{Wikstr10}\cite{Wikstr09}; and the work of Haines \cite{Haines19}
 that gives a formal proof of security of TW when the shuffle involves
-vectors of ciphertexts.
+vectors of ciphertexts. \par
 
-Instead of psuedocode, the kotlin code acts as the implementation
+Instead of psuedocode, the Kotlin library code acts as the implementation
 of the math described here. It can act as a reference and comparison
-for ports to other languages.
+for ports to other languages. 
 
-Ive tried to avoid notation that is hard to read, preferring for example,
-multiple character symbols like $pr$ instead of \~{r} or \^{r} ,
-since the glyphs can get too small to read when they are used in exponents
-or subscripts, and can be hard to replicate in places other than high
-quality Tex or PDF renderers.
+\pagebreak 
 
+\section{Definitions}
 
-\subsubsection{Definitions}
-
-\paragraph{The ElectionGuard Group}
+\subsection{The ElectionGuard Group}
 \begin{itemize}
 \item $Z=\{...,-3,-2,-1,0,1,2,3,...\}$ is the set of integers. 
 \item $Z_{n}=\{0,1,2,...,n-1\}$ is the ring of integers modulo n. 
@@ -123,12 +45,57 @@ then $Z_{p}^{r}$ is an order-q cyclic subgroup of $Z_{p}^{*}$ ,
 and for any $y\in Z_{p}^{*}$ , $y\in Z_{p}^{r}$ if and only if $y^{q}$
 mod p = 1. 
 \end{itemize}
-The ElectionGuard Kotlin library {[}7{]} and ElectionGuard 2.0 specification
-{[}1{]} is used for the cryptography primitives, in particular the
+
+The ElectionGuard Kotlin library \cite{Caron23} and ElectionGuard 2.0 specification \cite{Benaloh23} is used for the cryptography primitives, in particular the
 parameters for $Z_{p}^{r}$, the variant of ElGamal encryption described
 next, and the use of HMAC-SHA-256 for hashing
 
-\paragraph{Permutations}
+\subsection{ElGamal Encryption and Reencryption}
+
+\begin{align*}
+(1.2a)\\
+Encr(m,\xi)=(g^{\xi},K^{m+\xi})=(a,b)\\
+Encr(0,\xi')=(g^{\xi'},K^{\xi'})\\
+\\
+(1.2b)\\
+(a,b)*(a',b')=(a*a',b*b')\\
+Encr(m,\xi)*Encr(m',\xi')=(g^{\xi+\xi'},K^{m+m'+\xi+\xi'})=Encr(m+m',\xi+\xi')\\
+\\
+(1.2c)\\
+(a,b)^{k}=(a^{k},b^{k})\\
+Encr(m,\xi)^{k}=(g^{\xi*k},K^{(m*k+\xi*k)})=Encr(m*k,\xi*k)\\
+\\
+(1.2d)\\
+\prod_{j=1}^{n}Encr(m_{j},\xi_{j})=(g^{\sum_{j=1}^{n}\xi_{j}},K^{\sum_{j=1}^{n}m_{j}+\sum_{j=1}^{n}\xi_{j}})=Encr(\sum_{j=1}^{n}m_{j},\sum_{j=1}^{n}\xi_{j})\\
+\prod_{j=1}^{n}Encr(m_{j},\xi_{j})^{k_{j}}=Encr(\sum_{j=1}^{n}(m_{j}*k_{j}),\sum_{j=1}^{n}(\xi_{j}*k_{j}))\\
+\\
+(1.2e)\\
+ReEncr(m,r)=(g^{\xi+r},K^{m+\xi+r})=Encr(0,r)*Encr(m,\xi)\\
+ReEncr(m,r)^{k}=Encr(0,r*k)*Encr(m*k,\xi*k)\\
+\\
+(1.2f)\\
+\prod_{j=1}^{n}ReEncr(e_{j},r_{j})=(g^{\sum_{j=1}^{n}(\xi_{j}+r_{j})},K^{\sum_{j=1}^{n}(m_{j}+\xi_{j}+r_{j})})\\
+=ReEncr(\prod_{j=1}^{n}e_{j},\sum_{j=1}^{n}r_{j})\\
+(1.2g)\\
+\prod_{j=1}^{n}ReEncr(m_{j},r_{j})^{k_{j}}=\prod_{j=1}^{n}Encr(0,r_{j}*k_{j})*\prod_{j=1}^{n}Encr(m_{j}*k_{j},\xi_{j}*k_{j})\\
+=Encr(0,\sum_{j=1}^{n}(r_{j}*k_{j}))*\prod_{j=1}^{n}Encr(m_{j},\xi_{j})^{k_{j}}\\
+\end{align*}
+
+Let
+\begin{itemize}
+\item $e_{j}=Encr(m_{j},\xi_{j})$ 
+\item $re_{j}=ReEncr(m_{j},r_{j})=ReEncr(e_{j},r_{j})=Encr(0,r_{j})*e_{j}$ 
+\end{itemize}
+
+then
+
+\begin{align*}
+re_{j} & =Encr(0,r_{j})*e_{j}\\
+\prod_{j=1}^{n}re_{j}^{k_{j}} & =\prod_{j=1}^{n}Encr(0,r_{j})^{k_{j}}*\prod_{j=1}^{n}e_{j}^{k_{j}}\\
+ & =Encr(0,\sum_{j=1}^{n}(r_{j}*k_{j}))*\prod_{j=1}^{n}e_{j}^{k_{j}} \text{,    (Equation\ 1)}\\
+\end{align*}
+
+\subsection{Permutations}
 
 A \emph{permutation} is a bijective map $\psi:{1..N}\to{1..N}$. We
 use \textbf{px} to mean the permutation of a vector \textbf{x}, \textbf{px}
@@ -144,62 +111,16 @@ If $B_{\psi}$ = ($b_{ij}$) is an n-by-n matrix over$Z_{q}$ and
 then $B_{\psi}$ is a permutation matrix if and only
 
 \begin{align*}
-\sum_{i=1}^{n}b_{ij} & =1,for\ all\ j\ \ \ \ (Equation\ 1)\\
-\sum_{i=1}^{n}\sum_{j=1}^{n}b_{ij}x_{i} & =\sum_{i=1}^{n}x_{i}\ \ \ \ (Equation\ 2)
+\sum_{i=1}^{n}b_{ij} & =1 \text{, for all j         (Equation 1)}\\
+\sum_{i=1}^{n}\sum_{j=1}^{n}b_{ij}x_{i} & =\sum_{i=1}^{n}x_{i}\text{    (Equation 2)}
 \end{align*}
 
+\pagebreak
+\section{Verificatum}
 
-\paragraph{ElGamal Encryption and Reencryption}
+Derived mostly from \cite{Verificatum} and \cite{Wikstr22}.
 
-\begin{align*}
-(2a)\\
-Encr(m,\xi)=(g^{\xi},K^{m+\xi})=(a,b)\\
-Encr(0,\xi')=(g^{\xi'},K^{\xi'})\\
-\\
-(2b)\\
-(a,b)*(a',b')=(a*a',b*b')\\
-Encr(m,\xi)*Encr(m',\xi')=(g^{\xi+\xi'},K^{m+m'+\xi+\xi'})=Encr(m+m',\xi+\xi')\\
-\\
-(2c)\\
-(a,b)^{k}=(a^{k},b^{k})\\
-Encr(m,\xi)^{k}=(g^{\xi*k},K^{(m*k+\xi*k)})=Encr(m*k,\xi*k)\\
-\\
-(2d)\\
-\prod_{j=1}^{n}Encr(m_{j},\xi_{j})=(g^{\sum_{j=1}^{n}\xi_{j}},K^{\sum_{j=1}^{n}m_{j}+\sum_{j=1}^{n}\xi_{j}})=Encr(\sum_{j=1}^{n}m_{j},\sum_{j=1}^{n}\xi_{j})\\
-\prod_{j=1}^{n}Encr(m_{j},\xi_{j})^{k_{j}}=Encr(\sum_{j=1}^{n}(m_{j}*k_{j}),\sum_{j=1}^{n}(\xi_{j}*k_{j}))\\
-\\
-(2e)\\
-ReEncr(m,r)=(g^{\xi+r},K^{m+\xi+r})=Encr(0,r)*Encr(m,\xi)\\
-ReEncr(m,r)^{k}=Encr(0,r*k)*Encr(m*k,\xi*k)\\
-\\
-(2f)\\
-\prod_{j=1}^{n}ReEncr(e_{j},r_{j})=(g^{\sum_{j=1}^{n}(\xi_{j}+r_{j})},K^{\sum_{j=1}^{n}(m_{j}+\xi_{j}+r_{j})})\\
-=ReEncr(\prod_{j=1}^{n}e_{j},\sum_{j=1}^{n}r_{j})\\
-(2e)\\
-\prod_{j=1}^{n}ReEncr(m_{j},r_{j})^{k_{j}}=\prod_{j=1}^{n}Encr(0,r_{j}*k_{j})*\prod_{j=1}^{n}Encr(m_{j}*k_{j},\xi_{j}*k_{j})\\
-=Encr(0,\sum_{j=1}^{n}(r_{j}*k_{j}))*\prod_{j=1}^{n}Encr(m_{j},\xi_{j})^{k_{j}}\\
-\end{align*}
-
-Let
-\begin{enumerate}
-\item $e_{j}=Encr(m_{j},\xi_{j})$ 
-\item $re_{j}=ReEncr(m_{j},r_{j})=ReEncr(e_{j},r_{j})=Encr(0,r_{j})*e_{j}$ 
-\end{enumerate}
-Then
-
-\begin{align*}
-re_{j} & =Encr(0,r_{j})*e_{j}\\
-\prod_{j=1}^{n}re_{j}^{k_{j}} & =\prod_{j=1}^{n}Encr(0,r_{j})^{k_{j}}*\prod_{j=1}^{n}e_{j}^{k_{j}}\\
- & =Encr(0,\sum_{j=1}^{n}(r_{j}*k_{j}))*\prod_{j=1}^{n}e_{j}^{k_{j}},\ \ \ \ (Equation\ 1)\\
-\end{align*}
-
-\begin{center}
-\rule{0.5\linewidth}{0.5pt}
-\par\end{center}
-
-\subsubsection{Verificatum}
-
-\paragraph{Pedersen Commitments}
+\subsection*{Pedersen Commitments}
 
 For a set of messages $\textbf{m}=(m_{1}..m_{n})\in Z_{q}$, the \emph{Pedersen
 committment} to $\textbf{m}$ is
@@ -209,7 +130,7 @@ Commit(\textbf{m},cr)=g^{cr}*h_{1}^{m_{1}}*h_{2}^{m_{2}}*..h_{n}^{m_{n}}=g^{cr}*
 \end{align*}
 
 where ($g,\textbf{h}$) are generators of $Z_{p}^{r}$ with randomization
-nonce $cr\in Z_{q}$. (section 1.2 of {[}4{]})
+nonce $cr\in Z_{q}$. (section 1.2 of )
 
 If $\textbf{b}_{i}$ is the $i^{th}$ column of $B_{\psi}$, then
 the \emph{permutation commitment to $\psi$} is defined as the vector
@@ -226,7 +147,7 @@ c_{j}=Commit(\textbf{b}_{j},cr_{j})=g^{cr_{j}}*\prod_{i=1}^{n}h_{i}^{b_{ij}}=g^{
 \end{align*}
 
 
-\paragraph{Definitions}
+\subsection*{Definitions}
 
 Let
 \begin{itemize}
@@ -245,25 +166,29 @@ respectively
 \end{itemize}
 We use one-based array indexing for notational simplicity.
 
-\paragraph{Mix}
+\subsection*{Shuffle}
 
 Choose R = (n x width) matrix of reencryption random nonces, ie separate
-nonces for each ciphertext.
+nonces for each ciphertext. The the shuffle of $W$ is:
 
-$W^{\prime}$ = $\psi^{-1}$(Reencrypt(W, R))
+\[
+W^{\prime} = \psi^{-1}(Reencrypt(W, R))
+\]
 
-\paragraph{Proof Construction}
+
+
+\subsection*{Proof Construction}
 
 The Proof equations are reverse engineered from reading the Verificatum
 code. AFAIK, there is no documentation of these except in the Verificatum
-code, in particular not in {[}6{]}, although likely they are implied
-in {[}4{]} using different notation. In any case, these equations
+code, in particular not in \cite{Wikstr22}, although likely they are implied
+in \cite{Wikstr10} using different notation. In any case, these equations
 are implemented in the kotlin library \emph{ShuffleProver} and verify
 with \emph{ShuffleVerifier}. The \emph{ShuffleVerifier} also verifies
 against the proofs output by Verificatum itself, leading to some confidence
 that these equations capture the TW algorithm as implemented in Verificatum.
 
-\textbf{Commitment to permutation}
+\subsubsection*{Commitment to permutation}
 
 Choose a vector of \emph{n} random permutation nonces $\vec{pn}$.\\
  Form permutation commitments $\vec{u}$ that will be public:
@@ -272,7 +197,7 @@ Choose a vector of \emph{n} random permutation nonces $\vec{pn}$.\\
 u_{j}=g^{pn_{j}}\cdot h_{i},\ \ \ j=\psi(i)\ \ \ TODO
 \]
 
-\textbf{Commitment to shuffle}
+\subsubsection*{Commitment to shuffle}
 
 Compute \emph{n} nonces $\vec{e}$ that will be public. Let ${e^{\prime}}$
 = $\psi^{-1}(\vec{e})$.\\
@@ -284,13 +209,13 @@ Form the following values $\in Z_{p}^{r}$:
 
 \begin{align*}
 A^{\prime} & =g^{\alpha}\prod_{i=1}^{n}h_{i}^{eps_{i}}\\
-B_{i} & =g^{b_{i}}(B_{i-1})^{e_{i}^{\prime}},\ where\ B_{0}=h_{0},\ i=1..N\\
-B_{i}^{\prime} & =g^{\beta_{i}}(B_{i-1})^{eps_{i}},\ where\ B_{0}=h_{0},\ i=1..N\\
+B_{i} & =g^{b_{i}}(B_{i-1})^{e_{i}^{\prime}},\ where\ B_{0}=g^{b_0} h_0^{e_{0}^{\prime}},\ i=1..n\\
+B_{1}^{\prime}&=g^{\beta_1} h_0^{eps_1},\ B_{i}^{\prime} =g^{\beta_{i}}(B_{i-1})^{eps_{i}},\ i=2..n\\
 C^{\prime} & =g^{\gamma}\\
 D^{\prime} & =g^{\delta}\\
 \end{align*}
 
-\textbf{Commitment to exponents}
+\subsubsection*{Commitment to exponents}
 
 Choose \emph{width} random nonces $\vec{\phi}$ .
 
@@ -311,10 +236,10 @@ with $\vec{eps}$. We can use any of the following notations:
  & =\prod_{i=1}^{n}(W^{\prime})^{eps}\\
 \end{align*}
 
-This disambiguates the equations in Algorithm 19 of {[}6{]}, for example:
+This disambiguates the equations in Algorithm 19 of \cite{Wikstr22}, for example:
 $\prod w_{i}^{e_{i}}$. and $\prod(w_{i}^{\prime})^{k_{E,i}}$.
 
-\textbf{Reply to challenge v:}
+\subsubsection*{Reply to challenge v:}
 
 A challenge v $\in Z_{q}$ is given, and the following values $\in Z_{q}$
 are made as reply:
@@ -336,7 +261,7 @@ k_{F,j} & =v\ \cdot<\vec{R}_{j},\vec{e}^{\prime}>+\ \phi_{j}\ ,\ j=1..width\\
 
 where < , > is the inner product of two vectors.
 
-\paragraph{Proof of Shuffle Data Structure}
+\subsection*{ProofOfShuffle Data Structure}
 \begin{verbatim}
 data class ProofOfShuffle(
     val mixname: String,
@@ -360,9 +285,9 @@ data class ProofOfShuffle(
 )
 \end{verbatim}
 
-\paragraph{Proof Verification}
+\subsection*{Proof Verification}
 
-The following equations are taken from Algorithm 19 of {[}6{]} and
+The following equations are taken from Algorithm 19 of \cite{Wikstr22} and
 checked against the Verificatum implementation. The main ambiguity
 is in the meaning of $\prod_{i=1}^{n}w_{i}^{e_{i}}$ and $\prod_{i=1}^{n}(w_{i}^{\prime})^{k_{E,i}}$
 in steps 3 and 5. These are interpreted as a short hand for \emph{width}
@@ -370,14 +295,15 @@ equations on the column vectors of $W$ and $W^{\prime}$, respectively,
 as detailed in \emph{committment to exponents} section above.
 
 The Verifier is provided with:
+
 \begin{itemize}
 \item n = number of rows 
 \item width = number of ciphertexts in each row 
 \item $W$ = rows of ciphertexts (n x width) 
-\item $W^{\prime}$ = shuffled and reencrypted rows of ciphertexts (n x
-width) 
-\item The ProofOfShuffle 
+\item $W^{\prime}$ = shuffled and reencrypted rows of ciphertexts (n x width) 
+\item the ProofOfShuffle 
 \end{itemize}
+
 The $\vec{h}$ (generators), $\vec{e}$ nonces, and challenge are
 deterministically recalculated. This prevents those from being carefully
 chosen to subvert the proof.
@@ -412,28 +338,24 @@ and
 F_{j}^{v}F_{j}^{\prime} & =Encr(0,-k_{F,j})\prod_{i=1}^{n}(w_{i,j}^{\prime})^{k_{E,i}},\ j=1..width\\
 \end{align*}
 
+\subsection*{issues}
 
-\paragraph{issues}
-
-\textbf{Calculation of $\vec{h}$ (generators) , $\vec{e}$ and the
+\paragraph{Calculation of $\vec{h}$ (generators), $\vec{e}$ and the
 challenge nonces} are highly dependent on the VMN implementation.
 The verifier is expected to independently generate, ie they are not
 part of the ProofOfShuffle output.
 
-\textbf{generators} may need to be carefully chosen, see section 6.8
+\paragraph{generators} may need to be carefully chosen, see section 6.8
 of vmnv: "In particular, it is not acceptable to derive exponents
-x1 , . . . , xN in Zq and then define hi = g\^{\ensuremath{+}}xi"
-\begin{center}
-\rule{0.5\linewidth}{0.5pt}
-\par\end{center}
+x1 , . . . , xN in Zq and then define $h_i = g^{x_i}$"
 
-\subsubsection{ChVote}
+\section{OpenCHVote}
 
-This follows Haenni et. al. {[}2{]}, which has a good explanation
-of TW, except with width = 1, so we use vectors instead of matrices.
+This follows the OpenCHVote implementation \cite{OpenCHVote}, which has a version
+of the TW algorithm, except with width = 1, so we use vectors instead of matrices.
 Otherwise we switch notation to as above, to make it easier to compare.
 
-\paragraph{Pedersen Commitments}
+\subsection*{Pedersen Commitments}
 
 For a set of messages $\textbf{m}=(m_{1}..m_{n})\in Z_{q}$, the \emph{Extended
 Pedersen committment} to $\textbf{m}$ is
@@ -460,7 +382,7 @@ c_{j}=Commit(\textbf{b}_{j},pn_{j})=g^{pn_{j}}*\prod_{i=1}^{n}h_{i}^{b_{ij}}=g^{
 \end{align*}
 
 
-\paragraph{Mix}
+\subsection*{Mix}
 
 Choose a random permutation $\psi$ : (1..n) (1..n).
 
@@ -477,7 +399,7 @@ or
 \]
 
 
-\paragraph{Proof of permutation}
+\subsection*{Proof of permutation}
 
 Let \textbf{u} = $Commit(\psi,\vec{pn})$ = $(u_{1},u_{2},..u_{N})$,
 with randomization vector $\vec{pn}$ = $(pn_{1},pn_{2},..pn_{N})$,
@@ -505,7 +427,7 @@ $Condition$ 2 implies that:
 Which constitutes proof that condition 1 and 2 are true, so that u
 is a commitment to a permutation matrix.
 
-\paragraph{Proof of equal exponents}
+\subsection*{Proof of equal exponents}
 
 Let $\vec{m}$ be a vector of messages, $\vec{w}$ their encryptions
 = Encr($\vec{m}$), and Reencrypt($\vec{w},\vec{r}$) their reencryptions
@@ -536,9 +458,9 @@ If the shuffle is valid, then
 
 where $sumre=\sum_{j=1}^{n}(r_{i}\cdot e_{i})$ = $\sum_{i=1}^{n}(r_{i}\cdot e_{i})$.
 
-\subsubsection{Shuffling vectors}
+\section{Shuffling vectors}
 
-\paragraph{Simple}
+\subsection*{Simple}
 
 Much of the literature assumes that each row to be mixed consists
 of a single ciphertext. In our application we need the possibility
@@ -582,7 +504,7 @@ where, now
 sumru'=\sum_{j=1}^{n}width*(pr_{j}*pu_{j})\ \ \ (case1)=\sum_{j=1}^{n}\sum_{k=1}^{n}(pr_{j,k}*pu_{j})\ \ \ (case2).
 \]
 
-In algorithms 8.4, 8.5 of {[}2{]}, the challenge includes a list of
+In algorithms 8.4, 8.5 of \cite{Haenni23}, the challenge includes a list of
 all the ciphertexts and their reencryptions in their hash function:
 
 \[
@@ -594,9 +516,9 @@ so that all are included in the hash. Since the hash is dependent
 on the ordering of the hash elements, this should preclude an attack
 that switches ciphertexts within a row.
 
-\paragraph{Haines Proof of vector shuffling}
+\subsection*{Haines Proof of vector shuffling}
 
-Haines {[}9{]} gives a formal proof of security of TW when the shuffle
+Haines \cite{Haines19} gives a formal proof of security of TW when the shuffle
 involves vectors of ciphertexts.
 
 We will use the notation above for case 2, using a separate nonce
@@ -625,7 +547,7 @@ and the permuted form, as is returned by the shuffle:
 \textbf{pre}_{j}=ReEncr(\textbf{pe}_{j},\textbf{pr}_{j})=Encr(0,\textbf{pr}_{j})*\textbf{e}_{j}
 \]
 
-which corresponds to ntnu equation (p 3) of {[}9{]}:
+which corresponds to ntnu equation (p 3) of \cite{Haines19}:
 
 \[
 \textbf{e}_{i}^{\prime}=ReEnc(\textbf{e}_{\pi(i)},R_{\pi(i)}),\pi=\pi_{M}
@@ -633,7 +555,7 @@ which corresponds to ntnu equation (p 3) of {[}9{]}:
 
 Let $\omega$ be width random nonces, \textbf{omega'} = permuted \textbf{omega},
 and $\textbf{pe}_{i}$ = permuted $\textbf{e}_{i}=\textbf{e}_{i}^{\prime}$
-as before. Then the $t_{4}$ equation (p 3, paragraph 2 of {[}9{]})
+as before. Then the $t_{4}$ equation (p 3, paragraph 2 of \cite{Haines19}
 is a vector of width components:
 
 \[
@@ -655,7 +577,7 @@ row:
 
 (quite a bit more complicated than our simplest thing to do above)
 
-\textbf{extra}
+\subsection*{extra}
 
 to go back to (2f) and unravel this:
 
@@ -663,11 +585,8 @@ to go back to (2f) and unravel this:
 \prod_{j=1}^{n}ReEncr(e_{j},r_{j})=ReEncr(\prod_{j=1}^{n}e_{j},\sum_{j=1}^{n}r_{j})\ \ \ (2f)\prod_{j=1}^{n}ReEncr(\textbf{pe}_{i}^{\textbf{\ensuremath{\omega}}_{i}^{\prime}},r_{j})=ReEncr(\prod_{j=1}^{n}\textbf{pe}_{i}^{\textbf{\ensuremath{\omega}}_{i}^{\prime}},\sum_{j=1}^{n}r_{j})
 \]
 
-\begin{center}
-\rule{0.5\linewidth}{0.5pt}
-\par\end{center}
 
-\subsubsection{Timings vs Verificatum (preliminary)}
+\section{Timings vs Verificatum (preliminary)}
 
 Environment used for testing:
 \begin{itemize}
@@ -675,7 +594,7 @@ Environment used for testing:
 \item HP Z840 Workstation, Intel Xeon CPU E5-2680 v3 @ 2.50GHz 
 \item 24-cores, two threads per core. 
 \end{itemize}
-\textbf{Regular vs accelerated exponentiation time}
+\subsubsection*{Regular vs accelerated exponentiation time}
 
 Regular exponentiation is about 3 times slower after the acceleration
 cache warms up:
@@ -685,14 +604,15 @@ exp took 46018 msec for 20000 = 2.3009 msec per exp
 exp/acc = 3.01007326007326
 \end{verbatim}
 
-\paragraph{VMN}
+\subsection*{VMN}
 
-\textbf{Operation counts}
+\subsubsection*{Operation counts}
 \begin{itemize}
 \item \emph{n} = number of rows, eg ballots or contests 
 \item \emph{width} = number of ciphertexts per row 
 \item \emph{N} = nrows {*} width = total number of ciphertexts to be mixed 
 \end{itemize}
+
 \begin{longtable}[c]{@{}lllll@{}}
 \toprule 
  & shuffle  & proof of shuffle  & proof of exp  & verify\tabularnewline
@@ -712,12 +632,12 @@ values would have to be kept private (I think).
 Could break into batches of 100-1000 ballots each and do each batch
 in parallel. The advantage here is that there would be complete parallelization.
 
-\textbf{Timing results}
+\subsection*{Timing results}
 
 See \href{https://docs.google.com/spreadsheets/d/1Sny1xXxU9vjPnqo2K1QPeBHQwPVWhJOHdlXocMimt88/edit?usp=sharing}{VMN spreadsheets}for
 graphs of timing results (work in progress).
 
-\paragraph{OpenChVote}
+\subsection*{OpenChVote}
 
 \textbf{operations count}
 
@@ -787,35 +707,119 @@ using VMGJ gets.
 
 SO why doesnt same speedup apply to proof?
 
-\subsubsection{References}
-\begin{enumerate}
-\item Josh Benaloh and Michael Naehrig, \emph{ElectionGuard Design Specification,
-Version 2.0.0}, Microsoft Research, August 18, 2023, \url{https://github.com/microsoft/electionguard/releases/download/v2.0/EG_Spec_2_0.pdf} 
-\item Rolf Haenni, Reto E. Koenig, Philipp Locher, Eric Dubuis. \emph{CHVote
-Protocol Specification Version 3.5}, Bern University of Applied Sciences,
-February 28th, 2023, \url{https://eprint.iacr.org/2017/325.pdf} 
-\item R. Haenni, P. Locher, R. E. Koenig, and E. Dubuis. \emph{Pseudo-code
-algorithms for verifiable re-encryption mix-nets}. In M. Brenner,
-K. Rohloff, J. Bonneau, A. Miller, P. Y. A.Ryan, V. Teague, A. Bracciali,
-M. Sala, F. Pintore, and M. Jakobsson, editors, FC'17, 21st International
-Conference on Financial Cryptography, LNCS 10323, pages 370--384,
-Silema, Malta, 2017. 
-\item B. Terelius and D. Wikström. \emph{Proofs of restricted shuffles},
-In D. J. Bernstein and T. Lange, editors, AFRICACRYPT'10, 3rd International
-Conference on Cryptology inAfrica, LNCS 6055, pages 100--113, Stellenbosch,
-South Africa, 2010. 
-\item D. Wikström. \emph{A commitment-consistent proof of a shuffle.} In
-C. Boyd and J. González Nieto, editors, ACISP'09, 14th Australasian
-Conference on Information Security and Privacy, LNCS 5594, pages 407--421,
-Brisbane, Australia, 2009. 
-\item D. Wikström. \emph{How to Implement a Stand-alone Verifier for the
-Verificatum Mix-Net VMN Version 3.1.0}, 2022-09-10, \url{https://www.verificatum.org/files/vmnv-3.1.0.pdf} 
-\item John Caron, Dan Wallach, \emph{ElectionGuard Kotlin library}, \url{https://github.com/votingworks/electionguard-kotlin-multiplatform} 
-\item E-Voting Group, Institute for Cybersecurity and Engineering, Bern
-University of Applied Sciences, \emph{OpenCHVote}, \url{https://gitlab.com/openchvote/cryptographic-protocol} 
-\item Thomas Haines, \emph{A Description and Proof of a Generalised and
-Optimised Variant of Wikström's Mixnet}, arXiv:1901.08371v1 {[}cs.CR{]},
-24 Jan 2019 
-\end{enumerate}
+\begin{thebibliography}{999}
+
+\bibitem{Wikstr10} 
+  B. Terelius and D. Wikström. 
+  \emph{Proofs of restricted shuffles},
+  In D. J. Bernstein and T. Lange, editors, AFRICACRYPT'10, 
+  3rd International Conference on Cryptology inAfrica, LNCS 6055, pages 100--113, 
+  Stellenbosch, South Africa, 2010. 
+
+\bibitem{Wikstr09} D. Wikström. 
+  \emph{A commitment-consistent proof of a shuffle.} 
+  In C. Boyd and J. González Nieto, editors, 
+  ACISP'09, 14th Australasian Conference on Information Security and Privacy, LNCS 5594, pages 407--421,
+  Brisbane, Australia, 2009. 
+
+\bibitem{Wikstr22} D. Wikström. 
+  \emph{How to Implement a Stand-alone Verifier for the Verificatum Mix-Net VMN Version 3.1.0},
+  2022-09-10, 
+  \url{https://www.verificatum.org/files/vmnv-3.1.0.pdf}.
+
+\bibitem{Verificatum} D. Wikström. 
+  \emph{Verificatum Mix-Net},
+  \url{https://github.com/verificatum/verificatum-vmn}.
+
+\bibitem{Haenni23} 
+  Rolf Haenni, Reto E. Koenig, Philipp Locher, Eric Dubuis,
+  \emph{CHVote Protocol Specification Version 3.5}, 
+  Bern University of Applied Sciences,
+  February 28th, 2023, 
+  \url{https://eprint.iacr.org/2017/325.pdf} 
+  
+\bibitem{Haenni17} 
+  R. Haenni, P. Locher, R. E. Koenig, and E. Dubuis,
+  \emph{Pseudo-code algorithms for verifiable re-encryption mix-nets},
+  In M. Brenner, K. Rohloff, J. Bonneau, A. Miller, P. Y. A.Ryan, V. Teague, A. Bracciali, M. Sala, F. Pintore, and M. Jakobsson, editors, 
+  FC'17, 21st International Conference on Financial Cryptography, LNCS 10323, pages 370--384,
+  Silema, Malta, 2017. 
+  
+\bibitem{OpenCHVote}
+\emph{OpenCHVote}
+  E-Voting Group, Institute for Cybersecurity and Engineering, 
+  Bern University of Applied Sciences, 
+  \url{https://gitlab.com/openchvote/cryptographic-protocol} 
+
+\bibitem{Haines19}
+  Thomas Haines, 
+  \emph{A Description and Proof of a Generalised and Optimised Variant of Wikström's Mixnet}, arXiv:1901.08371v1 {[}cs.CR{]},
+  24 Jan 2019.
+
+\bibitem{Benaloh23}
+  Josh Benaloh and Michael Naehrig,
+  \emph{ElectionGuard Design Specification, Version 2.0.0},
+  Microsoft Research, 
+  August 18, 2023,
+  \url{https://github.com/microsoft/electionguard/releases/download/v2.0/EG\_Spec\_2\_0.pdf}.
+  
+\bibitem{Caron23} 
+  John Caron, Dan Wallach, 
+  \emph{ElectionGuard Kotlin library}, 
+  \url{https://github.com/votingworks/electionguard-kotlin-multiplatform}.
+  
+\end{thebibliography}
+
+\pagebreak
+\subsection*{Alternative Calculation of B}
+
+The calculation of B (use $e$ instead of $e^{\prime}$ here for notational simplicity):
+
+\begin{align*}
+B_{0} &= g^{b_0} h_0^{e_{0}} \\
+B_i & =g^{b_{i}}(B_{i-1})^{e_{i}},\ i=1..n \\
+\end{align*}
+
+can be done to only use accelerated exponents . Expand the series:
+
+\begin{align*}
+B_0 &= g^{b_0} h_0^{e_{0}} \\
+B_1 & = g^{b_1}(B_0)^{e_1} = g^{b_1 + b_0 e_1} \cdot h_0^{e_0 \cdot e_1} \\
+B_2 & = g^{b_2}(B_1)^{e_2} = g^{b_2 + (b_1 + b_0 e_1) e_2} \cdot h_0^{e_0 \cdot e_1 \cdot e_2} \\
+... \\
+B_i & = g^{b_i}(B_{i-1})^{e_i} = g^{gexps_i} \cdot h_0^{hexps_i} \\
+\end{align*}
+
+where
+
+\begin{align*}
+gexps_i &= b_i + (gexps_{i-1}) \cdot e_i \\
+hexps_i &= \prod_{j=1}^{i} e_j
+\end{align*}
+
+Then each row has 2 accelerated exponentiations.
+
+\subsection*{Alternative Calculation of B'}
+
+Similarly $B^{\prime}$:
+
+\begin{align*}
+B_{1}^{\prime} &= g^{\beta_1} h_0^{eps_1} \\
+B_{i}^{\prime} &= g^{\beta_{i}}(B_{i-1})^{eps_{i}},\ i=2..n \\
+\end{align*}
+
+can be done with only accelerated exponentiations:
+
+\begin{align*}
+B_1^{\prime} &= g^{\beta_1} h_0^{eps_1} \\
+B_i^{\prime} &= g^{beta_i}(B_{i-1})^{eps_i} = g^{gpexps_i} \cdot h_0^{hpexps_i} \\
+\end{align*}
+
+where
+
+\begin{align*}
+gpexps_i &= \beta_i + (gexps_{i-1}) \cdot eps_i \\
+hpexps_i &= hexps_{i-1} \cdot eps_i
+\end{align*}
 
 \end{document}

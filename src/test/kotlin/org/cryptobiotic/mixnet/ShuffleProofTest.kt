@@ -7,19 +7,39 @@ import kotlin.random.Random
 import kotlin.test.assertTrue
 
 class ShuffleProofTest {
+    private val useRegularB = true
+
     val group = productionGroup()
 
-    fun expectProof(n:Int, width: Int): String {
+    fun expectProof(n:Int, w: Int) =
+        if (useRegularB) expectProofReg(n, w) else expectProofAlt(n, w)
+
+    fun expectProofReg(n:Int, width: Int): String {
         val N = n*width
-        val nexps = 2*N + 4*n // 2N for poe, 4n for pos
-        val nacc = 3*n + 2*width + 4 // all for pos
+        val nexps = 2*N + 3*n - 1 // 2N for poe, 4n for pos
+        val nacc = 4*n + 2*width + 4 // all for pos
+        return " expect ($nexps, $nacc)"
+    }
+    fun expectProofAlt(n:Int, width: Int): String {
+        val N = n*width
+        val nexps = 2*N + n - 1
+        val nacc = 6*n + 2*width + 4
         return " expect ($nexps, $nacc)"
     }
 
-    fun expectCheck(n:Int, width: Int): String {
+    fun expectVerify(n:Int, w: Int) = expectVerifyAlt(n, w)
+
+    fun expectVerifyReg(n:Int, width: Int): String {
         val N = n*width
-        val nexps = 4*N + 4*n + 4
-        val nacc = n + 2*width + 3
+        val nexps = 4*N + 5*n + 4
+        val nacc = n + 2*width + 4
+        return " expect ($nexps, $nacc)"
+    }
+
+    fun expectVerifyAlt(n:Int, width: Int): String {
+        val N = n*width
+        val nexps = 4*N + 4*n + 1
+        val nacc = 2*n + 2*width + 6
         return " expect ($nexps, $nacc)"
     }
 
@@ -155,7 +175,7 @@ class ShuffleProofTest {
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
 
         stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
-        if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
+        if (showExps) println("  shuffle: ${group.showAndClearCountPowP()}")
 
         starting = getSystemTimeInMillis()
         runProof(
@@ -198,12 +218,22 @@ class ShuffleProofTest {
 
     @Test
     fun testSPV() {
-        runShuffleProofVerifyWithThreads(11, 1)
-        runShuffleProofVerifyWithThreads(1, 11)
-        runShuffleProofVerifyWithThreads(3, 3)
-        runShuffleProofVerifyWithThreads(6, 3)
-        runShuffleProofVerifyWithThreads(6, 9)
-        runShuffleProofVerifyWithThreads(9, 6)
+        runSPVcount(3, 3, 0)
+        runSPVcount(6, 3, 0)
+        runSPVcount(6, 9, 0)
+        runSPVcount(9, 9, 0)
+        runSPVcount(11, 1, 0)
+        runSPVcount(1, 11, 0)
+    }
+
+    fun runSPVcount(nrows: Int, width: Int, nthreads: Int = 48) {
+        println("=========================================")
+        println("testThreads nrows=$nrows, width= $width per row, N=${nrows * width}")
+
+        val keypair = elGamalKeyPairFromRandom(group)
+        val ballots = makeBallots(keypair, nrows, width)
+
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, showExps = true, showTiming = false,  nthreads = nthreads)
     }
 
     @Test
@@ -255,7 +285,7 @@ class ShuffleProofTest {
 
         val shuffleTime = getSystemTimeInMillis() - starting
         stats.of("shuffle", "text", "shuffle").accum(shuffleTime, N)
-        if (showExps) println("  after shuffle: ${group.showAndClearCountPowP()}")
+        if (showExps) println("  shuffle: ${group.showAndClearCountPowP()}")
 
         starting = getSystemTimeInMillis()
         val pos: ProofOfShuffle = runProof(
@@ -282,7 +312,7 @@ class ShuffleProofTest {
         )
         val verifyTime = getSystemTimeInMillis() - starting
         stats.of("verify", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
-        if (showExps) println("  after checkShuffleProof: ${group.showAndClearCountPowP()} ${expectCheck(nrows, width)}")
+        if (showExps) println("  verify: ${group.showAndClearCountPowP()} ${expectVerify(nrows, width)}")
 
         assertTrue(valid)
         if (showTiming) stats.show()
@@ -291,52 +321,5 @@ class ShuffleProofTest {
         println(r)
         return r
     }
-
-    /*
-    @Test
-    fun testSPVdebug() {
-        val nrows = 7
-        val width = 3
-
-        val keypair = elGamalKeyPairFromRandom(group)
-        val ballots = makeBallots(keypair, nrows, width)
-        runSPVdebug(keypair, ballots)
-    }
-
-    fun runSPVdebug(keypair: ElGamalKeypair, ballots: List<VectorCiphertext>) {
-
-        val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey)
-
-        val U = "PosBasicTW"
-        val seed = group.randomElementModQ()
-        val (h, generators) = getGeneratorsVmn(group, psi.n, U, seed) // CE 1 acc n exp
-
-        val prover = ProverV(   // CE n acc
-            group,
-            keypair.publicKey,
-            h,
-            generators, // generators
-            w = ballots, // ciphertexts
-            wp = mixedBallots, // permuted ciphertexts
-            rnonces, // unpermuted Reencryption nonces
-            psi,
-        )
-        val dp = prover.proveDebug()
-
-        val verifier = VerifierV(
-            group,
-            keypair.publicKey,
-            h,
-            generators, // generators
-            w = ballots, // ciphertexts
-            wp = mixedBallots, // permuted ciphertexts
-        )
-        val valid = verifier.verifyF(dp)
-
-        assertTrue(valid)
-    }
-
-     */
-
 
 }

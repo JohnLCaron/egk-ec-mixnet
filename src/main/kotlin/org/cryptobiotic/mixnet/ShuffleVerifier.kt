@@ -49,7 +49,7 @@ class VerifierV(
     val nthreads: Int = 10,
 ) {
     val size = w.size
-    val h = generators.elems[0]
+    val h0 = generators.elems[0]
 
     fun verify(proof: ProofOfShuffle, nthreads: Int = 10): Boolean {
         val v = this.challenge
@@ -58,12 +58,12 @@ class VerifierV(
         val A: ElementModP = prodPowP(proof.u, this.e, nthreads)                   // CE n exps
         // A.expMul(v, Ap).equals(g.exp(k_A).mul(h.expProd(k_E)));
         val leftA = (A powP v) * proof.Ap                                           // CE 1 exp
-        val genE = prodPowP(generators, proof.kE, nthreads)                       // CE n exp, 1 acc
-        val rightA = group.gPowP(proof.kA) * genE
+        val genE = prodPowP(generators, proof.kE, nthreads)                         // CE n-1 exp, 1 acc
+        val rightA = group.gPowP(proof.kA) * genE                                   // 1 acc
         val verdictA = (leftA == rightA)
 
         val verdictB = if (nthreads == 0) verifyB(proof, v)                  // CE 2n exp, n acc
-                       else PverifyB(proof, h, challenge, nthreads).calc()
+                       else PverifyB(proof, h0, challenge, nthreads).calc()
 
         val C: ElementModP = Prod(proof.u) / Prod(generators)
         val leftC = (C powP v) * proof.Cp   // CE 1 exp
@@ -71,7 +71,7 @@ class VerifierV(
         val verdictC = (leftC == rightC)
 
         val prode = Prod(this.e)
-        val D: ElementModP = proof.B.elems[size - 1] / (h powP prode) // CE 1 exp
+        val D: ElementModP = proof.B.elems[size - 1] / (h0 powP prode) // CE 1 exp
         val leftD = (D powP v) * proof.Dp   // CE 1 exp
         val rightD = group.gPowP(proof.kD) // CE 1 acc
         val verdictD = (leftD == rightD)
@@ -85,20 +85,49 @@ class VerifierV(
         val rightF: VectorCiphertext = right1 * right2
         val verdictF = (leftF == rightF)
 
-        println("$verdictA && $verdictB && $verdictC && $verdictD && $verdictF")
+        // println("$verdictA && $verdictB && $verdictC && $verdictD && $verdictF")
         return verdictA && verdictB && verdictC && verdictD && verdictF
-        // return verdictB && verdictC && verdictD && verdictF
     }
 
+    // 2n-1 exp, n+1 acc
     fun verifyB(proof: ProofOfShuffle, v: ElementModQ): Boolean {
         var verdictB = true
         repeat(size) { i ->
-            val Bminus1 = if (i == 0) h else proof.B.elems[i - 1]
+            val Bminus1 = if (i == 0) h0 else proof.B.elems[i - 1]
             val leftB = (proof.B.elems[i] powP v) * proof.Bp.elems[i]                        // CE n exp
-            val rightB = group.gPowP(proof.kB.elems[i]) * (Bminus1 powP proof.kE.elems[i]) // CE n exp, n acc
+            val rightB = group.gPowP(proof.kB.elems[i]) * (Bminus1 powP proof.kE.elems[i])   // CE n-1 exp, n+1 acc
             verdictB = verdictB && (leftB == rightB)
         }
         return verdictB
+    }
+
+    //        // Verify that prover knows b and e' such that:
+    //        //
+    //        // B_0 = g^{b_0} * h0^{e_0'}
+    //        // B_i = g^{b_i} * B_{i-1}^{e_i'}
+    //        //
+    //        final PGroupElementArray B_exp_v = B.exp(v);
+    //        final PGroupElementArray leftSide = B_exp_v.mul(Bp);
+    //        final PGroupElementArray g_exp_k_B = g.exp(k_B);
+    //        final PGroupElementArray B_shift = B.shiftPush(h0);
+    //        final PGroupElementArray B_shift_exp_k_E = B_shift.exp(k_E);
+    //        final PGroupElementArray rightSide = g_exp_k_B.mul(B_shift_exp_k_E);
+    //
+    //        final boolean verdictB = leftSide.equals(rightSide);
+    fun verifyBorg(proof: ProofOfShuffle, v: ElementModQ): Boolean {
+        // PGroupElementArray B_exp_v = B.exp(v);
+        val B_exp_v = proof.B.powP(v)                               // CE n exp
+        // PGroupElementArray leftSide = B_exp_v.mul(Bp);
+        val leftSide = B_exp_v.times(proof.Bp)
+        // PGroupElementArray g_exp_k_B = g.exp(k_B)
+        val g_exp_k_B = proof.kB.gPowP()                            // CE n acc
+        // PGroupElementArray B_shift = B.shiftPush(h0);
+        val B_shift = proof.B.shiftPush(h0)
+        // PGroupElementArray B_shift_exp_k_E = B_shift.exp(k_E);
+        val B_shift_exp_k_E = B_shift.powP(proof.kE)                // CE n-1 exp, 1 acc
+        // PGroupElementArray rightSide = g_exp_k_B.mul(B_shift_exp_k_E);
+        val rightSide = g_exp_k_B.times(B_shift_exp_k_E);
+        return leftSide.equals(rightSide)                           // total 2n-1 exp, n+1 acc
     }
 }
 
@@ -154,7 +183,7 @@ class PverifyB(
 
     fun validateB(idx: Int): Boolean {
         val Bminus1 = if (idx == 0) h else proof.B.elems[idx-1]
-        val leftB = (proof.B.elems[idx] powP this.challenge) * proof.Bp.elems[idx]                        // CE n exp
+        val leftB = (proof.B.elems[idx] powP this.challenge) * proof.Bp.elems[idx]                  // CE n exp
         val rightB = group.gPowP(proof.kB.elems[idx]) * (Bminus1 powP proof.kE.elems[idx])          // CE n exp, n acc
         return (leftB == rightB)
     }
