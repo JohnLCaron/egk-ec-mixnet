@@ -22,8 +22,8 @@ import java.nio.file.StandardOpenOption
 class ProofOfShuffleJson(
     val mixname: String,
     val u: VectorPJson,
-    val B: VectorPJson,
     val Ap: ElementModPJson,
+    val B: VectorPJson,
     val Bp: VectorPJson,
     val Cp: ElementModPJson,
     val Dp: ElementModPJson,
@@ -42,8 +42,8 @@ fun ProofOfShuffleJson.import(group: GroupContext) : ProofOfShuffle {
     return ProofOfShuffle(
         this.mixname,
         this.u.import(group),
-        this.B.import(group),
         this.Ap.import(group)!!,
+        this.B.import(group),
         this.Bp.import(group),
         this.Cp.import(group)!!,
         this.Dp.import(group)!!,
@@ -61,8 +61,8 @@ fun ProofOfShuffle.publishJson() : ProofOfShuffleJson {
     return ProofOfShuffleJson(
         this.mixname,
         this.u.publishJson(),
-        this.B.publishJson(),
         this.Ap.publishJson(),
+        this.B.publishJson(),
         this.Bp.publishJson(),
         this.Cp.publishJson(),
         this.Dp.publishJson(),

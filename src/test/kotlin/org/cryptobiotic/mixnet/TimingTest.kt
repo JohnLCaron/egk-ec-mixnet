@@ -26,16 +26,17 @@ class TimingTest {
 
         val nonces = List(n) { group.randomElementModQ() }
         val h = group.gPowP(group.randomElementModQ())
-        println("h class is ${h.javaClass.name}")
 
         var starting = getSystemTimeInMillis()
-        repeat(n) { group.gPowP(nonces[it]) }
+        repeat(n) { require( !group.gPowP(nonces[it]).isZero()) }
+
         var duration = getSystemTimeInMillis() - starting
         val peracc = duration.toDouble() / n
         println("acc took $duration msec for $n = $peracc msec per acc")
 
         starting = getSystemTimeInMillis()
-        repeat(n) { h powP nonces[it] }
+        repeat(n) { require(!(h powP nonces[it]).isZero()) }
+
         duration = getSystemTimeInMillis() - starting
         val perexp = duration.toDouble() / n
         println("exp took $duration msec for $n = $perexp msec per exp")

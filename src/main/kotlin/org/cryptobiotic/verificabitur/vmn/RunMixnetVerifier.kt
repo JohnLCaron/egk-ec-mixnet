@@ -141,8 +141,8 @@ class MyVerifier(
         val proof = ProofOfShuffle(
             "RunMixnetVerifier",
             VectorP(group, pcommit.commitments),
-            VectorP(group, pos.B),
             pos.Ap,
+            VectorP(group, pos.B),
             VectorP(group, pos.Bp),
             pos.Cp,
             pos.Dp,

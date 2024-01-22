@@ -5,13 +5,13 @@ import electionguard.core.*
 
 // generate a set of n independent generators
 
-fun getGeneratorsVmn(group: GroupContext, n: Int, U: String): VectorP {
+fun getGeneratorsVmn(group: GroupContext, n: Int, mixName: String): VectorP {
     // Generate a seed to the PRG for batching.
     val baseHash = parameterBaseHash(group.constants)
-    val prgSeed = hashFunction(baseHash.bytes, 0x102.toByte(), U)
+    val prgSeed = hashFunction(baseHash.bytes, 0x102.toByte(), mixName)
 
-    // not sure if this is good enough, except for testing
-    val nonces = Nonces(prgSeed.toElementModQ(group), U).take(n)
+    // not sure if this is good enough, TODO cryptographer review.
+    val nonces = Nonces(prgSeed.toElementModQ(group), mixName).take(n)
     val h0 = group.gPowP(nonces[0]).acceleratePow() // LOOK accelerated
     val generators = List(n) { if (it == 0) h0 else ( h0 powP nonces[it]) } // CE n acc
     return VectorP(group, generators)
