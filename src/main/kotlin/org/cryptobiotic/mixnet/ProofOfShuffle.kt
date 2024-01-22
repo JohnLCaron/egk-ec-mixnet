@@ -9,8 +9,8 @@ data class ProofOfShuffle(
     val u: VectorP, // permutation commitment
 
     // τ^pos = Commitment of the Fiat-Shamir proof.
-    val B: VectorP,
     val Ap: ElementModP,
+    val B: VectorP,
     val Bp: VectorP,
     val Cp: ElementModP,
     val Dp: ElementModP,
@@ -37,7 +37,7 @@ data class ProofOfShuffle(
     ) : this(
         mixname,
         pos.u,
-        pos.B, pos.Ap, pos.Bp, pos.Cp, pos.Dp, pos.Fp,
+        pos.Ap, pos.B, pos.Bp, pos.Cp, pos.Dp, pos.Fp,
         kA, kB, kC, kD, kE, kF
     )
 

@@ -7,7 +7,7 @@ import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-private val useRegularB = true
+private val useRegularB = false
 
 fun runProof(
     group: GroupContext,
@@ -119,7 +119,7 @@ class ProverV(
         val Fp = enc0 * wp_eps
        // println("  Fp: ${group.showAndClearCountPowP()}")
 
-        return ProofCommittment(u, d, e, B, Ap, Bp, Cp, Dp, Fp)
+        return ProofCommittment(u, d, e, Ap, B, Bp, Cp, Dp, Fp)
     }
 
     // Compute aggregated products:
@@ -262,8 +262,8 @@ data class ProofCommittment (
     val d: ElementModQ, // x[n-1]
     val e: VectorQ,
 
-    val B: VectorP, // Bridging commitments used to build up a product in the exponent
     val Ap: ElementModP, // Proof commitment used for the bridging commitments
+    val B: VectorP, // Bridging commitments used to build up a product in the exponent
     val Bp: VectorP, // Proof commitments for the bridging commitments
     val Cp: ElementModP, // Proof commitment for proving sum of random components
     val Dp: ElementModP, // Proof commitment for proving product of random components.

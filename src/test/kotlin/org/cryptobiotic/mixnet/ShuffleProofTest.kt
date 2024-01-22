@@ -7,7 +7,7 @@ import kotlin.random.Random
 import kotlin.test.assertTrue
 
 class ShuffleProofTest {
-    private val useRegularB = true
+    private val useRegularB = false
 
     val group = productionGroup()
 
@@ -238,12 +238,15 @@ class ShuffleProofTest {
 
     @Test
     fun testSPVMatrix() {
-        val nrows = 1000
+        val nrows = 100
         val width = 34
         val keypair = elGamalKeyPairFromRandom(group)
         val ballots = makeBallots(keypair, nrows, width)
         runShuffleProofAndVerify(nrows, width, keypair, ballots, 48)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 48)
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 20)
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 10)
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 4)
+        runShuffleProofAndVerify(nrows, width, keypair, ballots, 1)
     }
 
     fun runShuffleProofVerifyWithThreads(nrows: Int, width: Int) {
