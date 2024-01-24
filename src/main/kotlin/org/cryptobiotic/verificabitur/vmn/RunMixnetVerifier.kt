@@ -204,6 +204,7 @@ class VmnVerifier(shuffleDir: String, protInfo: String, val auxsid: String, val 
         val e = posBasicTW.gete()
         val h = posBasicTW.geth()
         val challenge = posBasicTW.getChallenge()!!
+        println("verifier.verify nrows= ${e.size()} width=$width")
 
         if (verbose) {
             val nizkpSize: Long
