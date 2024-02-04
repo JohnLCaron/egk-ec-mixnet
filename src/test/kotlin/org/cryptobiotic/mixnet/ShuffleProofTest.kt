@@ -111,7 +111,7 @@ class ShuffleProofTest {
                    nthreads : Int = 10,
         ) : Result {
         val starting = getSystemTimeInMillis()
-        group.showAndClearCountPowP()
+        group.getAndClearOpCounts()
 
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
 
@@ -170,12 +170,12 @@ class ShuffleProofTest {
         println("nrows=$nrows, width= $width per row, N=$N, nthreads=$nthreads")
 
         var starting = getSystemTimeInMillis()
-        group.showAndClearCountPowP()
+        group.getAndClearOpCounts()
 
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
 
         stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
-        if (showExps) println("  shuffle: ${group.showAndClearCountPowP()}")
+        if (showExps) println("  shuffle: ${group.getAndClearOpCounts()}")
 
         starting = getSystemTimeInMillis()
         runProof(
@@ -188,7 +188,7 @@ class ShuffleProofTest {
             psi,
             nthreads)
         stats.of("proof", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
-        if (showExps) println("  proof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
+        if (showExps) println("  proof: ${group.getAndClearOpCounts()} ${expectProof(nrows, width)}")
 
         if (showTiming) stats.show()
     }
@@ -204,16 +204,20 @@ class ShuffleProofTest {
 
     @Test
     fun testSPVpar() {
-        val nrows = 3
-        val width = 7
+        val nrows = 1000
+        val width = 34
 
         val keypair = elGamalKeyPairFromRandom(group)
         val ballots = makeBallots(keypair, nrows, width)
 
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 0)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 1)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 2)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 10)
+        val results = mutableListOf<Result>()
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, 1))
+        //results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, 2))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, 4))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, 6))
+        //results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, 12))
+        println("\nnthreads, shuffle, proof, verify, total")
+        results.forEach{ println(it) }
     }
 
     @Test
@@ -282,13 +286,13 @@ class ShuffleProofTest {
         val stats = Stats()
         val N = nrows*width
         var starting = getSystemTimeInMillis()
-        group.showAndClearCountPowP()
+        group.getAndClearOpCounts()
 
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
 
         val shuffleTime = getSystemTimeInMillis() - starting
         stats.of("shuffle", "text", "shuffle").accum(shuffleTime, N)
-        if (showExps) println("  shuffle: ${group.showAndClearCountPowP()}")
+        if (showExps) println("  shuffle: ${group.getAndClearOpCounts()}")
 
         starting = getSystemTimeInMillis()
         val pos: ProofOfShuffle = runProof(
@@ -302,7 +306,7 @@ class ShuffleProofTest {
             nthreads)
         val proofTime = getSystemTimeInMillis() - starting
         stats.of("proof", "text", "shuffle").accum(proofTime, N)
-        if (showExps) println("  proof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
+        if (showExps) println("  proof: ${group.getAndClearOpCounts()} ${expectProof(nrows, width)}")
 
         starting = getSystemTimeInMillis()
         val valid = runVerify(
@@ -315,7 +319,7 @@ class ShuffleProofTest {
         )
         val verifyTime = getSystemTimeInMillis() - starting
         stats.of("verify", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
-        if (showExps) println("  verify: ${group.showAndClearCountPowP()} ${expectVerify(nrows, width)}")
+        if (showExps) println("  verify: ${group.getAndClearOpCounts()} ${expectVerify(nrows, width)}")
 
         assertTrue(valid)
         if (showTiming) stats.show()

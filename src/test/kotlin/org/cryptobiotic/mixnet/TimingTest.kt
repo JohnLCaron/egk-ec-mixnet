@@ -23,7 +23,6 @@ class TimingTest {
     }
 
     fun compareExp(n:Int) {
-
         val nonces = List(n) { group.randomElementModQ() }
         val h = group.gPowP(group.randomElementModQ())
 
@@ -42,6 +41,31 @@ class TimingTest {
         println("exp took $duration msec for $n = $perexp msec per exp")
 
         println("exp/acc took ${perexp/peracc}")
+    }
 
+
+    @Test
+    // compare exp vs acc
+    fun testMultiply() {
+        timeMultiply(1000)
+        timeMultiply(10000)
+        timeMultiply(20000)
+    }
+
+    fun timeMultiply(n:Int) {
+        val nonces = List(n) { group.randomElementModQ() }
+        val elemps = nonces.map { group.gPowP(it) }
+
+        var starting = getSystemTimeInMillis()
+        val prod = elemps.reduce { a, b -> a * b }
+        var duration = getSystemTimeInMillis() - starting
+        var peracc = duration.toDouble() / n
+        println("multiply took $duration msec for $n = $peracc msec per multiply")
+
+        starting = getSystemTimeInMillis()
+        elemps.forEach { it * it }
+        duration = getSystemTimeInMillis() - starting
+        peracc = duration.toDouble() / n
+        println("square took $duration msec for $n = $peracc msec per multiply")
     }
 }

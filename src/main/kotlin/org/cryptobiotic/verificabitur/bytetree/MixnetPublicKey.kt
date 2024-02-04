@@ -4,7 +4,7 @@ import electionguard.core.*
 import java.math.BigInteger
 
 // public key y = g^x
-data class MixnetPublicKey(val g : ElementModP, val publicKey : ElementModP, val modPGroup: ModPGroupBt?) {
+data class MixnetPublicKey(val g : ElementModP, val publicKey : ElementModP, val modPGroup: ModPGroupBt? = null) {
     override fun toString(): String {
         return  "        g = ${this.g.toStringShort()}\n" +
                 "publicKey = ${this.publicKey.toStringShort()}\n" +

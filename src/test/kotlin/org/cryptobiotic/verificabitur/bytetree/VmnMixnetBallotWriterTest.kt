@@ -4,7 +4,7 @@ import electionguard.core.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class MixnetBallotWriterTest {
+class VmnMixnetBallotWriterTest {
     val inputDir = "src/test/data/working/vf"
     val bbDir = "src/test/data/working/bb/vf"
     val nizkpDir = "$inputDir/Party01/nizkp"

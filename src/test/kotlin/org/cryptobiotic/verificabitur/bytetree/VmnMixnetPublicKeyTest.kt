@@ -11,7 +11,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /** Compare ElectionGuard and Verificatum group definitions */
-class MixnetPublicKeyTest {
+class VmnMixnetPublicKeyTest {
     val group = productionGroup()
     val inputDir = "src/test/data/working"
 

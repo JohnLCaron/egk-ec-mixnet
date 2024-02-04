@@ -1,7 +1,6 @@
 package org.cryptobiotic.verificabitur.vmn
 
 import com.verificatum.arithm.PGroup
-import com.verificatum.arithm.PGroupElement
 import com.verificatum.arithm.PGroupElementArray
 import com.verificatum.eio.ExtIO
 import com.verificatum.protocol.Protocol
@@ -14,21 +13,23 @@ import com.verificatum.protocol.mixnet.MixNetElGamalInterfaceFactory
 import com.verificatum.ui.tui.TConsole
 import com.verificatum.ui.tui.TextualUI
 import com.verificatum.util.SimpleTimer
+import electionguard.util.Stopwatch
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
 import kotlinx.cli.required
 import org.cryptobiotic.verificabitur.bytetree.readByteTreeFromFile
 import java.io.File
+import java.lang.System.exit
 import kotlin.random.Random
 
-class RunMixnet {
+class RunVmnMixnet {
 
     companion object {
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val parser = ArgParser("RunMixnet")
+            val parser = ArgParser("RunVmnMixnet")
             val input by parser.option(
                 ArgType.String,
                 shortName = "in",
@@ -54,26 +55,51 @@ class RunMixnet {
                 shortName = "sessionId",
                 description = "session identifier for different sessions of the mix-net"
             )
+            val threads by parser.option(
+                ArgType.String,
+                shortName = "threads",
+                description = "Number of threads to use (may be a list)"
+            )
+            val quiet by parser.option(
+                ArgType.Boolean,
+                shortName = "quiet",
+                description = "Minimize output"
+            ).default(false)
 
             parser.parse(args)
 
-            println(
-                "RunMixnet starting\n" +
-                        "   input= $input\n" +
-                        "   privInfo = $privInfo\n" +
-                        "   protInfo = $protInfo\n" +
-                        "   auxsid = $auxsid\n"
-            )
+            // allow lists of ncores
+            val nthreads = if (threads != null) {
+                threads!!.split(",").map { Integer.parseInt(it.trim()) }
+            } else {
+                listOf(11)
+            }
 
-            val mixnet = Mixnet(privInfo, protInfo)
-            val sessionId = mixnet.run(input, auxsid)
-            println("sessionId $sessionId complete successfully\n")
+            nthreads.forEach { ncores ->
+                System.setProperty("ncores", ncores.toString())
+
+                if (!quiet) println(
+                    "RunVmnMixnet starting\n" +
+                            "   input= $input\n" +
+                            "   privInfo = $privInfo\n" +
+                            "   protInfo = $protInfo\n" +
+                            "   nthreads = $ncores\n" +
+                            "   auxsid = $auxsid\n"
+                )
+
+                val stopwatch = Stopwatch()
+                val mixnet = VmnMixnet(privInfo, protInfo, quiet)
+                val (sessionId, width) = mixnet.run(input, auxsid)
+                val took = stopwatch.stop()
+                println(" *** RunVmnMixnet took ${took / 1_000_000} ms for $ncores cores\")")
+            }
+            exit(0)
         }
     }
 }
 
 
-class Mixnet(privInfo: String, protInfo: String) {
+class VmnMixnet(privInfo: String, protInfo: String, val quiet: Boolean) {
     val elGamalRawInterface: ProtocolElGamalInterface
     val mixnet: MixNetElGamal
     var timer = SimpleTimer()
@@ -90,13 +116,12 @@ class Mixnet(privInfo: String, protInfo: String) {
         mixnet = MixNetElGamal(privateInfo, protocolInfo, TextualUI(TConsole()))
     }
 
-    fun run(input: String, auxsid: String?): String {
+    fun run(input: String, auxsid: String?): Pair<String, Int> {
         // read the input and find the width
         val tree = readByteTreeFromFile(input)
         require(tree.root.childs() == 2)
         require(tree.root.child[0].childs() == tree.root.child[1].childs())
         val width = tree.root.child[0].childs()
-        println("width = $width")
 
         val inputCiphFile = File(input)
         val inputCiphertexts = readCiphertexts(mixnet, width, inputCiphFile)
@@ -104,7 +129,7 @@ class Mixnet(privInfo: String, protInfo: String) {
 
         processShuffle(sessionId, mixnet, width, inputCiphertexts)
 
-        return sessionId
+        return Pair(sessionId, width)
     }
 
     internal fun readCiphertexts(mixnet: MixNetElGamal, width: Int, inputCiphFile: File?): PGroupElementArray {
@@ -136,7 +161,8 @@ class Mixnet(privInfo: String, protInfo: String) {
         // inputCiphertexts.free();
         outputCiphertexts.free()
 
-        postlude(mixnet, "shuffling")
+        mixnet.shutdown(mixnet.log)
+        if (!quiet) postlude(mixnet, "shuffling")
     }
 
     private fun processMixing(

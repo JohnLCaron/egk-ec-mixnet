@@ -7,7 +7,7 @@ fun readByteTreeFromFile(filename: String): ByteTree {
     try {
         val file = File(filename) // gulp the entire file to a byte array
         val ba: ByteArray = file.readBytes()
-        println("read ${ba.size} bytes from $filename")
+        // println("read ${ba.size} bytes from $filename")
         return readByteTree(ba)
     } catch (t: Throwable) {
         println("Exception on $filename")

@@ -2,7 +2,7 @@ package org.cryptobiotic.verificabitur.vmn
 
 import kotlin.test.Test
 
-class RunMixnetVmnVerifierTest {
+class RunVmnMixnetVmnVerifierTest {
 
     @Test
     fun testRunVerifierBB() {
