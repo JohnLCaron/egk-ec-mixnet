@@ -11,24 +11,16 @@ fi
 
 rave_print "***mixnet shuffle encrypted ballots..."
 
-EG_WORKSPACE="${WORKSPACE_DIR}/eg"
-CONSTANTS="${EG_WORKSPACE}/constants.json"
-ELECTION_PARAMS="${EG_WORKSPACE}/election_initialized.json"
-
 VERIFICATUM_WORKSPACE="${WORKSPACE_DIR}/vf"
 
 CLASSPATH="build/libs/egkmixnet-0.7-SNAPSHOT-all.jar"
 
 # shuffle once
-rave_print "  now shuffling once ..."
+rave_print "  now shuffling ..."
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.verificabitur.vmn.runVmnVerifierThreads() \
-    -in ${VERIFICATUM_WORKSPACE}/inputCiphertexts.bt \
-    -privInfo ${VERIFICATUM_WORKSPACE}/privateInfo.xml \
-    -protInfo ${VERIFICATUM_WORKSPACE}/protocolInfo.xml \
-    -sessionId mix1 \
-    -threads 7 \
-    -quiet
+  org.cryptobiotic.verificabitur.vmn.RunVmnMixnetThreads \
+    -vvvf ${VERIFICATUM_WORKSPACE} \
+    -threads 1,2,4,6,8,12,16,20,24,28,32,36,40,44,48
 
 rave_print " [DONE] Shuffling encrypted ballots"

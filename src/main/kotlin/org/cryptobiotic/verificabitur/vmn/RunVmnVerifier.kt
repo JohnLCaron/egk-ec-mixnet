@@ -15,8 +15,42 @@ import kotlinx.cli.default
 import kotlinx.cli.required
 import java.io.File
 
-fun runVmnVerifierThreads(inputDir: String, threadList: List<Int>) {
-    for (nthreads in threadList) {
+class RunVmnVerifierThreads {
+
+    companion object {
+
+        @JvmStatic
+        fun main(args: Array<String>) {
+            val parser = ArgParser("RunVmnVerifierThreads")
+            val vvbb by parser.option(
+                ArgType.String,
+                shortName = "vvbb",
+                description = "Directory containing vericatum bulletin board"
+            ).required()
+            val threads by parser.option(
+                ArgType.String,
+                shortName = "threads",
+                description = "Number of threads to use (may be a list)"
+            )
+
+            parser.parse(args)
+
+            // allow lists of thread counts
+            val nthreads = if (threads != null) {
+                threads!!.split(",").map { Integer.parseInt(it) }
+            } else {
+                listOf(11)
+            }
+
+            nthreads.forEach { ncores ->
+                runVmnVerifierThreads(vvbb, ncores)
+            }
+        }
+    }
+}
+
+// we have to start a new process each time
+fun runVmnVerifierThreads(inputDir: String, nthreads: Int) {
         val process = ProcessBuilder(
             "/usr/lib/jvm/jdk-19/bin/java", "-classpath", "build/libs/egkmixnet-0.7-SNAPSHOT-all.jar",
             "org.cryptobiotic.verificabitur.vmn.RunVmnVerifier",
@@ -24,21 +58,16 @@ fun runVmnVerifierThreads(inputDir: String, threadList: List<Int>) {
             "-protInfo", "$inputDir/protocolInfo.xml",
             "-auxsid", "mix1",
             "-width", "34",
-            "-nthreads", nthreads.toString(),
+            "-threads", nthreads.toString(),
             "-quiet",
         )
             .redirectOutput(ProcessBuilder.Redirect.INHERIT)
             .redirectError(ProcessBuilder.Redirect.INHERIT)
             .start()
             .waitFor()
-    }
 }
 
 class RunVmnVerifier {
-
-    // vmnv -shuffle -width "${WIDTH}" -auxsid "${AUXSID}" \
-    //   ${VERIFICATUM_WORKSPACE}/protInfo.xml \
-    //   ./dir/nizkp/${AUXSID} -v
 
     companion object {
 
@@ -66,10 +95,10 @@ class RunVmnVerifier {
                 description = "Number of ciphertexts per row"
             ).required()
             val threads by parser.option(
-                ArgType.String,
+                ArgType.Int,
                 shortName = "threads",
-                description = "Number of threads to use (may be a list)"
-            )
+                description = "Number of threads to use"
+            ).default(11)
             val quiet by parser.option(
                 ArgType.Boolean,
                 shortName = "quiet",
@@ -78,37 +107,26 @@ class RunVmnVerifier {
 
             parser.parse(args)
 
-            // allow lists of thread counts
-            val nthreads = if (threads != null) {
-                threads!!.split(",").map { Integer.parseInt(it) }
-            } else {
-                listOf(11)
-            }
-
-            nthreads.forEach { ncores ->
-
                 if (!quiet) println(
                     "RunVmnVerifier starting\n" +
                             "   inputDir= $inputDir\n" +
                             "   protInfo = $protInfo\n" +
                             "   width = $width\n" +
                             "   sessionId = $sessionId\n" +
-                            "   nthreads = $nthreads\n"
+                            "   nthreads = $threads\n"
                 )
 
-                System.setProperty("ncores", ncores.toString())
+                System.setProperty("ncores", threads.toString())
 
                 val stopwatch = Stopwatch()
                 val vv = VmnVerifier(inputDir, protInfo, sessionId, width, !quiet)
                 val ok = vv.verify()
                 val took = stopwatch.stop()
-                println(" *** RunVmnVerifier took ${took / 1_000_000} ms for $ncores cores")
+                println(" *** RunVmnVerifier took ${took / 1_000_000} ms for $threads cores")
                 require(ok)
             }
-        }
     }
 }
-
 
 class VmnVerifier(shuffleDir: String, protInfo: String, val auxsid: String, val width: Int, val verbose: Boolean) {
     val elGamalRawInterface: ProtocolElGamalInterface

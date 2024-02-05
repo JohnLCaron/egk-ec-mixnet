@@ -19,12 +19,9 @@ CLASSPATH="build/libs/egkmixnet-0.7-SNAPSHOT-all.jar"
 rave_print "  ... verify mix1 shuffle ..."
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.verificabitur.vmn.RunVmnVerifier \
-    -protInfo ${VF_BB}/protocolInfo.xml \
-    -shuffle ${VF_BB}/mix1 \
-    --sessionId mix1 \
-    -width 34 \
-    -threads 12,20 \
-    -quiet
+  org.cryptobiotic.verificabitur.vmn.RunVmnVerifierThreads \
+    --vvbb ${VF_BB} \
+    -threads 1,2,4,6,8,12,16,20,24,28,32,36,40,44,48
+
 
 rave_print " [DONE] Verifying shuffled ballots"

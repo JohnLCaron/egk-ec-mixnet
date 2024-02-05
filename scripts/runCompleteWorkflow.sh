@@ -1,6 +1,6 @@
 # ~/.bashrc
 ./scripts/initialize-election.sh working
-./scripts/generate-and-encrypt-ballots.sh working 1000
+./scripts/generate-and-encrypt-ballots.sh working 100
 # ./scripts/tally-encrypted-ballots.sh working
 # ./scripts/tally-decrypt.sh working
 ./scripts/make-mixnet-input.sh working
