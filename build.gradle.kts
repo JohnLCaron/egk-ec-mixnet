@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "org.cryptobiotic"
-version = "0.6-SNAPSHOT"
+version = "0.7-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -26,4 +26,20 @@ tasks.test {
 }
 kotlin {
     jvmToolchain(19)
+}
+
+tasks.register("fatJar", Jar::class.java) {
+    archiveClassifier.set("all")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveBaseName = "egkmixnet"
+
+    manifest {
+        attributes("Main-Class" to "org.cryptobiotic.verificabitur.vmn.RunVmnVerifier")
+    }
+    from(configurations.runtimeClasspath.get()
+        .onEach { println("add from runtimeClasspath: ${it.name}") }
+        .map { if (it.isDirectory) it else zipTree(it) })
+    val sourcesMain = sourceSets.main.get()
+    sourcesMain.allSource.forEach { println("add from sources: ${it.name}") }
+    from(sourcesMain.output)
 }

@@ -1,7 +1,6 @@
 package org.cryptobiotic.verificabitur.vmn
 
 import com.verificatum.arithm.PGroup
-import com.verificatum.arithm.PGroupElement
 import com.verificatum.arithm.PGroupElementArray
 import com.verificatum.eio.ExtIO
 import com.verificatum.protocol.Protocol
@@ -14,21 +13,92 @@ import com.verificatum.protocol.mixnet.MixNetElGamalInterfaceFactory
 import com.verificatum.ui.tui.TConsole
 import com.verificatum.ui.tui.TextualUI
 import com.verificatum.util.SimpleTimer
+import electionguard.util.Stopwatch
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
 import kotlinx.cli.required
 import org.cryptobiotic.verificabitur.bytetree.readByteTreeFromFile
 import java.io.File
+import java.lang.System.exit
+import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.random.Random
 
-class RunMixnet {
+class RunVmnMixnetThreads {
 
     companion object {
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val parser = ArgParser("RunMixnet")
+            val parser = ArgParser("RunVmnMixnetThreads")
+            val vvvf by parser.option(
+                ArgType.String,
+                shortName = "vvvf",
+                description = "Directory containing vericatum working directory"
+            ).required()
+            val threads by parser.option(
+                ArgType.String,
+                shortName = "threads",
+                description = "Number of threads to use (may be a list)"
+            )
+
+            parser.parse(args)
+
+            // allow lists of thread counts
+            val nthreads = if (threads != null) {
+                threads!!.split(",").map { Integer.parseInt(it) }
+            } else {
+                listOf(11)
+            }
+
+            nthreads.forEach { ncores ->
+                runVmnMixnetThreads(vvvf, ncores)
+            }
+        }
+    }
+}
+
+// java -classpath $CLASSPATH \
+//  org.cryptobiotic.verificabitur.vmn.RunVmnMixnet \
+//    -in ${VERIFICATUM_WORKSPACE}/inputCiphertexts.bt \
+//    -privInfo ${VERIFICATUM_WORKSPACE}/privateInfo.xml \
+//    -protInfo ${VERIFICATUM_WORKSPACE}/protocolInfo.xml \
+//    -sessionId mix1 \
+//    -threads 20 \
+//    -quiet
+
+// we have to start a new process each time
+fun runVmnMixnetThreads(inputDir: String, nthreads: Int) {
+    val process = ProcessBuilder(
+        "/usr/lib/jvm/jdk-19/bin/java", "-classpath", "build/libs/egkmixnet-0.7-SNAPSHOT-all.jar",
+        "org.cryptobiotic.verificabitur.vmn.RunVmnMixnet",
+        "-vvvf", "$inputDir",
+        "-in", "$inputDir/inputCiphertexts.bt",
+        "-privInfo", "$inputDir/privateInfo.xml",
+        "-protInfo", "$inputDir/protocolInfo.xml",
+        "-sessionId", "mix1",
+        "-threads", nthreads.toString(),
+        "-quiet",
+    )
+        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+        .redirectError(ProcessBuilder.Redirect.INHERIT)
+        .start()
+        .waitFor()
+}
+
+class RunVmnMixnet {
+
+    companion object {
+
+        @JvmStatic
+        fun main(args: Array<String>) {
+            val parser = ArgParser("RunVmnMixnet")
+            val vvvf by parser.option(
+                ArgType.String,
+                shortName = "vvvf",
+                description = "Directory containing vericatum working directory"
+            ).required()
             val input by parser.option(
                 ArgType.String,
                 shortName = "in",
@@ -54,26 +124,83 @@ class RunMixnet {
                 shortName = "sessionId",
                 description = "session identifier for different sessions of the mix-net"
             )
+            val threads by parser.option(
+                ArgType.Int,
+                shortName = "threads",
+                description = "Number of threads to use"
+            )
+            val quiet by parser.option(
+                ArgType.Boolean,
+                shortName = "quiet",
+                description = "Minimize output"
+            ).default(false)
 
             parser.parse(args)
 
-            println(
-                "RunMixnet starting\n" +
+            System.setProperty("ncores", threads.toString())
+
+            // remove old files that prevent mixnet from running
+            removeAllFiles("$vvvf/httpdir/1")
+            removeFile("$vvvf/.setup")
+            removeAllFilesUnder("$vvvf/Party01/tmp")
+            removeAllFiles("$vvvf/Party01/CoinFlipPRingSource")
+            removeAllFiles("$vvvf/Party01/DistrElGamal.DEG")
+            removeAllFiles("$vvvf/Party01/IndependentGenerator")
+            removeAllFiles("$vvvf/Party01/MixNetElGamalSession.mix1")
+            removeAllFiles("$vvvf/Party01/nizkp/mix1")
+            removeAllFiles("$vvvf/Party01/PlainKeys")
+            removeAllFiles("$vvvf/Party01/ShufflerElGamal.SEG/ShufflerElGamalSession.SID.mix1")
+            removeAllFilesUnder("$vvvf/Party01/tmp")
+
+            if (!quiet) println(
+                "RunVmnMixnet starting\n" +
                         "   input= $input\n" +
                         "   privInfo = $privInfo\n" +
                         "   protInfo = $protInfo\n" +
+                        "   nthreads = $threads\n" +
                         "   auxsid = $auxsid\n"
             )
 
-            val mixnet = Mixnet(privInfo, protInfo)
-            val sessionId = mixnet.run(input, auxsid)
-            println("sessionId $sessionId complete successfully\n")
+            val stopwatch = Stopwatch()
+            val mixnet = VmnMixnet(privInfo, protInfo, quiet)
+            val (sessionId, width) = mixnet.run(input, auxsid)
+            val took = stopwatch.stop()
+            println(" *** RunVmnMixnet took ${took / 1_000_000} ms for $threads cores")
+            exit(0)
         }
     }
 }
 
+fun removeFile(filename: String, quiet: Boolean = true) {
+    val f = File(filename)
+    val ok = f.delete()
+    if (!quiet) println(" $filename removed $ok")
+}
 
-class Mixnet(privInfo: String, protInfo: String) {
+fun removeAllFiles(dirname: String, quiet: Boolean = true) {
+    removeAllFilesUnder(dirname, quiet)
+    removeFile(dirname, quiet)
+}
+
+fun removeAllFilesUnder(dirname: String, quiet: Boolean = true) {
+    val path = Path.of(dirname)
+    if (!path.toFile().exists()) {
+        if (!quiet) println(" $dirname doesnt exist")
+        return
+    }
+    if (!quiet) println(" remove all under $dirname ")
+    Files.walk(path)
+        .filter { p: Path -> p != path }
+        .map { obj: Path -> obj.toFile() }
+        .sorted { o1: File, o2: File? -> -o1.compareTo(o2) }
+        .forEach { f: File ->
+            val ok = f.delete()
+            if (!quiet) println(" $f removed $ok")
+        }
+}
+
+
+class VmnMixnet(privInfo: String, protInfo: String, val quiet: Boolean) {
     val elGamalRawInterface: ProtocolElGamalInterface
     val mixnet: MixNetElGamal
     var timer = SimpleTimer()
@@ -90,13 +217,12 @@ class Mixnet(privInfo: String, protInfo: String) {
         mixnet = MixNetElGamal(privateInfo, protocolInfo, TextualUI(TConsole()))
     }
 
-    fun run(input: String, auxsid: String?): String {
+    fun run(input: String, auxsid: String?): Pair<String, Int> {
         // read the input and find the width
         val tree = readByteTreeFromFile(input)
         require(tree.root.childs() == 2)
         require(tree.root.child[0].childs() == tree.root.child[1].childs())
         val width = tree.root.child[0].childs()
-        println("width = $width")
 
         val inputCiphFile = File(input)
         val inputCiphertexts = readCiphertexts(mixnet, width, inputCiphFile)
@@ -104,7 +230,7 @@ class Mixnet(privInfo: String, protInfo: String) {
 
         processShuffle(sessionId, mixnet, width, inputCiphertexts)
 
-        return sessionId
+        return Pair(sessionId, width)
     }
 
     internal fun readCiphertexts(mixnet: MixNetElGamal, width: Int, inputCiphFile: File?): PGroupElementArray {
@@ -136,7 +262,8 @@ class Mixnet(privInfo: String, protInfo: String) {
         // inputCiphertexts.free();
         outputCiphertexts.free()
 
-        postlude(mixnet, "shuffling")
+        mixnet.shutdown(mixnet.log)
+        if (!quiet) postlude(mixnet, "shuffling")
     }
 
     private fun processMixing(

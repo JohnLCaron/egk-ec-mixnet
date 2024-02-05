@@ -4,7 +4,7 @@ import electionguard.core.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class MixnetFullPublicKeyTest {
+class VmnMixnetFullPublicKeyTest {
     val group = productionGroup()
     val inputDir = "src/test/data/working/bb/vf"
 

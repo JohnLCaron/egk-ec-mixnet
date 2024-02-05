@@ -157,7 +157,7 @@ class ShuffleTest {
         //println("nrows=$nrows, width= $width per row, N=$N, nthreads=$nthreads")
 
         var starting = getSystemTimeInMillis()
-        group.showAndClearCountPowP()
+        group.getAndClearOpCounts()
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
         stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
 

@@ -71,8 +71,8 @@ class RunMixnetVerifier {
                         "   sessionId = $sessionId\n"
             )
 
-            // TODO save these so we dont have to kepp calling vmn
-            val (e, h, challenge) = VmnVerifier(inputDir, protInfo, sessionId, width, true).verify()
+            // TODO save these so we dont have to keep calling vmn
+            val (e, h, challenge) = MyVmnVerifier(inputDir, protInfo, sessionId, width, true).verify()
 
             val verifier = MyVerifier(inputDir, e, h, challenge)
             val ok = verifier.verify()
@@ -167,7 +167,7 @@ class MyVerifier(
 }
 
 
-class VmnVerifier(shuffleDir: String, protInfo: String, val auxsid: String, val width: Int, val verbose: Boolean) {
+class MyVmnVerifier(shuffleDir: String, protInfo: String, val auxsid: String, val width: Int, val verbose: Boolean) {
     val elGamalRawInterface: ProtocolElGamalInterface
     val verifier: MixNetElGamalVerifyFiatShamir
     val shuffleDirFile = File(shuffleDir)

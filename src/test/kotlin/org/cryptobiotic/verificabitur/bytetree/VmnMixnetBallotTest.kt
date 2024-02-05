@@ -5,7 +5,7 @@ import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class MixnetBallotTest {
+class VmnMixnetBallotTest {
     val inputDir = "src/test/data/working/vf"
     val bbDir = "src/test/data/working/bb/vf"
     val nizkpDir = "$inputDir/Party01/nizkp"

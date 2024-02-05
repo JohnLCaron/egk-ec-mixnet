@@ -9,7 +9,7 @@ class RunMixnetTest {
     // need to set up a clean directory
     // @Test
     fun testRunMixnet() {
-        RunMixnet.main(
+        RunVmnMixnet.main(
             arrayOf(
                 "-in", "$inputDir/inputCiphertexts.bt",
                 "-privInfo", "$inputDir/privateInfo.xml",
@@ -19,7 +19,7 @@ class RunMixnetTest {
         )
 
         /*
-        RunMixnet.main(
+        RunVmnMixnet.main(
             arrayOf(
                 "-in", "$working/nizkp/mix1/ShuffledCiphertexts.bt",
                 "-privInfo", "$working/privateInfo.xml",

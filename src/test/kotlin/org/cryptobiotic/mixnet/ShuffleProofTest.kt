@@ -60,6 +60,9 @@ class ShuffleProofTest {
         override fun toString() =
             "${nthreads}, ${shuffle*.001}, ${proof*.001}, ${verify*.001}, ${total*.001}"
 
+        fun toString3() =
+            "${nthreads}, ${shuffle + proof}, ${verify}"
+
     }
 
     @Test
@@ -111,7 +114,7 @@ class ShuffleProofTest {
                    nthreads : Int = 10,
         ) : Result {
         val starting = getSystemTimeInMillis()
-        group.showAndClearCountPowP()
+        group.getAndClearOpCounts()
 
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
 
@@ -170,12 +173,12 @@ class ShuffleProofTest {
         println("nrows=$nrows, width= $width per row, N=$N, nthreads=$nthreads")
 
         var starting = getSystemTimeInMillis()
-        group.showAndClearCountPowP()
+        group.getAndClearOpCounts()
 
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
 
         stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
-        if (showExps) println("  shuffle: ${group.showAndClearCountPowP()}")
+        if (showExps) println("  shuffle: ${group.getAndClearOpCounts()}")
 
         starting = getSystemTimeInMillis()
         runProof(
@@ -188,7 +191,7 @@ class ShuffleProofTest {
             psi,
             nthreads)
         stats.of("proof", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
-        if (showExps) println("  proof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
+        if (showExps) println("  proof: ${group.getAndClearOpCounts()} ${expectProof(nrows, width)}")
 
         if (showTiming) stats.show()
     }
@@ -204,16 +207,20 @@ class ShuffleProofTest {
 
     @Test
     fun testSPVpar() {
-        val nrows = 3
-        val width = 7
+        val nrows = 1000
+        val width = 34
 
         val keypair = elGamalKeyPairFromRandom(group)
         val ballots = makeBallots(keypair, nrows, width)
 
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 0)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 1)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 2)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 10)
+        val results = mutableListOf<Result>()
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, 1))
+        //results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, 2))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, 4))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, 6))
+        //results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, 12))
+        println("\nnthreads, shuffle, proof, verify, total")
+        results.forEach{ println(it) }
     }
 
     @Test
@@ -238,57 +245,52 @@ class ShuffleProofTest {
 
     @Test
     fun testSPVMatrix() {
-        val nrows = 100
-        val width = 34
-        val keypair = elGamalKeyPairFromRandom(group)
-        val ballots = makeBallots(keypair, nrows, width)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 48)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 20)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 10)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 4)
-        runShuffleProofAndVerify(nrows, width, keypair, ballots, 1)
+        runShuffleProofVerifyWithThreads(100, 34)
+        //runShuffleProofVerifyWithThreads(1000, 34)
+        //runShuffleProofVerifyWithThreads(2000, 34)
     }
 
     fun runShuffleProofVerifyWithThreads(nrows: Int, width: Int) {
         println("=========================================")
         println("testThreads nrows=$nrows, width= $width per row, N=${nrows*width}")
-        println("nthreads, shuffle, proof, verify, total")
+        // println("nthreads, shuffle, proof, verify, total")
 
         val keypair = elGamalKeyPairFromRandom(group)
         val ballots = makeBallots(keypair, nrows, width)
 
         val results = mutableListOf<Result>()
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 48))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 40))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 32))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 24))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 20))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 16))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 14))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 12))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 10))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 8))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 6))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 4))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 1))
         results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 2))
-        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 0))
-        println("\nnthreads, shuffle, proof, verify, total")
-        results.forEach{ println(it) }
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 4))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 6))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 8))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 12))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 16))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 20))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 24))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 28))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 32))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 36))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 40))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 44))
+        results.add(runShuffleProofAndVerify(nrows, width, keypair, ballots, nthreads = 48))
+        println("\nnthreads, shuffle+proof, verify")
+        results.forEach{ println("${ it.toString3() }") }
     }
 
     fun runShuffleProofAndVerify(nrows: Int, width: Int, keypair: ElGamalKeypair, ballots: List<VectorCiphertext>,
                                  nthreads : Int = 10,
-                                 showExps: Boolean = false, showTiming: Boolean = true) : Result {
+                                 showExps: Boolean = false, showTiming: Boolean = false) : Result {
         val stats = Stats()
         val N = nrows*width
         var starting = getSystemTimeInMillis()
-        group.showAndClearCountPowP()
+        group.getAndClearOpCounts()
 
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
 
         val shuffleTime = getSystemTimeInMillis() - starting
         stats.of("shuffle", "text", "shuffle").accum(shuffleTime, N)
-        if (showExps) println("  shuffle: ${group.showAndClearCountPowP()}")
+        if (showExps) println("  shuffle: ${group.getAndClearOpCounts()}")
 
         starting = getSystemTimeInMillis()
         val pos: ProofOfShuffle = runProof(
@@ -302,7 +304,7 @@ class ShuffleProofTest {
             nthreads)
         val proofTime = getSystemTimeInMillis() - starting
         stats.of("proof", "text", "shuffle").accum(proofTime, N)
-        if (showExps) println("  proof: ${group.showAndClearCountPowP()} ${expectProof(nrows, width)}")
+        if (showExps) println("  proof: ${group.getAndClearOpCounts()} ${expectProof(nrows, width)}")
 
         starting = getSystemTimeInMillis()
         val valid = runVerify(
@@ -315,13 +317,13 @@ class ShuffleProofTest {
         )
         val verifyTime = getSystemTimeInMillis() - starting
         stats.of("verify", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
-        if (showExps) println("  verify: ${group.showAndClearCountPowP()} ${expectVerify(nrows, width)}")
+        if (showExps) println("  verify: ${group.getAndClearOpCounts()} ${expectVerify(nrows, width)}")
 
         assertTrue(valid)
         if (showTiming) stats.show()
 
         val r = Result(nthreads, shuffleTime, proofTime, verifyTime)
-        println(r)
+        if (showTiming) println(r)
         return r
     }
 
