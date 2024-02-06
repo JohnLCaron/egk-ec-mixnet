@@ -1,0 +1,172 @@
+Time verificatumvas used by rave
+
+RunMixnet elapsed time = 27831 msecs ( 0h  0m 27s)
+RunMixnet elapsed time = 26464 msecs ( 0h  0m 26s)
+RunMixnetVerifier elapsed time = 12123 msecs ( 0h  0m 12s)
+RunMixnetVerifier elapsed time = 12893 msecs ( 0h  0m 12s)
+total = 79311 msecs
+
+real	1m31.949s
+user	20m19.104s
+sys	2m16.643s
+
+time ./scripts/runMixnetWorkflow.sh
+Creating mixnet input from the encrypted ballots
+[DONE] Creating mixnet input.
+Initialize verificatum mixnet...
+RunMixnetConfig inputDir= working/eg workingDir= working/vf 
+[DONE] Initialize verificatum mixnet in directory working/vf
+Shuffling encrypted ballots...
+... now shuffling once ...
+RunMixnet starting
+   input= working/vf/inputCiphertexts.bt
+   privInfo = working/vf/privateInfo.xml
+   protInfo = working/vf/protocolInfo.xml
+   auxsid = mix1
+
+width = 34
+RunMixnet elapsed time = 27831 msecs ( 0h  0m 27s)
+sessionId mix1 complete successfully
+
+... now shuffling twice ...
+RunMixnet starting
+   input= working/vf/Party01/nizkp/mix1/ShuffledCiphertexts.bt
+   privInfo = working/vf/privateInfo.xml
+   protInfo = working/vf/protocolInfo.xml
+   auxsid = mix2
+
+width = 34
+RunMixnet elapsed time = 26464 msecs ( 0h  0m 26s)
+sessionId mix2 complete successfully
+
+[DONE] Shuffling encrypted ballots
+Copy files to public Bulletin Board
+cp: -r not specified; omitting directory 'working/eg/inputBallots'
+cp: -r not specified; omitting directory 'working/eg/trustees'
+[DONE] Copying files to public Bulletin Board
+Verifying shuffled ballots...
+... verify mix1 shuffle ...
+RunMixnetVerifier starting
+   inputDir= working/bb/vf/mix1
+   protInfo = working/bb/vf/protocolInfo.xml
+   width = 34
+   sessionId = mix1
+
+Using Generator class = com.verificatum.protocol.mixnet.MixNetElGamalGen
+
+============ Prepare to verify proof. ==========================
+231228 14:13:33 Read joint public key... done.
+
+Input ciphertexts = working/bb/vf/mix1/Ciphertexts.bt
+231228 14:13:35 Derive independent generators... done.
+
+============ Verify shuffle of Party 1. ========================
+231228 14:13:35 Read permutation commitment... done.
+231228 14:13:35 Read output of Party 1... 
+Shuffled ciphertexts = working/bb/vf/mix1/ShuffledCiphertexts.bt
+done.
+231228 14:13:36 Verify proof of shuffle... done.
+Proof size is 7.2 MB  (7247790 bytes)
+Completed verification after  0h  0m 11s  (11584 ms
+
+sessionId mix1 complete successfully
+RunMixnetVerifier elapsed time = 12123 msecs ( 0h  0m 12s)
+... verify mix2 shuffle ...
+RunMixnetVerifier starting
+   inputDir= working/bb/vf/mix2
+   protInfo = working/bb/vf/protocolInfo.xml
+   width = 34
+   sessionId = mix2
+
+Using Generator class = com.verificatum.protocol.mixnet.MixNetElGamalGen
+
+============ Prepare to verify proof. ==========================
+231228 14:13:45 Read joint public key... done.
+
+Input ciphertexts = working/bb/vf/mix2/Ciphertexts.bt
+231228 14:13:47 Derive independent generators... done.
+
+============ Verify shuffle of Party 1. ========================
+231228 14:13:48 Read permutation commitment... done.
+231228 14:13:48 Read output of Party 1... 
+Shuffled ciphertexts = working/bb/vf/mix2/ShuffledCiphertexts.bt
+done.
+231228 14:13:49 Verify proof of shuffle... done.
+Proof size is 7.2 MB  (7247790 bytes)
+Completed verification after  0h  0m 12s  (12451 ms
+
+sessionId mix2 complete successfully
+RunMixnetVerifier elapsed time = 12893 msecs ( 0h  0m 12s)
+[DONE] Verifying shuffled ballots
+
+real	1m31.949s
+user	20m19.104s
+sys	2m16.643s
+
+
+========================================================================================================================
+========================================================================================================================
+
+RunMixnet elapsed time = 27831 msecs ( 0h  0m 27s)
+RunMixnet elapsed time = 26464 msecs ( 0h  0m 26s)
+RunMixnetVerifier elapsed time = 12123 msecs ( 0h  0m 12s)
+RunMixnetVerifier elapsed time = 12893 msecs ( 0h  0m 12s)
+
+testShuffleVerifyJson: nrows=100, width=34 N=3400
+ countReencryptions = 3400
+  shuffle1 took 5545
+  shuffleProof1 took 17624
+  shuffleVerify1 took 33371
+ countReencryptions = 3400
+  shuffle2 took 5451
+  shuffleProof2 took 17467
+  shuffleVerify1 took 33364
+  after 2 shuffles: 119901 msecs, N=3400 perN=35 msecs
+
+verify is 3x, shuffle is the same. so we should look in vmn to find why that is.
+
+parellelize shuffleProof 10 threads: 17624/3506 = 5x,  17467/3237 = 5.4
+parellelize verify Proof 10 threads: 33371/3506 = 5x
+
+testShuffleVerifyJson: nthreads = 16 nrows=100, width=34 N=3400
+  shuffle1 took 814
+  shuffleProof1 took 2985
+  shuffleVerify1 took 4071
+  shuffle2 took 742
+  shuffleProof2 took 2669
+  shuffleVerify1 took 3897
+  after 2 shuffles: 22395 msecs, N=3400 perN=6 msecs
+testShuffleVerifyJson: nthreads = 8 nrows=100, width=34 N=3400
+  shuffle1 took 779
+  shuffleProof1 took 3697
+  shuffleVerify1 took 6001
+  shuffle2 took 785
+  shuffleProof2 took 3695
+  shuffleVerify1 took 6295
+  after 2 shuffles: 27717 msecs, N=3400 perN=8 msecs
+testShuffleVerifyJson: nthreads = 4 nrows=100, width=34 N=3400
+  shuffle1 took 737
+  shuffleProof1 took 5934
+  shuffleVerify1 took 10154
+  shuffle2 took 760
+  shuffleProof2 took 5667
+  shuffleVerify1 took 10271
+  after 2 shuffles: 40137 msecs, N=3400 perN=11 msecs
+testShuffleVerifyJson: nthreads = 2 nrows=100, width=34 N=3400
+  shuffle1 took 760
+  shuffleProof1 took 9820
+  shuffleVerify1 took 17875
+  shuffle2 took 758
+  shuffleProof2 took 9510
+  shuffleVerify1 took 17876
+  after 2 shuffles: 63062 msecs, N=3400 perN=18 msecs
+testShuffleVerifyJson: nthreads = 1 nrows=100, width=34 N=3400
+  shuffle1 took 719
+  shuffleProof1 took 17281
+  shuffleVerify1 took 33287
+  shuffle2 took 746
+  shuffleProof2 took 17234
+  shuffleVerify1 took 33328
+  after 2 shuffles: 108940 msecs, N=3400 perN=32 msecs
+
+
