@@ -324,7 +324,7 @@ class FEexp(val group: GroupContext, exps: List<ElementModQ>, show: Boolean = fa
         }
         val notmissing = vaChain.countRef()
         val ratio = notmissing.toDouble()/vaChain.chain.size
-        println( "  f = ${exps.size} chain size = ${vaChain.chain.size } notmissing = $notmissing ratio = ${ratio.sigfig(2)}")
+        // println( "  f = ${exps.size} chain size = ${vaChain.chain.size } notmissing = $notmissing ratio = ${ratio.sigfig(2)}")
         if (show) println(vaChain)
     }
 
@@ -347,7 +347,7 @@ class FEexp(val group: GroupContext, exps: List<ElementModQ>, show: Boolean = fa
                 a.add(f1 * f2)
                 countMultiply++
             }
-            println("  fff ${a.last().toStringShort()} from $wentry")
+            // println("  fff ${a.last().toStringShort()} from $wentry")
         }
         if (show) println("countMultiply=$countMultiply")
         return a.last()

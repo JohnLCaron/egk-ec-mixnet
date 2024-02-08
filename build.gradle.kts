@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "org.cryptobiotic"
-version = "0.7-SNAPSHOT"
+version = "0.8-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -13,8 +13,6 @@ repositories {
 
 dependencies {
     implementation(files("libs/egklib-jvm-2.0.3-SNAPSHOT.jar"))
-    implementation(files("libs/verificatum-vcr-3.1.0.jar"))
-    implementation(files("libs/verificatum-vmn-3.1.0.jar"))
 
     implementation(libs.bundles.eglib)
     implementation(libs.bundles.xmlutil)
