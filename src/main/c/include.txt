@@ -1,0 +1,13 @@
+#### Extracted from: /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h
+
+--include-function egk_mulMod   # header: /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h
+--include-function egk_mulModA  # header: /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h
+--include-function egk_powmA    # header: /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h
+--include-function egk_prodPowA # header: /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h
+
+--include-function __gmpz_export                      # header: /usr/local/include/gmp.h
+--include-function __gmpz_import                      # header: /usr/local/include/gmp.h
+--include-function __gmpz_mod                         # header: /usr/local/include/gmp.h
+--include-function __gmpz_mul                         # header: /usr/local/include/gmp.h
+
+--include-typedef __mpz_struct                        # header: /usr/local/include/gmp.h

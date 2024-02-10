@@ -214,40 +214,6 @@ egk_spowm_clear(egk_spowm_tab table) {
   mpz_clear(table->modulus);
 }
 
-// Product ( bases^exp ) modulo OLD
-void
-egk_prodpowm(mpz_t rop, mpz_t *bases, mpz_t *exponents, size_t len, mpz_t modulus) {
-  size_t batch_len = len; // HEY only one batch ?? wtf ??
-  size_t block_width = 7;
-
-  size_t i;
-  egk_spowm_tab table;  // declared in gmpmee.h
-  mpz_t tmp;
-
-  mpz_init(tmp);
-
-  // initialize table, it is reused for each batch ??
-  egk_spowm_init(table, batch_len, modulus, block_width);
-
-  mpz_set_ui(rop, 1);
-  for (i = 0; i < len; i += batch_len) { /// hmmm, batch_len == len wtf?
-      /* Perform computation for batch */
-      egk_spowm_precomp(table, bases);
-
-      /* Compute batch. */
-      egk_spowm_table(tmp, table, exponents);
-      /* Multiply with result so far. */
-      mpz_mul(rop, rop, tmp);
-      mpz_mod(rop, rop, modulus);
-
-      /* Move on to next batch. */
-      bases += batch_len;
-      exponents += batch_len;
-    }
-  mpz_clear(tmp);
-  egk_spowm_clear(table);
-}
-
 void
 egk_prodPowA(void *result, const void **pb, const void **qb, const int len, const void *modulusBytes, size_t pbytes, size_t qbytes) {
     mpz_t modulus, rop;
@@ -317,29 +283,6 @@ egk_prodPowA(void *result, const void **pb, const void **qb, const int len, cons
     }
     free(exponents);
     free(bases);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// typedef struct {
-//   int _mp_alloc;     /* Number of *limbs* allocated and pointed to by the _mp_d field.  */
-//   int _mp_size;      /* abs(_mp_size) is the number of limbs the last field points to.  If _mp_size is negative this is a negative number.  */
-//   mp_limb_t *_mp_d;  /* Pointer to the limbs.  */
-// } __mpz_struct;
-
-// Product ( bases ) modulo OLD
-void
-egk_prodm(mpz_t rop, mpz_t *bases, size_t len, mpz_t modulus) {
-  size_t i;
-  __mpz_struct *base;
-  mpz_set_ui(rop, 1);
-  for (i = 0; i < len; i++) {
-      base = bases[i];
-      printf("base alloc=%d, size=%d, first limb=%ld\n", base->_mp_alloc, base->_mp_size, base->_mp_d[0]);
-      mpz_mul(rop, rop, *bases);
-      mpz_mod(rop, rop, modulus);
-      bases++;
-    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

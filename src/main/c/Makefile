@@ -2,9 +2,9 @@ CC = gcc  # C compiler
 CFLAGS = -fPIC -Wall -Wextra -O2 -g  # C flags
 LDFLAGS = -L/usr/local/lib -lgmp  # linking flags
 RM = rm -f   # rm command
-TARGET_LIB = libegkspowm.so  # target lib
+TARGET_LIB = libegkgmp.so  # target lib
 
-SRCS = egk_spowm.c  # source files
+SRCS = egk_gmp.c  # source files
 OBJS = $(SRCS:.c=.o)
 
 .PHONY: all

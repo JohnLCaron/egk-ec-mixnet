@@ -2,16 +2,13 @@ package org.cryptobiotic.gmp
 
 import electionguard.core.*
 import electionguard.util.Stopwatch
-import org.cryptobiotic.mixnet.prodColumnPow
-import org.cryptobiotic.mixnet.VectorCiphertext
-import org.cryptobiotic.mixnet.VectorQ
 import org.junit.jupiter.api.Assertions.assertTrue
 import kotlin.test.Test
 import java.math.BigInteger
 import kotlin.random.Random
 import kotlin.test.assertEquals
 
-class SpowmTest {
+class CoverGmpTest {
     val group = productionGroup()
 
     @Test
@@ -46,20 +43,6 @@ class SpowmTest {
         val result2 = multiplyModGmp(bytes1, bytes2, modulus)
         println("result2 size = ${result2.size}")
         assertTrue(result1.contentEquals(result2))
-    }
-
-    @Test
-    fun testProdModP() {
-        val p1 = group.gPowP(group.randomElementModQ())
-        val p2 = group.gPowP(group.randomElementModQ())
-        val modulus = group.constants.largePrime
-
-        val product1 = p1 * p2
-
-        val product2 = prodModP(group, listOf(p1, p2), modulus)
-        println("product2 = ${product2.toStringShort()}")
-
-        assertEquals(product1, product2)
     }
 
     @Test
@@ -136,37 +119,4 @@ class SpowmTest {
         }
         println(" compareTimePowmA (org/gmp) = ${Stopwatch.ratioAndPer(orgTime, gmpTime, nrows)}")
     }
-
-    @Test
-    fun testProdPowA() {
-        compareTimeProdPowA(3, 4)
-        compareTimeProdPowA(10, 10)
-        compareTimeProdPowA(100, 100)
-        compareTimeProdPowA(1000, 34)
-        compareTimeProdPowA(1, 34)
-    }
-
-    fun compareTimeProdPowA(nrows: Int, width: Int) {
-        println("nrows = $nrows")
-        val keypair = elGamalKeyPairFromRandom(group)
-
-        val ballots: List<VectorCiphertext> = List(nrows) {
-            val ciphertexts = List(width) { Random.nextInt(11).encrypt(keypair) }
-            VectorCiphertext(group, ciphertexts)
-        }
-        val es = List(nrows) { group.randomElementModQ() }
-
-        val stopwatch = Stopwatch()
-        val org = prodColumnPow(ballots, VectorQ(group, es), 0)
-        val orgTime = stopwatch.stop()
-
-        stopwatch.start()
-        // prodColumnPowGmp(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertexty {
-        val gmps = prodColumnPow(ballots, VectorQ(group, es))
-        val gmpTime = stopwatch.stop()
-
-        assertEquals(org, gmps)
-        println(" compareTimeProdPowA (org/gmp) = ${Stopwatch.ratioAndPer(orgTime, gmpTime, nrows)}")
-    }
-
 }

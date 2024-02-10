@@ -44,23 +44,29 @@ make[1]: Leaving directory '/home/stormy/install/gmp-6.3.0'
 
 ================================================
 ~/dev/github/egk-mixnet/src/main/c:$ make
-gcc   -fPIC -Wall -Wextra -O2 -g   -MM egk_spowm.c >egk_spowm.d
-gcc   -fPIC -Wall -Wextra -O2 -g     -c -o egk_spowm.o egk_spowm.c
-gcc   -shared    -o libegkspowm.so egk_spowm.o
-
-~/dev/github/egk-mixnet/src/main/c:$ nm -D libegkspowm.so
+gcc   -fPIC -Wall -Wextra -O2 -g   -MM egk_gmp.c >egk_gmp.d
+gcc   -fPIC -Wall -Wextra -O2 -g     -c -o egk_gmp.o egk_gmp.c
+gcc   -shared -o libegkgmp.so egk_gmp.o -L/usr/local/lib -lgmp
+~/dev/github/egk-mixnet/src/main/c:$ sudo cp libegkgmp.so /usr/local/lib
+~/dev/github/egk-mixnet/src/main/c:$ nm -D libegkgmp.so
                  w __cxa_finalize@GLIBC_2.2.5
-00000000000018d0 T egk_spowm
-0000000000001800 T egk_spowm_clear
-00000000000012e0 T egk_spowm_init
-0000000000001410 T egk_spowm_precomp
-0000000000001590 T egk_spowm_table
+0000000000001cc0 T egk_mulMod
+0000000000001e20 T egk_mulModA
+0000000000001f70 T egk_powmA
+0000000000001950 T egk_prodPowA
+0000000000001880 T egk_spowm_clear
+0000000000001360 T egk_spowm_init
+0000000000001490 T egk_spowm_precomp
+0000000000001610 T egk_spowm_table
                  U free@GLIBC_2.2.5
                  w __gmon_start__
                  U __gmpz_clear
+                 U __gmpz_export
+                 U __gmpz_import
                  U __gmpz_init
                  U __gmpz_mod
                  U __gmpz_mul
+                 U __gmpz_powm
                  U __gmpz_set
                  U __gmpz_set_ui
                  U __gmpz_sizeinbase
@@ -68,6 +74,6 @@ gcc   -shared    -o libegkspowm.so egk_spowm.o
                  w _ITM_deregisterTMCloneTable
                  w _ITM_registerTMCloneTable
                  U malloc@GLIBC_2.2.5
+                 U memcpy@GLIBC_2.14
                  U __stack_chk_fail@GLIBC_2.4
 
-sudo cp libegkspowm.so /usr/local/lib
