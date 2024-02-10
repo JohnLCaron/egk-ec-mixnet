@@ -44,6 +44,34 @@ class BigintTest {
     }
 
     @Test
+    fun testParellelMultiply() {
+        timeParellelMultiply(1000)
+        timeParellelMultiply(10000)
+        timeParellelMultiply(20000)
+    }
+
+    // all with java.math.BigInteger: time multiplyMod, square and multiply()
+    fun timeParellelMultiply(n:Int) {
+        val modulus = java.math.BigInteger(1, group.constants.largePrime)
+
+        val nonces = List(n) { group.randomElementModQ() }
+        val elemps = nonces.map { group.gPowP(it) }
+        val basesb = elemps.map { it.toBigM() }
+
+        var starting = getSystemTimeInMillis()
+        val prod = basesb.reduce { a, b -> a.parallelMultiply(b).mod(modulus) }
+        var duration = getSystemTimeInMillis() - starting
+        var peracc = duration.toDouble() / n
+        println("parallalMultiplyMod took $duration msec for $n = $peracc msec per multiply")
+
+        starting = getSystemTimeInMillis()
+        basesb.forEach { it.parallelMultiply(it).mod(modulus) }
+        duration = getSystemTimeInMillis() - starting
+        peracc = duration.toDouble() / n
+        println("squareParallelMod took $duration msec for $n = $peracc msec per square")
+    }
+
+    @Test
     // test counting ops for runProdPowB, small in that exponents < 5 bits
     fun testProdPowBSmall() {
         val e0 = 30.toElementModQ(group)

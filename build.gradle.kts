@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     kotlin("jvm") version "1.9.22"
     application
@@ -13,6 +15,7 @@ repositories {
 
 dependencies {
     implementation(files("libs/egklib-jvm-2.0.3-SNAPSHOT.jar"))
+    implementation("net.java.dev.jna:jna:5.14.0")
 
     implementation(libs.bundles.eglib)
     implementation(libs.bundles.xmlutil)
@@ -20,12 +23,47 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
 
+///// LOOK
+tasks {
+    val ENABLE_PREVIEW = "--enable-preview"
+    withType<JavaCompile>() {
+        options.compilerArgs.add(ENABLE_PREVIEW)
+        // Optionally we can show which preview feature we use.
+        options.compilerArgs.add("-Xlint:preview")
+        // options.compilerArgs.add("--enable-native-access=org.openjdk.jextract")
+        // Explicitly setting compiler option --release
+        // is needed when we wouldn't set the
+        // sourceCompatiblity and targetCompatibility
+        // properties of the Java plugin extension.
+        options.release.set(21)
+    }
+    withType<Test>().all {
+        useJUnitPlatform()
+        jvmArgs("--enable-preview")
+        minHeapSize = "512m"
+        maxHeapSize = "4g"
+    }
+    withType<JavaExec>().all {
+        jvmArgs("--enable-preview")
+    }
+    withType<KotlinCompile> {
+        kotlinOptions.jvmTarget = "21"
+    }
+}
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+kotlin {
+    jvmToolchain(21)
+}
 tasks.test {
     useJUnitPlatform()
 }
-kotlin {
-    jvmToolchain(17)
-}
+
+/*
 tasks.register("fatJar", Jar::class.java) {
     archiveClassifier.set("all")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -41,3 +79,5 @@ tasks.register("fatJar", Jar::class.java) {
     sourcesMain.allSource.forEach { println("add from sources: ${it.name}") }
     from(sourcesMain.output)
 }
+
+ */

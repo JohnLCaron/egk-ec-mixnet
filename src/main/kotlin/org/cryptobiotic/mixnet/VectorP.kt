@@ -56,18 +56,18 @@ fun Prod(vp: VectorP): ElementModP {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-fun prodPowP(generators: VectorP, exps: VectorQ, nthreads: Int = 10): ElementModP {
-    return if (nthreads == 0) Prod(generators powP exps)           // CE n exp, 1 acc
-           else PProdPowP(generators, exps, nthreads).calc()
+fun prodPowP(bases: VectorP, exps: VectorQ, nthreads: Int = 10): ElementModP {
+    return if (nthreads == 0) Prod(bases powP exps)           // CE n exp, 1 acc
+           else PProdPowP(bases, exps, nthreads).calc()
 }
 
-class PProdPowP(val vp: VectorP, val exp: VectorQ, val nthreads: Int = 10) {
-    var result = exp.group.ONE_MOD_P
+class PProdPowP(val bases: VectorP, val exps: VectorQ, val nthreads: Int = 10) {
+    var result = exps.group.ONE_MOD_P
 
     fun calc(): ElementModP {
         runBlocking {
             val jobs = mutableListOf<Job>()
-            val pairProducer = producer(vp, exp)
+            val pairProducer = producer(bases, exps)
             repeat(nthreads) {
                 jobs.add( launchCalculator(pairProducer) { (p, q) -> p powP q } )
             }
