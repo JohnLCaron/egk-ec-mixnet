@@ -21,7 +21,28 @@ class VmnModPowTabTest {
             bitLength *= 2
         }
     }
+    // optimalWidth (nexps at a time) for 8 = 3
+    //optimalWidth (nexps at a time) for 16 = 4
+    //optimalWidth (nexps at a time) for 32 = 5
+    //optimalWidth (nexps at a time) for 64 = 5
+    //optimalWidth (nexps at a time) for 128 = 6
+    //optimalWidth (nexps at a time) for 256 = 7
+    //optimalWidth (nexps at a time) for 512 = 8
+    //optimalWidth (nexps at a time) for 1024 = 9
+    //optimalWidth (nexps at a time) for 2048 = 9
+    //optimalWidth (nexps at a time) for 4096 = 10
+    //optimalWidth (nexps at a time) for 8192 = 11
+    //optimalWidth (nexps at a time) for 16384 = 12
 
+    @Test
+    fun testCountMultiplies() {
+        val t = 256 // exp size
+        for (w in 1 .. 15) {
+            // (2^w + 2t)/w
+            var count = ((1 shl w) + 2 * t) / w
+            println("w = $w count = $count")
+        }
+    }
     // w = 1 count = 514
     //w = 2 count = 258
     //w = 3 count = 173
@@ -37,15 +58,6 @@ class VmnModPowTabTest {
     //w = 13 count = 669
     //w = 14 count = 1206
     //w = 15 count = 2218
-    @Test
-    fun testCountMultiplies() {
-        val t= 256
-        for (w in 1 .. 15) {
-            // (2^w + 2t)/w
-            var count = ((1 shl w) + 2 * t) / w
-            println("w = $w count = $count")
-        }
-    }
 
     @Test
     fun testTableCreation() {
