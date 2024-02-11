@@ -39,6 +39,7 @@ final class RuntimeHelper {
             (size, align) -> Arena.ofAuto().allocate(size, align);
 
     static {
+        System.load("/usr/local/lib/libgmp.so");
         System.load("/usr/local/lib/libegkgmp.so");
         SymbolLookup loaderLookup = SymbolLookup.loaderLookup();
         SYMBOL_LOOKUP = name -> loaderLookup.find(name).or(() -> LINKER.defaultLookup().find(name));

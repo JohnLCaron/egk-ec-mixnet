@@ -35,29 +35,29 @@ private const val debug = false
 
 
 // compute Prod (col_i ^ exp_i) for i = 0..nrows
-fun prodColumnPowGmp(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
+fun prodColumnPowGmpA(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
     val nrows = rows.size
     require(exps.nelems == nrows)
     val width = rows[0].nelems
     val result = List(width) { col -> // can parellelize
         val column = List(nrows) { row -> rows[row].elems[col] }
-        val pad = prodColumnPowGmp( column.map { it.pad }, exps)
-        val data = prodColumnPowGmp( column.map { it.data }, exps)
+        val pad = prodColumnPowGmpA( column.map { it.pad }, exps)
+        val data = prodColumnPowGmpA( column.map { it.data }, exps)
         ElGamalCiphertext(pad, data)
     }
     return VectorCiphertext(exps.group, result)
 }
 
 // compute Prod (col_i ^ exp_i) for one column
-private fun prodColumnPowGmp(col: List<ElementModP>, exps: VectorQ): ElementModP {
+private fun prodColumnPowGmpA(col: List<ElementModP>, exps: VectorQ): ElementModP {
     val qbs = exps.elems.map { it.byteArray() }
     val pbs = col.map { it.byteArray() }
     val modulusBytes = exps.group.constants.largePrime
-    val resultBytes =  egkProdPow(pbs, qbs, modulusBytes)
+    val resultBytes =  egkProdPowA(pbs, qbs, modulusBytes)
     return exps.group.binaryToElementModPsafe(resultBytes)
 }
 
-private fun egkProdPow(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes: ByteArray): ByteArray {
+private fun egkProdPowA(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes: ByteArray): ByteArray {
     require( pbs.size == qbs.size)
     Arena.ofConfined().use { arena ->
         pbs.forEach { require(it.size == modulusBytes.size) }
@@ -99,7 +99,7 @@ private fun egkProdPow(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes:
         val resultBytes = arena.allocate(pbytesL)
 
         // void egk_prodPowA(void *result, const void **pb, const void **qb, const int len, const void *modulusBytes, size_t pbytes, size_t qbytes);
-        EgkGmpIF.egk_prodPow(resultBytes, pbaa, qbaa, pbs.size, msModulus, pbytesL, qbytes)
+        EgkGmpIF.egk_prodPowA(resultBytes, pbaa, qbaa, pbs.size, msModulus, pbytesL, qbytes)
         if (debug) println("egk_prodPowA")
 
         // copies it back to on heap
