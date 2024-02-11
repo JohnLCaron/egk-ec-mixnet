@@ -15,15 +15,15 @@ class ProdColumnPowGmpTest {
     val group = productionGroup()
 
     @Test
-    fun testProdPowA() {
-        compareTimeProdPowA(3, 1)
-        compareTimeProdPowA(10, 10)
-        compareTimeProdPowA(100, 100)
-        compareTimeProdPowA(100, 34)
-        compareTimeProdPowA(1000, 34)
+    fun testProdPowW() {
+        compareTimeProdPowW(3, 1)
+        compareTimeProdPowW(10, 10)
+        compareTimeProdPowW(100, 100)
+        compareTimeProdPowW(100, 34)
+        compareTimeProdPowW(1000, 34)
     }
 
-    fun compareTimeProdPowA(nrows: Int, width: Int) {
+    fun compareTimeProdPowW(nrows: Int, width: Int) {
         println("nrows = $nrows width=$width")
         val keypair = elGamalKeyPairFromRandom(group)
 
@@ -39,7 +39,7 @@ class ProdColumnPowGmpTest {
 
         stopwatch.start()
         // prodColumnPowGmp(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertexty {
-        val gmps = prodColumnPowGmpA(ballots, VectorQ(group, es))
+        val gmps = prodColumnPowGmpW(ballots, VectorQ(group, es))
         val gmpTime = stopwatch.stop()
 
         assertEquals(org, gmps)

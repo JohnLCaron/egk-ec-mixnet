@@ -33,31 +33,34 @@ cd ~/install/jextract-21/bin
 
 private const val debug = false
 
-
-// compute Prod (col_i ^ exp_i) for i = 0..nrows
-fun prodColumnPowGmpA(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
+/**
+ * Compute Prod (col_i ^ exp_i) for i = 0..nrows.
+ * Interface to egk_prodPowW.c
+ * Douglas Wikstrom version of prodPow, running about 50% faster, but uses more memory.
+ */
+fun prodColumnPowGmpW(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
     val nrows = rows.size
     require(exps.nelems == nrows)
     val width = rows[0].nelems
     val result = List(width) { col -> // can parellelize
         val column = List(nrows) { row -> rows[row].elems[col] }
-        val pad = prodColumnPowGmpA( column.map { it.pad }, exps)
-        val data = prodColumnPowGmpA( column.map { it.data }, exps)
+        val pad = prodColumnPowGmpW( column.map { it.pad }, exps)
+        val data = prodColumnPowGmpW( column.map { it.data }, exps)
         ElGamalCiphertext(pad, data)
     }
     return VectorCiphertext(exps.group, result)
 }
 
 // compute Prod (col_i ^ exp_i) for one column
-private fun prodColumnPowGmpA(col: List<ElementModP>, exps: VectorQ): ElementModP {
+private fun prodColumnPowGmpW(col: List<ElementModP>, exps: VectorQ): ElementModP {
     val qbs = exps.elems.map { it.byteArray() }
     val pbs = col.map { it.byteArray() }
     val modulusBytes = exps.group.constants.largePrime
-    val resultBytes =  egkProdPowA(pbs, qbs, modulusBytes)
+    val resultBytes =  egkProdPowW(pbs, qbs, modulusBytes)
     return exps.group.binaryToElementModPsafe(resultBytes)
 }
 
-private fun egkProdPowA(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes: ByteArray): ByteArray {
+private fun egkProdPowW(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes: ByteArray): ByteArray {
     require( pbs.size == qbs.size)
     Arena.ofConfined().use { arena ->
         pbs.forEach { require(it.size == modulusBytes.size) }
@@ -68,7 +71,7 @@ private fun egkProdPowA(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes
         val pbaa : MemorySegment = arena.allocateArray(ADDRESS, pbs.size.toLong())
         pbs.forEachIndexed { idx, pb ->
             require( pb.size == pbytes)
-            //println(" pbs first byte = ${pb[0]}")
+            if (debug) println(" pbs first byte = ${pb[0]}")
             val heapSegment = MemorySegment.ofArray(pb) // turn it into a MemorySegment, on the heap
             val offheap = arena.allocate(pbytesL)
             // copy to the offheap segment
@@ -81,7 +84,7 @@ private fun egkProdPowA(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes
         val qbytes = 32.toLong()
         val qbaa : MemorySegment = arena.allocateArray(ADDRESS, qbs.size.toLong())
         qbs.forEachIndexed { idx, qb ->
-            //println(" qbs first byte = ${qb[0]}")
+            if (debug) println(" qbs first byte = ${qb[0]}")
             require( qb.size == 32)
             val heapSegment = MemorySegment.ofArray(qb) // turn it into a MemorySegment, on the heap
             val offheap = arena.allocate(qbytes)
@@ -98,9 +101,9 @@ private fun egkProdPowA(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes
         // the result is just len * pbytes
         val resultBytes = arena.allocate(pbytesL)
 
-        // void egk_prodPowA(void *result, const void **pb, const void **qb, const int len, const void *modulusBytes, size_t pbytes, size_t qbytes);
-        EgkGmpIF.egk_prodPowA(resultBytes, pbaa, qbaa, pbs.size, msModulus, pbytesL, qbytes)
-        if (debug) println("egk_prodPowA")
+        // void egk_prodPowW(void *result, const void **pb, const void **qb, const int len, const void *modulusBytes, size_t pbytes, size_t qbytes);
+        EgkGmpIF.egk_prodPowW(resultBytes, pbaa, qbaa, pbs.size, msModulus, pbytesL, qbytes)
+        if (debug) println("egk_prodPowW")
 
         // copies it back to on heap
         val raw : ByteArray = resultBytes.toArray(JAVA_BYTE)

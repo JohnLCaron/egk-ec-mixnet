@@ -8,7 +8,7 @@ import java.math.BigInteger
 import kotlin.random.Random
 import kotlin.test.assertEquals
 
-class CoverGmpTest {
+class EgkGmpTest {
     val group = productionGroup()
 
     @Test

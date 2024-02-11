@@ -1,12 +1,7 @@
 package org.cryptobiotic.gmp
 
-import electionguard.core.*
-import org.cryptobiotic.gmp.EgkGmpIF
-import org.cryptobiotic.gmp.__mpz_struct
 import java.lang.foreign.*
 import java.lang.foreign.ValueLayout.*
-import java.math.BigInteger
-import java.util.stream.Stream
 
 // These are covers of GMP methods for testing. Old way using mpz_t.
 

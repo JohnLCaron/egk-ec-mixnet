@@ -1,8 +1,9 @@
-package org.cryptobiotic.exp
+package org.cryptobiotic.bigint
 
 import electionguard.core.*
 import electionguard.util.Stopwatch
-import org.cryptobiotic.bigint.BigInteger
+import org.cryptobiotic.exp.toBig
+import org.cryptobiotic.exp.toBigM
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -180,4 +181,5 @@ fun showCountResultsPerRow(where: String, nrows: Int): String {
         }
     }
 }
+
 

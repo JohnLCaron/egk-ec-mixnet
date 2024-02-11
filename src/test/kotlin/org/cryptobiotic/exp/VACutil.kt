@@ -336,16 +336,18 @@ fun List<Int>.toCV(): Int {
     return this.toVector().toCV()
 }
 
-fun BigInteger.toByteArray(width: Int): ByteArray {
+///////////////////////////////////////////////////////
+
+fun org.cryptobiotic.bigint.BigInteger.toByteArray(width: Int): ByteArray {
     return this.toByteArray().normalize(width)
 }
 
-fun ElementModP.toBig(): BigInteger {
-    return BigInteger(1, this.byteArray().normalize(512))
+fun ElementModP.toBig(): org.cryptobiotic.bigint.BigInteger {
+    return org.cryptobiotic.bigint.BigInteger(1, this.byteArray().normalize(512))
 }
 
-fun ElementModQ.toBig(): BigInteger {
-    return BigInteger(1, this.byteArray().normalize(32))
+fun ElementModQ.toBig(): org.cryptobiotic.bigint.BigInteger {
+    return org.cryptobiotic.bigint.BigInteger(1, this.byteArray().normalize(32))
 }
 
 fun ElementModP.toBigM(): java.math.BigInteger {
@@ -356,10 +358,10 @@ fun ElementModQ.toBigM(): java.math.BigInteger {
     return java.math.BigInteger(1, this.byteArray().normalize(512))
 }
 
-fun BigInteger.toBigM(): java.math.BigInteger {
+fun org.cryptobiotic.bigint.BigInteger.toBigM(): java.math.BigInteger {
     return java.math.BigInteger(1, this.toByteArray())
 }
 
-fun java.math.BigInteger.toBig(): BigInteger {
-    return BigInteger(1, this.toByteArray())
+fun java.math.BigInteger.toBig(): org.cryptobiotic.bigint.BigInteger {
+    return org.cryptobiotic.bigint.BigInteger(1, this.toByteArray())
 }
