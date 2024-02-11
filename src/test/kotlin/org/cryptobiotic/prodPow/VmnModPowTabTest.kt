@@ -1,4 +1,4 @@
-package org.cryptobiotic.exp
+package org.cryptobiotic.prodPow
 
 import electionguard.core.productionGroup
 import electionguard.core.randomElementModQ
@@ -6,6 +6,9 @@ import electionguard.util.Stopwatch
 import electionguard.util.sigfig
 import org.junit.jupiter.api.Test
 import org.cryptobiotic.bigint.BigInteger
+import org.cryptobiotic.bigint.showCountResultsPerRow
+import org.cryptobiotic.exp.toBig
+import org.cryptobiotic.exp.toBigM
 import kotlin.test.assertEquals
 
 class VmnModPowTabTest {
@@ -129,13 +132,15 @@ class VmnModPowTabTest {
     @Test
     fun testCountModPowProd7B() {
         countModPowProd7B(7)
-        countModPowProd7B(1000)
+        countModPowProd7B(700)
         println()
     }
 
     // count ops for modPowProd7B
     // get time for modPowProd7 (using java.math.BigInteger)
     fun countModPowProd7B(nexps: Int) {
+        println("operation count of modPowProd7 (new) vs current group.modPow (old) with nrows = $nexps")
+
         val exps = List(nexps) { group.randomElementModQ() }
         val bases = List(nexps) { group.gPowP(group.randomElementModQ()) }
 
@@ -173,11 +178,11 @@ class VmnModPowTabTest {
 
     // compare times of modPowProd7 vs current modPow (oldWay), both using java.math.BigInteger
     fun timeModPowProd7(nrows: Int) {
-        println("compare times of modPowProd7 (new)  vs current modPow (old) with nrows = $nrows")
+        println("compare times of modPowProd7 (new) vs current group.modPow (old) with nrows = $nrows")
         val bases = List(nrows) { group.gPowP(group.randomElementModQ()) }
         val exps = List(nrows) { group.randomElementModQ() }
 
-        // current modPow (oldWay)
+        // current modPow using java.math.BigInteger (oldWay)
         val stopwatch = Stopwatch()
         val org = bases.mapIndexed { idx, it -> it powP exps[idx] }.reduce { a, b -> (a * b) }
         val oldWay = org.toBigM()

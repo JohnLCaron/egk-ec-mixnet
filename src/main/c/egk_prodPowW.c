@@ -216,6 +216,8 @@ egk_batch_compute(mpz_t rop, egk_spowm_tab table, mpz_t *exponents) {
     }
 }
 
+// TODO maybe put batch limits back in, to limit the memory use. Or count on calling routine to do so.
+
 void
 egk_prodPowW(void *result, const char **pb, const char **qb, const int nrows, const void *modulusBytes, size_t pbytes, size_t qbytes) {
     mpz_t modulus, rop;

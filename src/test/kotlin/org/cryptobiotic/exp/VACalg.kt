@@ -151,8 +151,8 @@ class VAChain(val k: Int, val show: Boolean = false) {
 
 private const val SpecialOneFactor = Integer.MIN_VALUE
 
-class VACalg(val group: GroupContext, exps: List<BigInteger>, val show: Boolean = false) {
-    val modulus = BigInteger(1, group.constants.largePrime)
+class VACalg(val group: GroupContext, exps: List<org.cryptobiotic.bigint.BigInteger>, val show: Boolean = false) {
+    val modulus = org.cryptobiotic.bigint.BigInteger(1, group.constants.largePrime)
 
     // there are k exponents which are integers of bitlength t = actualBitLength
     val k = exps.size
@@ -217,9 +217,9 @@ class VACalg(val group: GroupContext, exps: List<BigInteger>, val show: Boolean 
         println( "  k = ${exps.size}, width= $width, chain size = ${vaChain.chain.size}")
     }
 
-    fun prodPowP(bases: List<BigInteger>): BigInteger {
+    fun prodPowP(bases: List<org.cryptobiotic.bigint.BigInteger>): org.cryptobiotic.bigint.BigInteger {
         var countMultiply = 0
-        val a = mutableListOf<BigInteger>()
+        val a = mutableListOf<org.cryptobiotic.bigint.BigInteger>()
 
         vaChain.chain.forEach { elem ->
             val (i1, i2) = elem.w

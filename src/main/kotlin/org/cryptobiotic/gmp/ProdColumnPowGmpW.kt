@@ -33,8 +33,11 @@ cd ~/install/jextract-21/bin
 
 private const val debug = false
 
-
-// compute Prod (col_i ^ exp_i) for i = 0..nrows
+/**
+ * Compute Prod (col_i ^ exp_i) for i = 0..nrows.
+ * Interface to egk_prodPowW.c
+ * Douglas Wikstrom version of prodPow, running about 50% faster, but uses more memory.
+ */
 fun prodColumnPowGmpW(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
     val nrows = rows.size
     require(exps.nelems == nrows)
@@ -68,7 +71,7 @@ private fun egkProdPowW(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes
         val pbaa : MemorySegment = arena.allocateArray(ADDRESS, pbs.size.toLong())
         pbs.forEachIndexed { idx, pb ->
             require( pb.size == pbytes)
-            //println(" pbs first byte = ${pb[0]}")
+            if (debug) println(" pbs first byte = ${pb[0]}")
             val heapSegment = MemorySegment.ofArray(pb) // turn it into a MemorySegment, on the heap
             val offheap = arena.allocate(pbytesL)
             // copy to the offheap segment
@@ -81,7 +84,7 @@ private fun egkProdPowW(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes
         val qbytes = 32.toLong()
         val qbaa : MemorySegment = arena.allocateArray(ADDRESS, qbs.size.toLong())
         qbs.forEachIndexed { idx, qb ->
-            //println(" qbs first byte = ${qb[0]}")
+            if (debug) println(" qbs first byte = ${qb[0]}")
             require( qb.size == 32)
             val heapSegment = MemorySegment.ofArray(qb) // turn it into a MemorySegment, on the heap
             val offheap = arena.allocate(qbytes)

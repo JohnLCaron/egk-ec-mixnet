@@ -3,6 +3,8 @@ package org.cryptobiotic.exp
 import electionguard.core.*
 import electionguard.util.sigfig
 import org.cryptobiotic.bigint.BigInteger
+import org.cryptobiotic.bigint.runProdPowB
+import org.cryptobiotic.bigint.showCountResults
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
