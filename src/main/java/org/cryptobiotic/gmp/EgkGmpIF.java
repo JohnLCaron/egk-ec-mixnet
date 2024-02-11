@@ -97,8 +97,24 @@ public class EgkGmpIF  {
             throw new AssertionError("should not reach here", ex$);
         }
     }
+    public static MethodHandle egk_prodPow$MH() {
+        return RuntimeHelper.requireNonNull(constants$2.const$0,"egk_prodPow");
+    }
+    /**
+     * {@snippet :
+     * void egk_prodPow(void* result, void** pb, void** qb, int nrows, void* modulusBytes, size_t pbytes, size_t qbytes);
+     * }
+     */
+    public static void egk_prodPow(MemorySegment result, MemorySegment pb, MemorySegment qb, int nrows, MemorySegment modulusBytes, long pbytes, long qbytes) {
+        var mh$ = egk_prodPow$MH();
+        try {
+            mh$.invokeExact(result, pb, qb, nrows, modulusBytes, pbytes, qbytes);
+        } catch (Throwable ex$) {
+            throw new AssertionError("should not reach here", ex$);
+        }
+    }
     public static MethodHandle egk_mulMod$MH() {
-        return RuntimeHelper.requireNonNull(constants$2.const$1,"egk_mulMod");
+        return RuntimeHelper.requireNonNull(constants$2.const$2,"egk_mulMod");
     }
     /**
      * {@snippet :
@@ -114,7 +130,7 @@ public class EgkGmpIF  {
         }
     }
     public static MethodHandle egk_mulModA$MH() {
-        return RuntimeHelper.requireNonNull(constants$2.const$3,"egk_mulModA");
+        return RuntimeHelper.requireNonNull(constants$2.const$4,"egk_mulModA");
     }
     /**
      * {@snippet :
@@ -130,7 +146,7 @@ public class EgkGmpIF  {
         }
     }
     public static MethodHandle egk_powmA$MH() {
-        return RuntimeHelper.requireNonNull(constants$2.const$4,"egk_powmA");
+        return RuntimeHelper.requireNonNull(constants$2.const$5,"egk_powmA");
     }
     /**
      * {@snippet :

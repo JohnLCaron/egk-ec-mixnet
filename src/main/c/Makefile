@@ -4,7 +4,7 @@ LDFLAGS = -L/usr/local/lib -lgmp  # linking flags
 RM = rm -f   # rm command
 TARGET_LIB = libegkgmp.so  # target lib
 
-SRCS = egk_gmp.c  # source files
+SRCS = egk_gmp.c egk_prodPow.c # source files
 OBJS = $(SRCS:.c=.o)
 
 .PHONY: all

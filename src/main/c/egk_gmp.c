@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <mcheck.h>
 #include <gmp.h>
 
 /**
@@ -160,6 +161,7 @@ egk_spowm_table(mpz_t rop, egk_spowm_tab table, mpz_t *exponents) {
 
   /* Execute simultaneous square-and-multiply. */
   for (index = max_exponent_bitlen - 1; index >= 0; index--) {
+      // When processing the batch, all squarings are done for the complete batch
       /* Square ... */
       mpz_mul(rop, rop, rop);
       mpz_mod(rop, rop, table->modulus);
@@ -215,13 +217,14 @@ egk_spowm_clear(egk_spowm_tab table) {
 }
 
 void
-egk_prodPowA(void *result, const void **pb, const void **qb, const int len, const void *modulusBytes, size_t pbytes, size_t qbytes) {
+egk_prodPowA(void *result, const char **pb, const char **qb, const int len, const void *modulusBytes, size_t pbytes, size_t qbytes) {
     mpz_t modulus, rop;
     mpz_t tmp;
-    mpz_t *bases;
-    mpz_t *exponents;
+    mpz_t *bases, *basep;
+    mpz_t *exponents, *expp;
+    void * resultBytes;
     size_t count;
-    int i;
+    int i, offset;
 
     size_t batch_len = len; // HEY only one batch ?? wtf ??
     size_t block_width = 7;
@@ -229,53 +232,67 @@ egk_prodPowA(void *result, const void **pb, const void **qb, const int len, cons
     egk_spowm_tab table;
 
     mpz_init(modulus);
-    __gmpz_import(modulus, pbytes, 1, 1, 1, 0, modulusBytes);
+    mpz_import(modulus, pbytes, 1, 1, 1, 0, modulusBytes);
 
     exponents = malloc(len * sizeof(mpz_t)); // LOOK at other example above
     for (i=0; i<len; i++) {
-        __gmpz_import(exponents[i], qbytes, 1, 1, 1, 0, *qb);
+        mpz_init(exponents[i]);
+        mpz_import(exponents[i], qbytes, 1, 1, 1, 0, *qb);
+        //printf(" qb first byte = %d\n", *qb[0]);
         qb++;
     }
 
     bases = malloc(len * sizeof(mpz_t)); // can probably get this down to 7
     for (i=0; i<len; i++) {
-        __gmpz_import(bases[i], pbytes, 1, 1, 1, 0, *pb);
+        mpz_init(bases[i]);
+        mpz_import(bases[i], pbytes, 1, 1, 1, 0, *pb);
+        //printf(" pb first byte = %d\n", *pb[0]);
         pb++;
     }
 
     // initialize table, it is reused for each batch ??
     egk_spowm_init(table, batch_len, modulus, block_width);
+    //printf("egk_spowm_init\n");
 
     mpz_init(tmp);
     mpz_init(rop);
     mpz_set_ui(rop, 1);
 
+    expp = exponents;
+    basep = bases;
     for (i = 0; i < len; i += batch_len) { /// hmmm, batch_len == len wtf?
       /* Perform computation for batch */
-      egk_spowm_precomp(table, bases);
+      egk_spowm_precomp(table, basep);
 
       /* Compute batch. */
-      egk_spowm_table(tmp, table, exponents);
+      egk_spowm_table(tmp, table, expp);
 
       /* Multiply with result so far. */
       mpz_mul(rop, rop, tmp);
       mpz_mod(rop, rop, modulus);
 
       /* Move on to next batch. */
-      bases += batch_len;
-      exponents += batch_len;
+      basep += batch_len;
+      expp += batch_len;
     }
 
-    // void * mpz_export (void *data, size_t *countp, int order, size_t size, int endian, size_t nail, mpz_srcptr z)
-    __gmpz_export(result, &count, 1, 1, 1, 0, rop);
+    // theres no guarentee rop is 512 bytes long. need a normalizer.
+    resultBytes = malloc(pbytes);
+    __gmpz_export(resultBytes, &count, 1, 1, 1, 0, rop);
+    offset = 512 - count;
+    if (offset >= 0) {
+        memcpy(result+offset, resultBytes, count);
+    } else {
+        printf("__gmpz_export bytes > 512 \n");
+    }
 
-   /* Deallocate resources. */
-    mpz_clear(tmp);
+    // Deallocate resources.
+    mpz_clear(modulus);
+
     egk_spowm_clear(table);
 
     mpz_clear(rop);
     mpz_clear(tmp);
-    mpz_clear(modulus);
 
     for (i=0; i<len; i++) {
       mpz_clear(exponents[i]);
@@ -283,6 +300,8 @@ egk_prodPowA(void *result, const void **pb, const void **qb, const int len, cons
     }
     free(exponents);
     free(bases);
+    free(resultBytes);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -295,13 +314,13 @@ egk_mulMod(void *result, const void *pb1, const void *pb2, const void *modulusBy
 
     // void mpz_import (mpz_ptr z, size_t count, int order, size_t size, int endian, size_t nail, const void *data)
     mpz_init(modulus);
-    __gmpz_import(modulus, nbytes, 1, 1, 1, 0, modulusBytes);
+    mpz_import(modulus, nbytes, 1, 1, 1, 0, modulusBytes);
 
     mpz_init(p1);
-    __gmpz_import(p1, nbytes, 1, 1, 1, 0, pb1);
+    mpz_import(p1, nbytes, 1, 1, 1, 0, pb1);
 
     mpz_init(p2);
-    __gmpz_import(p2, nbytes, 1, 1, 1, 0, pb2);
+    mpz_import(p2, nbytes, 1, 1, 1, 0, pb2);
 
     mpz_init(product);
     mpz_mul(product, p1, p2);
@@ -327,14 +346,14 @@ egk_mulModA(void *result, const void **pb, const int len, const void *modulusByt
 
     // void mpz_import (mpz_ptr z, size_t count, int order, size_t size, int endian, size_t nail, const void *data)
     mpz_init(modulus);
-    __gmpz_import(modulus, nbytes, 1, 1, 1, 0, modulusBytes);
+    mpz_import(modulus, nbytes, 1, 1, 1, 0, modulusBytes);
 
     mpz_init(tmp);
     mpz_init(product);
     mpz_set_ui(product, 1);
 
     for (i=0; i<len; i++) {
-        __gmpz_import(tmp, nbytes, 1, 1, 1, 0, *pb);
+        mpz_import(tmp, nbytes, 1, 1, 1, 0, *pb);
         mpz_mul(product, product, tmp);
         mpz_mod(product, product, modulus);
         pb++;
@@ -349,7 +368,7 @@ egk_mulModA(void *result, const void **pb, const int len, const void *modulusByt
     mpz_clear(modulus);
 }
 
-// pb^pa modulo, componentwise
+// pb^pa modulo, component-wise
 void
 egk_powmA(void *result, const void **pb, const void **qb, const int len, const void *modulusBytes, size_t pbytes, size_t qbytes) {
     mpz_t mzp_modulus, mzp_base, mzp_exp, mzp_rop;
@@ -359,7 +378,7 @@ egk_powmA(void *result, const void **pb, const void **qb, const int len, const v
     int offset;
 
     mpz_init(mzp_modulus);
-    __gmpz_import(mzp_modulus, pbytes, 1, 1, 1, 0, modulusBytes);
+    mpz_import(mzp_modulus, pbytes, 1, 1, 1, 0, modulusBytes);
 
     mpz_init(mzp_base);
     mpz_init(mzp_exp);
@@ -367,8 +386,8 @@ egk_powmA(void *result, const void **pb, const void **qb, const int len, const v
     resultBytes = malloc(pbytes);
 
     for (i=0; i<len; i++) {
-        __gmpz_import(mzp_base, pbytes, 1, 1, 1, 0, *pb);
-        __gmpz_import(mzp_exp, qbytes, 1, 1, 1, 0, *qb);
+        mpz_import(mzp_base, pbytes, 1, 1, 1, 0, *pb);
+        mpz_import(mzp_exp, qbytes, 1, 1, 1, 0, *qb);
 
         // mpz_powm (mpz_ptr r, mpz_srcptr b, mpz_srcptr e, mpz_srcptr m)
         mpz_powm(mzp_rop, mzp_base, mzp_exp, mzp_modulus);

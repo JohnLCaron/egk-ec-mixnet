@@ -119,4 +119,16 @@ class CoverGmpTest {
         }
         println(" compareTimePowmA (org/gmp) = ${Stopwatch.ratioAndPer(orgTime, gmpTime, nrows)}")
     }
+
+    // nrows = 3
+    // compareTimeProdPowA (org/gmp) = 77 / 85 ms =  .908;  25 / 28.4 ms per row
+    //nrows = 10
+    // compareTimeProdPowA (org/gmp) = 480 / 121 ms =  3.95;  48 / 12.1 ms per row
+    //nrows = 100
+    // compareTimeProdPowA (org/gmp) = 48147 / 5587 ms =  8.61;  481 / 55.8 ms per row
+    //nrows = 1000
+    // compareTimeProdPowA (org/gmp) = 167279 / 21490 ms =  7.78;  167 / 21.4 ms per row
+    //nrows = 1
+    // compareTimeProdPowA (org/gmp) = 209 / 23 ms =  8.72;  209 / 23.9 ms per row
+
 }
