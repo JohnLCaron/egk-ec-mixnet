@@ -2,6 +2,7 @@ package org.cryptobiotic.mixnet
 
 import electionguard.core.*
 import org.junit.jupiter.api.Test
+import org.cryptobiotic.maths.*
 
 class PermutationCommittmentTest {
     val group = productionGroup()

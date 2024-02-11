@@ -1,8 +1,8 @@
 package org.cryptobiotic.gmp
 
 import electionguard.core.*
-import org.cryptobiotic.mixnet.VectorCiphertext
-import org.cryptobiotic.mixnet.VectorQ
+import org.cryptobiotic.maths.VectorCiphertext
+import org.cryptobiotic.maths.VectorQ
 import java.lang.foreign.*
 import java.lang.foreign.ValueLayout.*
 

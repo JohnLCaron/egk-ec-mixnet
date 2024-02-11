@@ -5,6 +5,7 @@ import electionguard.util.sigfig
 import org.junit.jupiter.api.Assertions.assertEquals
 import kotlin.random.Random
 import kotlin.test.Test
+import org.cryptobiotic.maths.*
 
 class VectorPTest {
     val group = productionGroup()

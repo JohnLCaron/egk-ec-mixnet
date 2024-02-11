@@ -2,12 +2,8 @@ package org.cryptobiotic.gmp
 
 import electionguard.core.*
 import electionguard.util.Stopwatch
-import org.cryptobiotic.mixnet.prodColumnPow
-import org.cryptobiotic.mixnet.VectorCiphertext
-import org.cryptobiotic.mixnet.VectorQ
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.cryptobiotic.maths.*
 import kotlin.test.Test
-import java.math.BigInteger
 import kotlin.random.Random
 import kotlin.test.assertEquals
 

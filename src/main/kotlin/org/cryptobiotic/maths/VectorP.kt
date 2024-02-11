@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet
+package org.cryptobiotic.maths
 
 import electionguard.core.*
 import kotlinx.coroutines.*
@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.cryptobiotic.mixnet.Permutation
 
 data class VectorP(val group: GroupContext, val elems: List<ElementModP> ) {
     val nelems = elems.size

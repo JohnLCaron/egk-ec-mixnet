@@ -1,6 +1,7 @@
-package org.cryptobiotic.mixnet
+package org.cryptobiotic.maths
 
 import electionguard.core.*
+import org.cryptobiotic.mixnet.Permutation
 
 data class MatrixQ(val elems: List<VectorQ> ) {
     val nrows = elems.size

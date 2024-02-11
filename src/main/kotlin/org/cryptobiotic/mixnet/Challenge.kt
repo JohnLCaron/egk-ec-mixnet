@@ -2,6 +2,7 @@ package org.cryptobiotic.mixnet
 
 import electionguard.ballot.parameterBaseHash
 import electionguard.core.*
+import org.cryptobiotic.maths.*
 
 fun getBatchingVectorAndChallenge(
     group: GroupContext,

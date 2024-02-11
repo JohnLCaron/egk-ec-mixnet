@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet
+package org.cryptobiotic.maths
 
 import electionguard.core.ElGamalCiphertext
 import electionguard.core.GroupContext
@@ -7,23 +7,35 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.math.max
 
+fun showCores() {
+    val cores = Runtime.getRuntime().availableProcessors()
+    val useCores = max(cores * 3 / 4, 1)
+    println("cores = $cores useCores = $useCores")
+}
 /**
  * Componentwise product of the ballot's column vectors ^ exps.
  *  rows (aka ballots): nrows x width ElGamalCiphertexts
  *  exps: nrows ElementModQ
  *  for each column, calculate Prod (col ^ exps) modulo, return VectorCiphertext(width).
 */
-fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ, nthreads: Int = 10): VectorCiphertext {
-    return if (nthreads == 0) {
-        prodColumnPowSingleThread(rows, exps)
+fun prodColumnPowTab(rows: List<VectorCiphertext>, exps: VectorQ, nthreads: Int = -1): VectorCiphertext {
+    return if (nthreads < 0) {
+        val cores = Runtime.getRuntime().availableProcessors()
+        val useCores = max(cores * 3 / 4, 1)
+        PprodColumnPowTab(rows, exps, useCores).calc()
+
+    } else if (nthreads == 0) {
+        prodColumnPowTabSingleThread(rows, exps)
+
     } else {
-        PprodColumnPow(rows, exps, nthreads).calc()
+        PprodColumnPowTab(rows, exps, nthreads).calc()
     }
 }
 
 // CE 2 * N exp
-fun prodColumnPowSingleThread(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
+fun prodColumnPowTabSingleThread(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
     val nrows = rows.size
     require(exps.nelems == nrows)
     val width = rows[0].nelems
@@ -38,12 +50,12 @@ fun prodColumnPowSingleThread(rows: List<VectorCiphertext>, exps: VectorQ): Vect
 //////////////////////////////////////////////////////////////////////////
 // parallel calculator of product of columns vectors to a power
 
-fun calcOneCol(columnV: VectorCiphertext, exps: VectorQ): ElGamalCiphertext {
+fun calcOneCol2(columnV: VectorCiphertext, exps: VectorQ): ElGamalCiphertext {
     require(exps.nelems == columnV.nelems)
     return Prod(columnV powP exps) // CE 2 * width exp
 }
 
-class PprodColumnPow(val rows: List<VectorCiphertext>, val exps: VectorQ, val nthreads: Int = 10) {
+class PprodColumnPowTab(val rows: List<VectorCiphertext>, val exps: VectorQ, val nthreads: Int = 10) {
     val group: GroupContext = exps.group
     val results = mutableMapOf<Int, ElGamalCiphertext>()
 
@@ -55,7 +67,7 @@ class PprodColumnPow(val rows: List<VectorCiphertext>, val exps: VectorQ, val nt
             val colProducer = producer(rows)
             repeat(nthreads) {
                 jobs.add(launchCalculator(colProducer) { (columnV, colIdx) ->
-                    Pair(calcOneCol(columnV, exps), colIdx)
+                    Pair(calcOneCol2(columnV, exps), colIdx)
                 })
             }
             // wait for all calculations to be done, then close everything

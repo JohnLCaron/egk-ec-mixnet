@@ -148,13 +148,14 @@ class VmnModPowTabTest {
         val expsM = exps.map { it.toBigM() }
 
         val stopwatch = Stopwatch()
-        val modPowProd7 = modPowProd7(basesM, expsM, modulusM)
+        val modPowProd7 = VmnModPowTab.modPowProd7(basesM, expsM, modulusM)
         val took = stopwatch.stop()
         println("*** modPowProd7 ${Stopwatch.perRow(took, nexps)}")
         val orgb = modPowProd7.toBig()
 
         val basesB = bases.map { it.toBig() }
         val expsB = exps.map { it.toBig() }
+        println(" ${VmnModPowTabB.expectedCount(nexps)}")
         val (productb, timeb) = countModPowProd7B(basesB, expsB, true)
 
         assertEquals(orgb, productb)
@@ -163,7 +164,7 @@ class VmnModPowTabTest {
     fun countModPowProd7B(bases: List<BigInteger>, exps: List<BigInteger>, show: Boolean = false): Pair<BigInteger, Long> {
         val stopwatch = Stopwatch()
         BigInteger.getAndClearOpCounts()
-        val newWay = modPowProd7B(bases, exps, modulus)
+        val newWay = VmnModPowTabB.modPowProd7B(bases, exps, modulus)
         val timeNew = stopwatch.stop()
         if (show) println(showCountResultsPerRow(" newWay (modPowProd7B)", bases.size))
         return Pair(newWay, timeNew)
@@ -193,7 +194,7 @@ class VmnModPowTabTest {
 
         stopwatch.start()
         BigInteger.getAndClearOpCounts()
-        val newWay = modPowProd7(basesM, expsM, modulusM)
+        val newWay = VmnModPowTab.modPowProd7(basesM, expsM, modulusM)
         val timeNew = stopwatch.stop()
 
         println(" timeModPowProd7 (old/new) = ${Stopwatch.ratioAndPer(timeOld, timeNew, nrows)}")
