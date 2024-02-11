@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import org.cryptobiotic.maths.*
 
 class RoundtripJsonTest {
     val filenameProof = "testOut/proofOfShuffle.json"

@@ -7,12 +7,12 @@ import kotlin.math.min
 
 /**
  * Creates a pre-computed table.
+ * Port of VCR's LargeIntegerSimModPowTab.java (not GMP).
  *
  * @param bases Bases used for pre-computation.
  * @param offset Position of first basis element to use.
  * @param width Number of bases elements to use.
  * @param modulus Underlying modulus.
- * from VCR's LargeIntegerSimModPowTab
  */
 class VmnModPowTab(
     bases: List<BigInteger>,
@@ -94,41 +94,41 @@ class VmnModPowTab(
 
             return max(1.0, (width - 1).toDouble()).toInt()
         }
+
+        // modPowProd7 using java.math.BigInteger
+        fun modPowProd7(
+            bases: List<BigInteger>,
+            exponents: List<BigInteger>,
+            modulus: BigInteger
+        ): BigInteger {
+            val bitLength = 256 // exps always 256 bits
+            val maxWidth = 7 // so this is fixed also
+
+            // Enabled pure java code ends here
+            val results = mutableListOf<BigInteger>()
+
+            // LOOK VMN threads here with ArrayWorker, we are threading one level up, on each column vector
+
+            var offset = 0
+            var end = bases.size
+
+            while (offset < end) {
+                val width = min(maxWidth, (end - offset))
+                // println("modPowProd $offset, ${offset + width} ")
+
+                // Compute table for simultaneous exponentiation.
+                // doesnt appear that LargeIntegerFixModPowTab is used
+                val tab = VmnModPowTab(bases, offset, width, modulus)
+
+                // Perform simultaneous exponentiation.
+                val batch: BigInteger = tab.modPowProd(exponents, offset, bitLength)
+
+                results.add(batch)
+
+                offset += width
+            }
+            // multiply results from each batch
+            return results.reduce { a, b -> (a.multiply(b)).mod(modulus) }
+        }
     }
-}
-
-// modPowProd7 using java.math.BigInteger
-fun modPowProd7(
-    bases: List<BigInteger>,
-    exponents: List<BigInteger>,
-    modulus: BigInteger
-): BigInteger {
-    val bitLength = 256 // exps always 256 bits
-    val maxWidth = 7 // so this is fixed also
-
-    // Enabled pure java code ends here
-    val results = mutableListOf<BigInteger>()
-
-    // LOOK VMN threads here with ArrayWorker, we are threading one level up, on each column vector
-
-    var offset = 0
-    var end = bases.size
-
-    while (offset < end) {
-        val width = min(maxWidth, (end - offset))
-        // println("modPowProd $offset, ${offset + width} ")
-
-        // Compute table for simultaneous exponentiation.
-        // doesnt appear that LargeIntegerFixModPowTab is used
-        val tab = VmnModPowTab(bases, offset, width, modulus)
-
-        // Perform simultaneous exponentiation.
-        val batch: BigInteger = tab.modPowProd(exponents, offset, bitLength)
-
-        results.add(batch)
-
-        offset += width
-    }
-    // multiply results from each batch
-    return results.reduce { a, b -> (a.multiply(b)).mod(modulus) }
 }

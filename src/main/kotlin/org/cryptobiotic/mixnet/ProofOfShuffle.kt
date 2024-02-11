@@ -2,6 +2,7 @@ package org.cryptobiotic.mixnet
 
 import electionguard.core.ElementModP
 import electionguard.core.ElementModQ
+import org.cryptobiotic.maths.*
 
 // Non-interactive proof, output from the Prover, input to the Verifier.
 data class ProofOfShuffle(

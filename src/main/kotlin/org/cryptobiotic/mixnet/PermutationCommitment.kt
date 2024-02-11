@@ -1,6 +1,8 @@
 package org.cryptobiotic.mixnet
 
 import electionguard.core.*
+import org.cryptobiotic.maths.*
+
 
 // pcommit = u, part of the ProofOfShuffle
 // PoSBasicTW line 452

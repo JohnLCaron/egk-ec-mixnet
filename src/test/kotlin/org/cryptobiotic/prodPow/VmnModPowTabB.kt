@@ -5,7 +5,7 @@ import java.util.*
 import kotlin.math.min
 
 /**
- * Creates a pre-computed table.
+ * Port of VCR's LargeIntegerSimModPowTab.java (not GMP).
  * Uses instrumented BigInteger to do operation counts.
  * Dont use this for timing, use VmnModPowTab.
  *
@@ -79,49 +79,58 @@ class VmnModPowTabB(
         }
         return res
     }
-}
 
-// modPowProd7 using bigint.BigInteger
-// total count is N/w * (2^w + 2t) + N/w = N * ((2^w + 2t)/w + 1/w)
-// w = 7, t = 256 = N*(128 + 512)/7 = N * 91
-fun modPowProd7B(
-    bases: List<org.cryptobiotic.bigint.BigInteger>,
-    exponents: List<org.cryptobiotic.bigint.BigInteger>,
-    modulus: org.cryptobiotic.bigint.BigInteger
-): org.cryptobiotic.bigint.BigInteger {
-    val bitLength = 256 // exps always 256 bits
-    val maxWidth = 7    // so this is fixed also
+    companion object {
 
-    // Enabled pure java code ends here
-    val results = mutableListOf<org.cryptobiotic.bigint.BigInteger>()
+        // modPowProd7 using bigint.BigInteger
+        fun modPowProd7B(
+            bases: List<org.cryptobiotic.bigint.BigInteger>,
+            exponents: List<org.cryptobiotic.bigint.BigInteger>,
+            modulus: org.cryptobiotic.bigint.BigInteger
+        ): org.cryptobiotic.bigint.BigInteger {
+            val bitLength = 256 // exps always 256 bits
+            val maxWidth = 7    // so this is fixed also
 
-    // LOOK VMN threads here with ArrayWorker, we are threading one level up, on each column vector
+            // Enabled pure java code ends here
+            val results = mutableListOf<org.cryptobiotic.bigint.BigInteger>()
 
-    var offset = 0
-    var end = bases.size
-    var count = 0
-    var countCalls = 0
+            // LOOK VMN threads here with ArrayWorker, we are threading one level up, on each column vector
 
-    // called N/w times (2^w + 2t) modMultiply
-    while (offset < end) {
-        val width = min(maxWidth, (end - offset))
-        // println("modPowProd $offset, ${offset + width} ")
+            var offset = 0
+            var end = bases.size
+            var count = 0
+            var countCalls = 0
 
-        // Compute table for simultaneous exponentiation.
-        val tab = VmnModPowTabB(bases, offset, width, modulus)
+            // called N/w times (2^w + 2t) modMultiply
+            while (offset < end) {
+                val width = min(maxWidth, (end - offset))
+                // println("modPowProd $offset, ${offset + width} ")
 
-        // Perform simultaneous exponentiation.
-        val batch: org.cryptobiotic.bigint.BigInteger = tab.modPowProd(exponents, offset, bitLength)
-        results.add(batch)
-        count += tab.count
-        countCalls++
+                // Compute table for simultaneous exponentiation.
+                val tab = VmnModPowTabB(bases, offset, width, modulus)
 
-        offset += width
+                // Perform simultaneous exponentiation.
+                val batch: org.cryptobiotic.bigint.BigInteger = tab.modPowProd(exponents, offset, bitLength)
+                results.add(batch)
+                count += tab.count
+                countCalls++
+
+                offset += width
+            }
+
+            // multiply results from each batch
+            val result = results.reduce { a, b -> (a.multiply(b)).mod(modulus) } // N/w modMultiply
+            count += results.size
+            println(" $count modMultiply = ${count / bases.size} perN")
+            return result
+        }
+
+        fun expectedCount(nrows: Int): String {
+            val t = 256 // exp size
+            val w = 7 // window size
+            // (2^w + 2t)/w
+            var perN = ((1 shl w) + 2 * t) / w
+            return "expected multiplies = ${nrows * perN} perRow = $perN"
+        }
     }
-
-    // multiply results from each batch
-    val result =  results.reduce { a, b -> (a.multiply(b)).mod(modulus) } // N/w modMultiply
-    count += results.size
-    println(" $count modMultiply = ${count/bases.size} perN")
-    return result
 }

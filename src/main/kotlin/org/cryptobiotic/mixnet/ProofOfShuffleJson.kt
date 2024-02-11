@@ -17,6 +17,7 @@ import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import org.cryptobiotic.maths.*
 
 @Serializable
 class ProofOfShuffleJson(

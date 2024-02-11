@@ -2,6 +2,7 @@ package org.cryptobiotic.mixnet
 
 import electionguard.ballot.parameterBaseHash
 import electionguard.core.*
+import org.cryptobiotic.maths.*
 
 // generate a set of n independent generators
 

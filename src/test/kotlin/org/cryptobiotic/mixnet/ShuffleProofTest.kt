@@ -5,6 +5,7 @@ import electionguard.util.Stats
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertTrue
+import org.cryptobiotic.maths.*
 
 class ShuffleProofTest {
     private val useRegularB = false
