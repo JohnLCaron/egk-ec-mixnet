@@ -1,21 +1,4 @@
-/*
- * Copyright 2008 2009 2010 2011 2013 2014 2015 2016 Douglas Wikstrom
- *
- * This file is part of GMP Modular Exponentiation Extension (GMPMEE).
- *
- * GMPMEE is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * GMPMEE is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with GMPMEE. If not, see <http://www.gnu.org/licenses/>.
- */
+// Standard algorithm, but implementation derived from gmpee.
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -23,13 +6,13 @@
 #include <gmp.h>
 
 typedef struct {
-  int width;              /**< Number of bases/exponents in each block. */
-  mpz_t *pproduct;            /**< Table of partial products */
-  size_t npproduct;         /**< size of partial product table. */
+  int width;              // Number of bases/exponents in each block.
+  mpz_t *pproduct;        // Table of partial products
+  size_t npproduct;       // size of partial product table.
 } egk_prod_table[1]; /* Magic references. */
 
 void
-egk_table_init(egk_prod_table table, int nrows, int width)  {
+egk_ptable_init(egk_prod_table table, int nrows, int width)  {
   size_t j;
 
   table->width = width;
@@ -46,7 +29,7 @@ egk_table_init(egk_prod_table table, int nrows, int width)  {
 }
 
 void
-egk_table_free(egk_prod_table table)  {
+egk_ptable_free(egk_prod_table table)  {
   size_t j;
   for (j = 0; j < table->npproduct; j++) {
       mpz_clear(table->pproduct[j]);
@@ -55,7 +38,7 @@ egk_table_free(egk_prod_table table)  {
 }
 
 void
-egk_table_precomp(egk_prod_table table, mpz_t *bases, size_t block_width, mpz_t modulus) {
+egk_ptable_precompute(egk_prod_table table, mpz_t *bases, size_t block_width, mpz_t modulus) {
   size_t j;
   int mask;
   int one_mask;
@@ -85,7 +68,7 @@ egk_table_precomp(egk_prod_table table, mpz_t *bases, size_t block_width, mpz_t 
  * extracted from the first integer in the input array.
  */
 static int
-egk_getbits(mpz_t *op, int index, size_t block_width)
+egk_ptable_getbits(mpz_t *op, int index, size_t block_width)
 {
   int i;
   int bits = 0;
@@ -100,7 +83,7 @@ egk_getbits(mpz_t *op, int index, size_t block_width)
 }
 
 void
-egk_table_compute(mpz_t rop, egk_prod_table table, mpz_t *exponents, size_t block_width, mpz_t modulus) {
+egk_ptable_compute(mpz_t rop, egk_prod_table table, mpz_t *exponents, size_t block_width, mpz_t modulus) {
   size_t i;
   int index;
   int mask;
@@ -126,7 +109,7 @@ egk_table_compute(mpz_t rop, egk_prod_table table, mpz_t *exponents, size_t bloc
       mpz_mod(rop, rop, modulus);
 
       /* ... and multiply. */
-      mask = egk_getbits(exponents, index, block_width);
+      mask = egk_ptable_getbits(exponents, index, block_width);
       mpz_mul(rop, rop, table->pproduct[mask]);
       mpz_mod(rop, rop, modulus);
     }
@@ -159,7 +142,7 @@ egk_prodPow(void *result, const void **pb, const void **qb, const int nrows, con
     }
 
     // initialize table to do width exps at a time
-    egk_table_init(table, nrows, width);
+    egk_ptable_init(table, nrows, width);
 
     mpz_init(rop);
     mpz_set_ui(rop, 1);
@@ -180,10 +163,10 @@ egk_prodPow(void *result, const void **pb, const void **qb, const int nrows, con
         }
 
       /* Perform computation for batch */
-      egk_table_precomp(table, bases, batch_width, modulus);
+      egk_ptable_precompute(table, bases, batch_width, modulus);
 
       /* Compute batch. */
-      egk_table_compute(batch_rop, table, exponents, batch_width, modulus);
+      egk_ptable_compute(batch_rop, table, exponents, batch_width, modulus);
 
       /* Multiply with running total (rop). */
       mpz_mul(rop, rop, batch_rop);
@@ -209,7 +192,7 @@ egk_prodPow(void *result, const void **pb, const void **qb, const int nrows, con
     free(bases);
     free(resultBytes);
 
-    egk_table_free(table);
+    egk_ptable_free(table);
 
     mpz_clear(modulus);
     mpz_clear(rop);

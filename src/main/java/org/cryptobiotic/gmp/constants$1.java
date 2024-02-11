@@ -47,7 +47,7 @@ final class constants$1 {
         JAVA_LONG
     );
     static final MethodHandle const$6 = RuntimeHelper.downcallHandle(
-        "egk_prodPowA",
+        "egk_prodPowW",
         constants$1.const$5
     );
 }

@@ -81,16 +81,16 @@ public class EgkGmpIF  {
             throw new AssertionError("should not reach here", ex$);
         }
     }
-    public static MethodHandle egk_prodPowA$MH() {
-        return RuntimeHelper.requireNonNull(constants$1.const$6,"egk_prodPowA");
+    public static MethodHandle egk_prodPowW$MH() {
+        return RuntimeHelper.requireNonNull(constants$1.const$6,"egk_prodPowW");
     }
     /**
      * {@snippet :
-     * void egk_prodPowA(void* result, void** pb, void** qb, int len, void* modulusBytes, size_t pbytes, size_t qbytes);
+     * void egk_prodPowW(void* result, void** pb, void** qb, int len, void* modulusBytes, size_t pbytes, size_t qbytes);
      * }
      */
-    public static void egk_prodPowA(MemorySegment result, MemorySegment pb, MemorySegment qb, int len, MemorySegment modulusBytes, long pbytes, long qbytes) {
-        var mh$ = egk_prodPowA$MH();
+    public static void egk_prodPowW(MemorySegment result, MemorySegment pb, MemorySegment qb, int len, MemorySegment modulusBytes, long pbytes, long qbytes) {
+        var mh$ = egk_prodPowW$MH();
         try {
             mh$.invokeExact(result, pb, qb, len, modulusBytes, pbytes, qbytes);
         } catch (Throwable ex$) {
