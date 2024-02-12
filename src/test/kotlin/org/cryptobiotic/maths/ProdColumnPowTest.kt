@@ -2,12 +2,11 @@ package org.cryptobiotic.maths
 
 import electionguard.core.*
 import electionguard.util.Stopwatch
-import org.cryptobiotic.gmp.prodColumnPowGmpW
 import org.junit.jupiter.api.Assertions.assertEquals
 import kotlin.random.Random
 import kotlin.test.Test
 
-class VectorPTest {
+class ProdColumnPowTest {
     val group = productionGroup()
 
     @Test
@@ -24,11 +23,11 @@ class VectorPTest {
         }
 
         val stopwatch = Stopwatch()
-        val single = prodColumnPow(ciphertexts, exps, 1)
+        val single = prodColumnPowJava(ciphertexts, exps, 1)
         val timeSingle = stopwatch.stop()
 
         stopwatch.start()
-        val multi = prodColumnPow(ciphertexts, exps)
+        val multi = prodColumnPowJava(ciphertexts, exps)
         val timeMulti = stopwatch.stop()
         assertEquals(single, multi)
 
@@ -64,8 +63,10 @@ class VectorPTest {
     fun testProdColumnPow() {
         compareProdColumnPow(7,100)
         compareProdColumnPow(100,34)
-        compareProdColumnPow(7,100, 1)
-        compareProdColumnPow(100,100, 1)
+        compareProdColumnPow(500,34)
+        compareProdColumnPow(7,100, 2)
+        compareProdColumnPow(100,34, 2)
+        compareProdColumnPow(500,34, 2)
         println()
     }
 
@@ -115,7 +116,7 @@ class VectorPTest {
         }
 
         val stopwatch = Stopwatch()
-        val org = prodColumnPow(ciphertexts, exps, threads)
+        val org = prodColumnPowJava(ciphertexts, exps, threads)
         val timeOrg = stopwatch.stop()
 
         stopwatch.start()
@@ -127,13 +128,25 @@ class VectorPTest {
     }
 
     @Test
-    fun testProdColumnPowG() {
-        compareProdColumnPowG(7,100)
-        compareProdColumnPowG(100,34)
+    fun testProdColumnPowGvsJ() {
+        compareProdColumnPowGvsJ(1,10)
+        compareProdColumnPowGvsJ(10,10)
+        compareProdColumnPowGvsJ(100,10)
+        compareProdColumnPowGvsJ(100,34)
+        compareProdColumnPowGvsJ(1000,34)
         println()
     }
 
-    fun compareProdColumnPowG(nrows: Int, width: Int, threads: Int? = null) {
+    @Test
+    fun testSmallGvsJ() {
+        compareProdColumnPowGvsJ(100,10) // warmup
+            repeat(30) { width ->
+                compareProdColumnPowGvsJ(1, 2*width+1)
+            }
+        println()
+    }
+
+    fun compareProdColumnPowGvsJ(nrows: Int, width: Int, threads: Int? = null) {
         val exps = VectorQ(group, List(nrows) { group.randomElementModQ() })
 
         val keypair = elGamalKeyPairFromRandom(group)
@@ -143,15 +156,15 @@ class VectorPTest {
         }
 
         val stopwatch = Stopwatch()
-        val org = prodColumnPow(ciphertexts, exps, 1)
+        val org =  ProdColumnPow.prodColumnPow(ciphertexts, exps, null, ProdColumnAlg.Java)
         val timeOrg = stopwatch.stop()
 
         stopwatch.start()
-        val tab = prodColumnPowGmpW(ciphertexts, exps)
+        val gmp = ProdColumnPow.prodColumnPow(ciphertexts, exps, null, ProdColumnAlg.Gmp)
         val timeTab = stopwatch.stop()
-        assertEquals(org, tab)
+        assertEquals(org, gmp)
 
-        println("testProdColumnPowTab nrows=$nrows width=$width threads=$threads timeOrg/timeTab = ${Stopwatch.ratioAndPer(timeOrg, timeTab, nrows)}")
+        println("compareProdColumnPowGvsJ nrows=$nrows width=$width threads=$threads timeOrg/timeTab = ${Stopwatch.ratioAndPer(timeOrg, timeTab, nrows)}")
     }
 
 }

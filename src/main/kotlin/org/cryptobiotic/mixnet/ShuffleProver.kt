@@ -116,7 +116,7 @@ class ProverV(
         //// poe
         //        Fp = pkey.exp(phi.neg()).mul(wp.expProd(epsilon));
         val enc0: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, phi)  // CE 2 * width acc
-        val wp_eps: VectorCiphertext = prodColumnPow(wp, epsilon, nthreads)  // CE 2 * N exp
+        val wp_eps: VectorCiphertext = ProdColumnPow.prodColumnPow(wp, epsilon, nthreads)  // CE 2 * N exp
         val Fp = enc0 * wp_eps
        // println("  Fp: ${group.showAndClearCountPowP()}")
 

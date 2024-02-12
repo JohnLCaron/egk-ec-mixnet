@@ -106,13 +106,13 @@ class ShuffleTest {
         val v = group.randomElementModQ()
 
         val ev = e.timesScalar(v)
-        val Fv = prodColumnPow(rows, ev, 0)
-        val leftv = Fv * enc0 * prodColumnPow(mixed, epsilon) // Fp = enc0 * prodColumnPow(wp, epsilon)
+        val Fv = prodColumnPowJava(rows, ev, 0)
+        val leftv = Fv * enc0 * prodColumnPowJava(mixed, epsilon) // Fp = enc0 * prodColumnPow(wp, epsilon)
         val ff = innerProductColumn(rnonces, pe)
         val kF = ff.timesScalar(v) + phi
         val right1v = VectorCiphertext.zeroEncryptNeg(publicKey, kF) // k_F = innerProductColumn(rnonces, ipe).timesScalar(v) + phi
         val kE = pe.timesScalar(v) + epsilon
-        val right2v = prodColumnPow(mixed, kE, 0) // k_E = ipe.timesScalar(v) + epsilon
+        val right2v = prodColumnPowJava(mixed, kE, 0) // k_E = ipe.timesScalar(v) + epsilon
         val rightv = right1v * right2v
         println("   rightv == leftv ${rightv == leftv}")
         assertTrue(rightv == leftv)

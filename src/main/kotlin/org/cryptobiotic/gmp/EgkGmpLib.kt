@@ -1,7 +1,9 @@
 package org.cryptobiotic.gmp
 
-import java.lang.foreign.*
-import java.lang.foreign.ValueLayout.*
+import java.lang.foreign.Arena
+import java.lang.foreign.MemorySegment
+import java.lang.foreign.ValueLayout.ADDRESS
+import java.lang.foreign.ValueLayout.JAVA_BYTE
 
 
 // These are covers of GMP methods for testing using Bytearrays.
@@ -10,6 +12,22 @@ import java.lang.foreign.ValueLayout.*
 
 private const val debug = false
 
+class EgkGmpLib {
+    companion object {
+        private var isAvailable: Boolean? = null
+        fun loadIfAvailable(): Boolean {
+            if (isAvailable == null) {
+                try {
+                    val loader = RuntimeHelper::class.java.classLoader // call anything that loads the class.
+                    isAvailable = true
+                } catch (t: Throwable) {
+                    isAvailable = false
+                }
+            }
+            return isAvailable!!
+        }
+    }
+}
 
 // multiply and mod
 fun egkMulMod(pb1: ByteArray, pb2: ByteArray, modulusBytes: ByteArray): ByteArray {
