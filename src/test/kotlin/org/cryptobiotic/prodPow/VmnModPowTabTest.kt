@@ -7,8 +7,8 @@ import electionguard.util.sigfig
 import org.junit.jupiter.api.Test
 import org.cryptobiotic.bigint.BigInteger
 import org.cryptobiotic.bigint.showCountResultsPerRow
-import org.cryptobiotic.exp.toBig
-import org.cryptobiotic.exp.toBigM
+import org.cryptobiotic.exp.toBigint
+import org.cryptobiotic.maths.toBigInteger
 import kotlin.test.assertEquals
 
 class VmnModPowTabTest {
@@ -67,7 +67,7 @@ class VmnModPowTabTest {
         //     class LargeIntegerSimModPowTab(bases: List<BigInteger>, offset: Int, val width: Int, val modulus: BigInteger) {
 
         val nrows = 3
-        val bases = List(nrows) { group.gPowP(group.randomElementModQ()).toBig() }
+        val bases = List(nrows) { group.gPowP(group.randomElementModQ()).toBigint() }
         val table = VmnModPowTabB(bases, 0, nrows, modulus)
     }
 
@@ -90,8 +90,8 @@ class VmnModPowTabTest {
     // compare LargeInteger.modPowProdB vs BigIntegerB.modPow
     fun compareModPowProdB(nrows: Int, show: Boolean = false) {
         println("compareModPowProdB with nrows = $nrows")
-        val bases = List(nrows) { group.gPowP(group.randomElementModQ()).toBig() }
-        val exps = List(nrows) { group.randomElementModQ().toBig() }
+        val bases = List(nrows) { group.gPowP(group.randomElementModQ()).toBigint() }
+        val exps = List(nrows) { group.randomElementModQ().toBigint() }
 
         val (newWay, timeNew) = runModPowProdB(bases, exps, show)
 
@@ -120,8 +120,8 @@ class VmnModPowTabTest {
     }
 
     fun timeModPowProd7B(nrows: Int, show: Boolean = false) {
-        val bases = List(nrows) { group.gPowP(group.randomElementModQ()).toBig() }
-        val exps = List(nrows) { group.randomElementModQ().toBig() }
+        val bases = List(nrows) { group.gPowP(group.randomElementModQ()).toBigint() }
+        val exps = List(nrows) { group.randomElementModQ().toBigint() }
 
         val (newWay, timeNew) = countModPowProd7B(bases, exps, show)
         println("runModPowProdB with nrows =$nrows  time = $timeNew msecs, per_row = ${(timeNew.toDouble()/nrows).sigfig(3)} msecs")
@@ -144,17 +144,17 @@ class VmnModPowTabTest {
         val exps = List(nexps) { group.randomElementModQ() }
         val bases = List(nexps) { group.gPowP(group.randomElementModQ()) }
 
-        val basesM = bases.map { it.toBigM() }
-        val expsM = exps.map { it.toBigM() }
+        val basesM = bases.map { it.toBigInteger() }
+        val expsM = exps.map { it.toBigInteger() }
 
         val stopwatch = Stopwatch()
         val modPowProd7 = VmnModPowTab.modPowProd7(basesM, expsM, modulusM)
         val took = stopwatch.stop()
         println("*** modPowProd7 ${Stopwatch.perRow(took, nexps)}")
-        val orgb = modPowProd7.toBig()
+        val orgb = modPowProd7.toBigint()
 
-        val basesB = bases.map { it.toBig() }
-        val expsB = exps.map { it.toBig() }
+        val basesB = bases.map { it.toBigint() }
+        val expsB = exps.map { it.toBigint() }
         println(" ${VmnModPowTabB.expectedCount(nexps)}")
         val (productb, timeb) = countModPowProd7B(basesB, expsB, true)
 
@@ -186,11 +186,11 @@ class VmnModPowTabTest {
         // current modPow using java.math.BigInteger (oldWay)
         val stopwatch = Stopwatch()
         val org = bases.mapIndexed { idx, it -> it powP exps[idx] }.reduce { a, b -> (a * b) }
-        val oldWay = org.toBigM()
+        val oldWay = org.toBigInteger()
         val timeOld = stopwatch.stop()
 
-        val basesM = bases.map { it.toBigM() }
-        val expsM = exps.map { it.toBigM() }
+        val basesM = bases.map { it.toBigInteger() }
+        val expsM = exps.map { it.toBigInteger() }
 
         stopwatch.start()
         BigInteger.getAndClearOpCounts()

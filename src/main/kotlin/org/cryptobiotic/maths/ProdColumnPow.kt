@@ -7,16 +7,24 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.math.max
 
 /**
- * Componentwise product of the ballot's column vectors ^ exps.
+ * Component-wise product of the ballot's column vectors ^ exps.
+ * This uses java.math.BigInteger powP operator.
  *  rows (aka ballots): nrows x width ElGamalCiphertexts
  *  exps: nrows ElementModQ
  *  for each column, calculate Prod (col ^ exps) modulo, return VectorCiphertext(width).
 */
-fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ, nthreads: Int = 10): VectorCiphertext {
-    return if (nthreads == 0) {
+fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ, nthreads: Int? = null): VectorCiphertext {
+    return if (nthreads == null) {
+        val cores = Runtime.getRuntime().availableProcessors()
+        val useCores = max(cores * 3 / 4, 1)
+        PprodColumnPow(rows, exps, useCores).calc()
+
+    } else if (nthreads < 2) {
         prodColumnPowSingleThread(rows, exps)
+
     } else {
         PprodColumnPow(rows, exps, nthreads).calc()
     }

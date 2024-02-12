@@ -3,7 +3,6 @@ package org.cryptobiotic.exp
 import electionguard.core.ElementModP
 import electionguard.core.ElementModQ
 import electionguard.core.normalize
-import org.cryptobiotic.bigint.BigInteger
 
 private val byteZ = 0.toByte()
 
@@ -342,26 +341,18 @@ fun org.cryptobiotic.bigint.BigInteger.toByteArray(width: Int): ByteArray {
     return this.toByteArray().normalize(width)
 }
 
-fun ElementModP.toBig(): org.cryptobiotic.bigint.BigInteger {
+fun ElementModP.toBigint(): org.cryptobiotic.bigint.BigInteger {
     return org.cryptobiotic.bigint.BigInteger(1, this.byteArray().normalize(512))
 }
 
-fun ElementModQ.toBig(): org.cryptobiotic.bigint.BigInteger {
+fun ElementModQ.toBigint(): org.cryptobiotic.bigint.BigInteger {
     return org.cryptobiotic.bigint.BigInteger(1, this.byteArray().normalize(32))
 }
 
-fun ElementModP.toBigM(): java.math.BigInteger {
-    return java.math.BigInteger(1, this.byteArray().normalize(512))
-}
-
-fun ElementModQ.toBigM(): java.math.BigInteger {
-    return java.math.BigInteger(1, this.byteArray().normalize(512))
-}
-
-fun org.cryptobiotic.bigint.BigInteger.toBigM(): java.math.BigInteger {
-    return java.math.BigInteger(1, this.toByteArray())
-}
-
-fun java.math.BigInteger.toBig(): org.cryptobiotic.bigint.BigInteger {
+fun java.math.BigInteger.toBigint(): org.cryptobiotic.bigint.BigInteger {
     return org.cryptobiotic.bigint.BigInteger(1, this.toByteArray())
+}
+
+fun org.cryptobiotic.bigint.BigInteger.toBigInteger(): java.math.BigInteger {
+    return java.math.BigInteger(1, this.toByteArray())
 }

@@ -73,7 +73,7 @@ class VmnModPowTabB(
             res = res.multiply(res).mod(modulus)
 
             // Multiply.
-            res = res.multiply(pre[k]).mod(modulus)
+            res = res.multiply(pre[k]).mod(modulus) // could check for k == 0
 
             count += 2
         }
@@ -124,6 +124,17 @@ class VmnModPowTabB(
             println(" $count modMultiply = ${count / bases.size} perN")
             return result
         }
+
+        // called N/w times, each call takes (2^w + 2t)
+        // let w' = N % w, if w` != 0, extra call takes (2^w'+ 2t). ignore this case.
+        // also ignoring a few multiply by 1.
+        //
+        // cost per row is (2^w + 2t)/w
+        // algw per row is (2^w + t)/w + t/b
+        //
+        // with w=7, t=256, b=83
+        // alg = (128 + 512)/7 = 91
+        // algw = (128 + 256)/7 + 256/83 = 55 + 3 = 58
 
         fun expectedCount(nrows: Int): String {
             val t = 256 // exp size
