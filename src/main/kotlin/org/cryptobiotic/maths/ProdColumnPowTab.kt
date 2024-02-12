@@ -8,7 +8,6 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.math.BigInteger
 import kotlin.math.max
 import kotlin.math.min
 
@@ -39,7 +38,7 @@ fun prodColumnPowTab(rows: List<VectorCiphertext>, exps: VectorQ, nthreads: Int?
     }
 }
 
-fun prodColumnPowTabSingleThread(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
+private fun prodColumnPowTabSingleThread(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
     val nrows = rows.size
     require(exps.nelems == nrows)
     val width = rows[0].nelems
@@ -58,13 +57,13 @@ private fun prodColumnPow(col: List<ElGamalCiphertext>, exps: VectorQ, batched: 
     val qbs = exps.elems.map { it.toBigInteger() }
 
     val pads = col.map { it.pad.toBigInteger() }
-    val padResult =  if (batched) VmnModPowTabW.modPowProdBatched(pads, qbs, modulus)
-                     else VmnModPowTabW.modPowProd(pads, qbs, modulus)
+    val padResult =  if (batched) VmnProdPowW.modPowProdBatched(pads, qbs, modulus)
+                     else VmnProdPowW.modPowProd(pads, qbs, modulus)
     val padElement =  exps.group.binaryToElementModPsafe(padResult.toByteArray())
 
     val data = col.map { it.data.toBigInteger() }
-    val dataResult =  if (batched) VmnModPowTabW.modPowProdBatched(data, qbs, modulus)
-                      else VmnModPowTabW.modPowProd(data, qbs, modulus)
+    val dataResult =  if (batched) VmnProdPowW.modPowProdBatched(data, qbs, modulus)
+                      else VmnProdPowW.modPowProd(data, qbs, modulus)
     val dataElement =  exps.group.binaryToElementModPsafe(dataResult.toByteArray())
     return ElGamalCiphertext(padElement, dataElement)
 }
@@ -74,8 +73,8 @@ private fun prodColumnPow(col: List<ElementModP>, exps: VectorQ, batched: Boolea
     val qbs = exps.elems.map { it.toBigInteger() }
     val pbs = col.map { it.toBigInteger() }
 
-    val result =  if (batched) VmnModPowTabW.modPowProdBatched(pbs, qbs, modulus)
-                  else VmnModPowTabW.modPowProd(pbs, qbs, modulus)
+    val result =  if (batched) VmnProdPowW.modPowProdBatched(pbs, qbs, modulus)
+                  else VmnProdPowW.modPowProd(pbs, qbs, modulus)
     return exps.group.binaryToElementModPsafe(result.toByteArray())
 }
 
@@ -123,7 +122,7 @@ class PprodColumnPowTab(val rows: List<VectorCiphertext>, val exps: VectorQ, val
                 val columnPad = VectorP(group, column.map { it.pad} )
                 var offset = 0
                 while (offset < nrows) {
-                    val batchSize = min(VmnModPowTabW.maxBatchSize, nrows-offset)
+                    val batchSize = min(VmnProdPowW.maxBatchSize, nrows-offset)
                     val baseBatch = columnPad.elems.subList(offset, offset+batchSize)
                     val expsBatch = exps.elems.subList(offset, offset+batchSize)
                     send(Triple(VectorP(group, baseBatch), VectorQ(group, expsBatch), col*2))
@@ -136,7 +135,7 @@ class PprodColumnPowTab(val rows: List<VectorCiphertext>, val exps: VectorQ, val
                 val columnData = VectorP(group, column.map { it.data} )
                 offset = 0
                 while (offset < nrows) {
-                    val batchSize = min(VmnModPowTabW.maxBatchSize, nrows-offset)
+                    val batchSize = min(VmnProdPowW.maxBatchSize, nrows-offset)
                     val baseBatch = columnData.elems.subList(offset, offset+batchSize)
                     val expsBatch = exps.elems.subList(offset, offset+batchSize)
                     send(Triple(VectorP(group, baseBatch), VectorQ(group, expsBatch), col*2+1))

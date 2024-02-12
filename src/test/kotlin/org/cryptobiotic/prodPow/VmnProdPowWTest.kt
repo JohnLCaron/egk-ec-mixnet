@@ -7,11 +7,11 @@ import org.junit.jupiter.api.Test
 import org.cryptobiotic.bigint.BigInteger
 import org.cryptobiotic.bigint.showCountResultsPerRow
 import org.cryptobiotic.exp.toBigint
-import org.cryptobiotic.maths.VmnModPowTabW
+import org.cryptobiotic.maths.VmnProdPowW
 import org.cryptobiotic.maths.toBigInteger
 import kotlin.test.assertEquals
 
-class VmnModPowTabWTest {
+class VmnProdPowWTest {
     val group = productionGroup()
     val modulus = BigInteger(1, group.constants.largePrime)
     val modulusM = java.math.BigInteger(1, group.constants.largePrime)
@@ -102,7 +102,7 @@ class VmnModPowTabWTest {
 
         stopwatch.start()
         BigInteger.getAndClearOpCounts()
-        val newWay = VmnModPowTabW.modPowProd(basesM, expsM, modulusM)
+        val newWay = VmnProdPowW.modPowProd(basesM, expsM, modulusM)
         val timeNew = stopwatch.stop()
 
         println(" timeModPowProd7W (old/new) = ${Stopwatch.ratioAndPer(timeOld, timeNew, nrows)}")

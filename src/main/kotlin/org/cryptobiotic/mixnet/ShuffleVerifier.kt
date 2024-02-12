@@ -79,10 +79,10 @@ class VerifierV(
 
         //// poe
         val ev = this.e.timesScalar(v)
-        val Fv: VectorCiphertext = prodColumnPow(w, ev, nthreads)                            // CE 2 * N exp
+        val Fv: VectorCiphertext = ProdColumnPow.prodColumnPow(w, ev, nthreads)                            // CE 2 * N exp
         val leftF: VectorCiphertext = Fv * proof.Fp
         val right1: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, proof.kF) // CE width * 2 acc
-        val right2: VectorCiphertext = prodColumnPow(wp, proof.kE, nthreads)                // CE 2 * N exp
+        val right2: VectorCiphertext = ProdColumnPow.prodColumnPow(wp, proof.kE, nthreads)                // CE 2 * N exp
         val rightF: VectorCiphertext = right1 * right2
         val verdictF = (leftF == rightF)
 

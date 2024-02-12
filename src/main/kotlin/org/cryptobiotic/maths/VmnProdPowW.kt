@@ -11,7 +11,7 @@ import kotlin.math.min
  * @param width Number of bases elements to use.
  * @param modulus Underlying modulus.
  */
-class VmnModPowTabW(
+class VmnProdPowW(
     bases: List<BigInteger>,
     val width: Int, // Width of table of pre-computed values, eg 7
     val modulus: BigInteger,
@@ -123,7 +123,7 @@ class VmnModPowTabW(
                 val batchSize = min(maxBatchSize, end-offset)
                 val baseBatch = bases.subList(offset, offset+batchSize)
                 val expsBatch = exponents.subList(offset, offset+batchSize)
-                val tab = VmnModPowTabW(baseBatch, width, modulus)
+                val tab = VmnProdPowW(baseBatch, width, modulus)
 
                 val batch: BigInteger = tab.modPowProd(expsBatch, bitLength)
                 results.add(batch)
@@ -142,7 +142,7 @@ class VmnModPowTabW(
             modulus: BigInteger,
             show: Boolean = false
         ): BigInteger {
-            val tab = VmnModPowTabW(bases, width, modulus)
+            val tab = VmnProdPowW(bases, width, modulus)
             val result: BigInteger = tab.modPowProd(exponents, bitLength)
             if (show) println(" ${tab.countMultiply} countMultiply = ${tab.countMultiply / bases.size} perN")
             return result

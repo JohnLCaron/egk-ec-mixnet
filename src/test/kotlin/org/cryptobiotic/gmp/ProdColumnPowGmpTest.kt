@@ -30,12 +30,12 @@ class ProdColumnPowGmpTest {
         val es = List(nrows) { group.randomElementModQ() }
 
         val stopwatch = Stopwatch()
-        val org = prodColumnPow(ballots, VectorQ(group, es), 0)
+        val org = prodColumnPowJava(ballots, VectorQ(group, es), 0)
         val orgTime = stopwatch.stop()
 
         stopwatch.start()
         // prodColumnPowGmp(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertexty {
-        val gmps = prodColumnPowGmpW(ballots, VectorQ(group, es))
+        val gmps = VmnProdPowWGmp.prodColumnPow(ballots, VectorQ(group, es))
         val gmpTime = stopwatch.stop()
 
         assertEquals(org, gmps)
@@ -62,7 +62,7 @@ class ProdColumnPowGmpTest {
         val es = List(nrows) { group.randomElementModQ() }
 
         val stopwatch = Stopwatch()
-        val org = prodColumnPow(ballots, VectorQ(group, es), 0)
+        val org = prodColumnPowJava(ballots, VectorQ(group, es), 0)
         val orgTime = stopwatch.stop()
 
         stopwatch.start()
