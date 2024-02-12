@@ -2,8 +2,8 @@ package org.cryptobiotic.bigint
 
 import electionguard.core.*
 import electionguard.util.Stopwatch
-import org.cryptobiotic.exp.toBig
-import org.cryptobiotic.exp.toBigM
+import org.cryptobiotic.exp.toBigint
+import org.cryptobiotic.maths.toBigInteger
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -23,7 +23,7 @@ class BigintTest {
 
         val nonces = List(n) { group.randomElementModQ() }
         val elemps = nonces.map { group.gPowP(it) }
-        val basesb = elemps.map { it.toBigM() }
+        val basesb = elemps.map { it.toBigInteger() }
 
         var starting = getSystemTimeInMillis()
         val prod = basesb.reduce { a, b -> a.multiply(b).mod(modulus) }
@@ -57,7 +57,7 @@ class BigintTest {
 
         val nonces = List(n) { group.randomElementModQ() }
         val elemps = nonces.map { group.gPowP(it) }
-        val basesb = elemps.map { it.toBigM() }
+        val basesb = elemps.map { it.toBigInteger() }
 
         var starting = getSystemTimeInMillis()
         val prod = basesb.reduce { a, b -> a.parallelMultiply(b).mod(modulus) }
@@ -83,7 +83,7 @@ class BigintTest {
         val bases = List(3) { group.gPowP(group.randomElementModQ()) }
 
         val org: ElementModP = bases.mapIndexed { idx, it -> it powP es[idx] }.reduce { a, b -> (a * b) }
-        val orgb = org.toBig()
+        val orgb = org.toBigint()
 
         val productb = runProdPowB(es, bases, group, true)
         assertEquals(orgb, productb)
@@ -109,7 +109,7 @@ class BigintTest {
         println("*** prodPow ${Stopwatch.perRow(took, nexps)}")
 
         val productb = runProdPowB(es, bases, group, true)
-        assertEquals(org.toBig(), productb)
+        assertEquals(org.toBigint(), productb)
     }
 
     @Test
@@ -128,12 +128,12 @@ class BigintTest {
         val bases = List(nexps) { group.gPowP(group.randomElementModQ()) }
         val stopwatch = Stopwatch()
         val org: ElementModP = bases.mapIndexed { idx, it -> it powP es[idx] }.reduce { a, b -> (a * b) }
-        val orgb: BigInteger = org.toBig()
+        val orgb: BigInteger = org.toBigint()
         val BigIntegerTime = stopwatch.stop()
 
         stopwatch.start()
-        val esb = es.map { it.toBig() }
-        val basesb = bases.map { it.toBig() }
+        val esb = es.map { it.toBigint() }
+        val basesb = bases.map { it.toBigint() }
         val modulus = BigInteger(1, group.constants.largePrime)
         val expsb = basesb.mapIndexed { idx, it -> it.modPow(esb[idx], modulus) }
         val productb: BigInteger = expsb.reduce { a, b -> (a.multiply(b)).mod(modulus) }
@@ -146,8 +146,8 @@ class BigintTest {
 
 fun runProdPowB(exps: List<ElementModQ>, bases: List<ElementModP>, group: GroupContext, show: Boolean = false): BigInteger {
     val modulus = BigInteger(1, group.constants.largePrime)
-    val esb = exps.map { it.toBig() }
-    val basesb = bases.map { it.toBig() }
+    val esb = exps.map { it.toBigint() }
+    val basesb = bases.map { it.toBigint() }
     return runProdPowB(esb, basesb, modulus, show)
 }
 

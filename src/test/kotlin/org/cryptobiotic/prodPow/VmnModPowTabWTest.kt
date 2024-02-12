@@ -6,9 +6,9 @@ import electionguard.util.Stopwatch
 import org.junit.jupiter.api.Test
 import org.cryptobiotic.bigint.BigInteger
 import org.cryptobiotic.bigint.showCountResultsPerRow
-import org.cryptobiotic.exp.toBig
-import org.cryptobiotic.exp.toBigM
+import org.cryptobiotic.exp.toBigint
 import org.cryptobiotic.maths.VmnModPowTabW
+import org.cryptobiotic.maths.toBigInteger
 import kotlin.test.assertEquals
 
 class VmnModPowTabWTest {
@@ -47,10 +47,10 @@ class VmnModPowTabWTest {
         val exps = List(nexps) { group.randomElementModQ() }
         val bases = List(nexps) { group.gPowP(group.randomElementModQ()) }
         val org = bases.mapIndexed { idx, it -> it powP exps[idx] }.reduce { a, b -> (a * b) }
-        val orgb = org.toBig()
+        val orgb = org.toBigint()
 
-        val basesB = bases.map { it.toBig() }
-        val expsB = exps.map { it.toBig() }
+        val basesB = bases.map { it.toBigint() }
+        val expsB = exps.map { it.toBigint() }
         println(" ${VmnModPowTabWB.expectedCount(nexps)}")
         println(" ${VmnModPowTabWB.expectedMemory(70)}")
         val (productb, timeb) = countModPowProd7WB(basesB, expsB, false)
@@ -87,22 +87,22 @@ class VmnModPowTabWTest {
 
     // compare times of modPowProd7 vs current modPow (oldWay), both using java.math.BigInteger
     fun timeModPowProd7W(nrows: Int) {
-        println("compare times of modPowProd7 (new) vs current group.modPow (old) with nrows = $nrows")
+        println("compare times of modPowProd7W (new) vs current group.modPow (old) with nrows = $nrows")
         val bases = List(nrows) { group.gPowP(group.randomElementModQ()) }
         val exps = List(nrows) { group.randomElementModQ() }
 
         // current modPow using java.math.BigInteger (oldWay)
         val stopwatch = Stopwatch()
         val org = bases.mapIndexed { idx, it -> it powP exps[idx] }.reduce { a, b -> (a * b) }
-        val oldWay = org.toBigM()
+        val oldWay = org.toBigInteger()
         val timeOld = stopwatch.stop()
 
-        val basesM = bases.map { it.toBigM() }
-        val expsM = exps.map { it.toBigM() }
+        val basesM = bases.map { it.toBigInteger() }
+        val expsM = exps.map { it.toBigInteger() }
 
         stopwatch.start()
         BigInteger.getAndClearOpCounts()
-        val newWay = VmnModPowTabW.modPowProd7W(basesM, expsM, modulusM)
+        val newWay = VmnModPowTabW.modPowProd(basesM, expsM, modulusM)
         val timeNew = stopwatch.stop()
 
         println(" timeModPowProd7W (old/new) = ${Stopwatch.ratioAndPer(timeOld, timeNew, nrows)}")

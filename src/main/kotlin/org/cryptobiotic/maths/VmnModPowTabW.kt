@@ -102,15 +102,16 @@ class VmnModPowTabW(
 
     companion object {
         val maxBatchSize = 84
+        val bitLength = 256 // exps always 256 bits
+        val width = 7       // so this is fixed also
 
-        fun modPowProd7W(
+        // this version does the batches for you.
+        fun modPowProdBatched(
             bases: List<BigInteger>,
             exponents: List<BigInteger>,
             modulus: BigInteger,
             show: Boolean = false
         ): BigInteger {
-            val bitLength = 256 // exps always 256 bits
-            val width = 7    // so this is fixed also
 
             // For the moment we're not going to break this into batches
             val results = mutableListOf<BigInteger>()
@@ -134,7 +135,23 @@ class VmnModPowTabW(
             return results.reduce { a, b -> (a.multiply(b)).mod(modulus) }
         }
 
-        // total cost is t squares + t * N/w multiplies + N/w * 2^w multiplies
+        // this version just does the one batch that is sent to it.
+        fun modPowProd(
+            bases: List<BigInteger>,
+            exponents: List<BigInteger>,
+            modulus: BigInteger,
+            show: Boolean = false
+        ): BigInteger {
+            val tab = VmnModPowTabW(bases, width, modulus)
+            val result: BigInteger = tab.modPowProd(exponents, bitLength)
+            if (show) println(" ${tab.countMultiply} countMultiply = ${tab.countMultiply / bases.size} perN")
+            return result
+        }
+
+        // cost per batch is t squares + t * b/w multiplies + b/w * 2^w multiplies
+        // you need N/b batches. Keep b a multiple of w, then:
+        // = N/b ( t + t * b/w + b/w * 2^w) = N (t/b + (t + 2^w)/w)
+        // = (t + 2^w)/w + t/b per row
         fun expectedCount(batch: Int): String {
             val t = 256 // exp size
             val w = 7 // window size

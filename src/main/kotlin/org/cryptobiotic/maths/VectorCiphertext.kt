@@ -40,3 +40,17 @@ fun Prod(vc: VectorCiphertext): ElGamalCiphertext {
     return vc.elems.encryptedSum()!!
 }
 
+///////////////////////////////////////////////////////
+
+fun ElementModP.toBigInteger(): java.math.BigInteger {
+    return java.math.BigInteger(1, this.byteArray().normalize(512))
+}
+
+fun ElementModQ.toBigInteger(): java.math.BigInteger {
+    return java.math.BigInteger(1, this.byteArray().normalize(512))
+}
+
+fun ByteArray.toBigInteger(): java.math.BigInteger {
+    return java.math.BigInteger(1, this.normalize(512))
+}
+

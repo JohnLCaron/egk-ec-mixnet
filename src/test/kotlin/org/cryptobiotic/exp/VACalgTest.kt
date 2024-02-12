@@ -27,8 +27,8 @@ class VACalgTest {
         assertEquals(check, org)
         println("///////////////////////////////////////////")
 
-        val esb = exps.map { it.toBig() }
-        val basesb = bases.map { it.toBig() }
+        val esb = exps.map { it.toBigint() }
+        val basesb = bases.map { it.toBigint() }
 
         val vac = VACalg(group, esb, true)
         val result = vac.prodPowP(basesb)
@@ -55,8 +55,8 @@ class VACalgTest {
         assertEquals(check, feResult)
         println("///////////////////////////////////////////")
 
-        val esb = exps.map { it.toBig() }
-        val basesb = bases.map { it.toBig() }
+        val esb = exps.map { it.toBigint() }
+        val basesb = bases.map { it.toBigint() }
 
         val vac = VACalg(group, esb, true)
         val result = vac.prodPowP(basesb)
@@ -85,8 +85,8 @@ class VACalgTest {
         //assertEquals(check, feResult)
         println("///////////////////////////////////////////")
 
-        val esb = exps.map { it.toBig() }
-        val basesb = bases.map { it.toBig() }
+        val esb = exps.map { it.toBigint() }
+        val basesb = bases.map { it.toBigint() }
 
         val vac = VACalg(group, esb, true)
         val result = vac.prodPowP(basesb)
@@ -121,8 +121,8 @@ class VACalgTest {
         //assertEquals(check, feResult)
         println("///////////////////////////////////////////")
 
-        val esb = exps.map { it.toBig() }
-        val basesb = bases.map { it.toBig() }
+        val esb = exps.map { it.toBigint() }
+        val basesb = bases.map { it.toBigint() }
 
         val vac = VACalg(group, esb, true)
         val result = vac.prodPowP(basesb)
@@ -144,8 +144,8 @@ class VACalgTest {
         val exps = List(nrows) { group.randomElementModQ() }
         val bases = List(nrows) { group.gPowP( group.randomElementModQ()) }
 
-        val esb = exps.map { it.toBig() }
-        val basesb = bases.map { it.toBig() }
+        val esb = exps.map { it.toBigint() }
+        val basesb = bases.map { it.toBigint() }
 
         val vac = VACalg(group, esb, true)
         BigInteger.getAndClearOpCounts()
@@ -194,7 +194,7 @@ class VACalgTest {
         println("runVACtiming nexps = $nexps, nbases = $nbases")
 
         val exps = List(nexps) { group.randomElementModQ() }
-        val esb = exps.map { it.toBig() }
+        val esb = exps.map { it.toBigint() }
 
         // how long to build?
         var starting11 = getSystemTimeInMillis()
@@ -208,7 +208,7 @@ class VACalgTest {
         BigInteger.getAndClearOpCounts()
         repeat (nbases) {
             val bases = List(nexps) { group.gPowP(group.randomElementModQ()) }
-            val basesb = bases.map { it.toBig() }
+            val basesb = bases.map { it.toBigint() }
             vac.prodPowP(basesb)
             countFE += bases.size
         }
@@ -220,7 +220,7 @@ class VACalgTest {
         var countP = 0
         repeat (nbases) {
             val bases = List(nexps) { group.gPowP(group.randomElementModQ()) }
-            val basesb = bases.map { it.toBig() }
+            val basesb = bases.map { it.toBigint() }
             val productb = runProdPowB(esb, basesb, modulus, true)
         }
         val timePowP = getSystemTimeInMillis() - starting
