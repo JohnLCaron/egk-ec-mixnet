@@ -1,4 +1,4 @@
-// Standard algorithm, but implementation derived from gmpee.
+// Standard algorithm 14.88, but implementation derived from gmpee.
 
 #include <stdlib.h>
 #include <stdio.h>

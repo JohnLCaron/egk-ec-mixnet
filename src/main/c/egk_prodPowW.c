@@ -17,6 +17,9 @@
  * along with GMPMEE. If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Douglas Wikstrom version of prodPow, ported from gmpee.
+// batching is done by the calling routine.
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -215,8 +218,6 @@ egk_batch_compute(mpz_t rop, egk_spowm_tab table, mpz_t *exponents) {
       }
     }
 }
-
-// TODO maybe put batch limits back in, to limit the memory use. Or count on calling routine to do so.
 
 void
 egk_prodPowW(void *result, const char **pb, const char **qb, const int nrows, const void *modulusBytes, size_t pbytes, size_t qbytes) {
