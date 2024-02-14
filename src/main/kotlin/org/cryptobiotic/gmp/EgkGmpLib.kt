@@ -5,6 +5,29 @@ import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout.ADDRESS
 import java.lang.foreign.ValueLayout.JAVA_BYTE
 
+/*
+
+cd ~/install/jextract-21/bin
+
+./jextract  --source \
+    --header-class-name EgkGmpIF \
+    --target-package org.cryptobiotic.gmp \
+    --dump-includes /home/stormy/dev/github/egk-mixnet/src/main/c/includes.txt \
+    -I /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h \
+    -l /usr/local/lib/libegkgmp.so \
+    --output /home/stormy/dev/github/egk-mixnet/src/main/java \
+    /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h
+
+./jextract  --source \
+    --header-class-name EgkGmpIF \
+    --target-package org.cryptobiotic.gmp \
+    --source @/home/stormy/dev/github/egk-mixnet/src/main/c/include.txt \
+    -I /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h \
+    -l /usr/local/lib/libegkgmp.so \
+    --output /home/stormy/dev/github/egk-mixnet/src/main/java \
+    /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h
+
+ */
 
 // These are covers of GMP methods for testing using Bytearrays.
 // NEW WAY pass in the byte arrays, let c library do the import/export
@@ -12,12 +35,32 @@ import java.lang.foreign.ValueLayout.JAVA_BYTE
 
 private const val debug = false
 
+// A caveat when trying to load a JNI library in a Java program is that the Java Virtual Machine does not use the default
+// mechanism of the operating system to locate dynamic libraries. A C/C++ program running on a GNU/Linux based operating
+// system would normally use the dynamic linking loader to load dynamic libraries. To be able to load a dynamic library
+// from within Java, the so-called “Java libary path” must contain the path to the directory of the library. Inside the
+// Java Virtual Machine the Java library path is stored in the java.library.path property (see JavaDoc of java.lang.System class).
+// The Java library path can be set using the appropriate command line option when starting the Java Virtual Machine
+// (e.g. java -Djava.library.path=~/lib HelloJNI).
+//
+//Under Unix-based operating systems, the content of the LD_LIBRARY_PATH environmental variable is merged with the Java
+// library path. Furthermore the Java library path contains the directories /lib/ and /usr/lib/ per default. According
+// to the Filesystem Hierachy Standard the /lib/ directory should contain essential shared libraries and kernel modules.
+// The /usr/lib/ directory should contain libraries for programming and packages.
+//
+//When running under Windows the Java library path is merged with the content of the PATH environmental variable.
+//
+//Naturally, a JNI library can reference other dynamically linked libraries. The Java Virtual Machine will then locate
+// the “initial” JNI library using the Java library path, but the “secondary” libraries are loaded using the default
+// mechanism of the operating system.
+
 class EgkGmpLib {
     companion object {
         private var isAvailable: Boolean? = null
         fun loadIfAvailable(): Boolean {
             if (isAvailable == null) {
                 try {
+                    // TODO test this. seems like it always returns true??
                     val loader = RuntimeHelper::class.java.classLoader // call anything that loads the class.
                     isAvailable = true
                 } catch (t: Throwable) {
@@ -29,7 +72,7 @@ class EgkGmpLib {
     }
 }
 
-// multiply and mod
+// EgkGmpIF.egk_mulMod: multiply and mod one value
 fun egkMulMod(pb1: ByteArray, pb2: ByteArray, modulusBytes: ByteArray): ByteArray {
     Arena.ofConfined().use { arena ->
         require(pb1.size == pb2.size)
@@ -61,7 +104,7 @@ fun byteToOffHeap(bytes: ByteArray, srcSegment: MemorySegment): MemorySegment {
 
 //     public static void egk_mulModA(MemorySegment result, MemorySegment pb, int len, MemorySegment modulusBytes, long nbytes) {
 
-// Product( pbs) modulo
+// EgkGmpIF.egk_mulModA:  Product( pbs) modulo for a list of value
 fun egkMulModA(pbs: List<ByteArray>, modulusBytes: ByteArray): ByteArray {
     Arena.ofConfined().use { arena ->
         pbs.forEach { require(it.size == modulusBytes.size) }
@@ -91,6 +134,7 @@ fun egkMulModA(pbs: List<ByteArray>, modulusBytes: ByteArray): ByteArray {
     }
 }
 
+// EgkGmpIF.egk_powmA:  Use GMP to compute pbs ^ qbs for a list of values
 fun egkPowmA(pbs: List<ByteArray>, qbs: List<ByteArray>, modulusBytes: ByteArray): List<ByteArray> {
     require( pbs.size == qbs.size)
     Arena.ofConfined().use { arena ->

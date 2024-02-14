@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test
 import org.cryptobiotic.bigint.BigInteger
 import org.cryptobiotic.bigint.showCountResultsPerRow
 import org.cryptobiotic.exp.toBigint
-import org.cryptobiotic.maths.VmnProdPowW
 import org.cryptobiotic.maths.toBigInteger
 import kotlin.test.assertEquals
 
@@ -25,7 +24,7 @@ class VmnProdPowWTest {
     fun testMemorySize() {
         var batch = 35
         repeat(40) {
-            println(" ${VmnModPowTabWB.expectedMemory(batch)} for ${VmnModPowTabWB.expectedCount(batch)}")
+            println(" ${VmnProdPowWB.expectedMemory(batch)} for ${VmnProdPowWB.expectedCount(batch)}")
             batch += 7
         }
     }
@@ -51,8 +50,8 @@ class VmnProdPowWTest {
 
         val basesB = bases.map { it.toBigint() }
         val expsB = exps.map { it.toBigint() }
-        println(" ${VmnModPowTabWB.expectedCount(nexps)}")
-        println(" ${VmnModPowTabWB.expectedMemory(70)}")
+        println(" ${VmnProdPowWB.expectedCount(nexps)}")
+        println(" ${VmnProdPowWB.expectedMemory(70)}")
         val (productb, timeb) = countModPowProd7WB(basesB, expsB, false)
 
         assertEquals(orgb, productb)
@@ -61,7 +60,7 @@ class VmnProdPowWTest {
     fun countModPowProd7WB(bases: List<BigInteger>, exps: List<BigInteger>, show: Boolean = false): Pair<BigInteger, Long> {
         val stopwatch = Stopwatch()
         BigInteger.getAndClearOpCounts()
-        val newWay = VmnModPowTabWB.modPowProd7WB(bases, exps, modulus, true)
+        val newWay = VmnProdPowWB.modPowProd7WB(bases, exps, modulus, true)
         val timeNew = stopwatch.stop()
         if (show) println(showCountResultsPerRow(" newWay (modPowProd7WB)", bases.size))
         return Pair(newWay, timeNew)

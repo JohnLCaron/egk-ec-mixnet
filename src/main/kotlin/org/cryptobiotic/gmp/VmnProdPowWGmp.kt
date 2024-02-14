@@ -6,31 +6,6 @@ import org.cryptobiotic.maths.VectorQ
 import java.lang.foreign.*
 import java.lang.foreign.ValueLayout.*
 
-
-/*
-
-cd ~/install/jextract-21/bin
-
-./jextract  --source \
-    --header-class-name EgkGmpIF \
-    --target-package org.cryptobiotic.gmp \
-    --dump-includes /home/stormy/dev/github/egk-mixnet/src/main/c/includes.txt \
-    -I /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h \
-    -l /usr/local/lib/libegkgmp.so \
-    --output /home/stormy/dev/github/egk-mixnet/src/main/java \
-    /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h
-
-./jextract  --source \
-    --header-class-name EgkGmpIF \
-    --target-package org.cryptobiotic.gmp \
-    --source @/home/stormy/dev/github/egk-mixnet/src/main/c/include.txt \
-    -I /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h \
-    -l /usr/local/lib/libegkgmp.so \
-    --output /home/stormy/dev/github/egk-mixnet/src/main/java \
-    /home/stormy/dev/github/egk-mixnet/src/main/c/egk_gmp.h
-
- */
-
 private const val debug = false
 
 /**

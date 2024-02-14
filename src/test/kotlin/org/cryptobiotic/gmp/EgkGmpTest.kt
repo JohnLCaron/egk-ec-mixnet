@@ -12,6 +12,14 @@ class EgkGmpTest {
     val group = productionGroup()
 
     @Test
+    fun testloadIfAvailable() {
+        // java.library.path=/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib
+        println(" java.library.path= ${System.getProperty("java.library.path")}")
+
+        println(" EgkGmpLib.loadIfAvailable= ${EgkGmpLib.loadIfAvailable()}")
+    }
+
+    @Test
     fun testMultiplyGmp() {
         val bytes1 = (group.gPowP(group.randomElementModQ()) as ProductionElementModP).byteArray()
         val bytes2 = (group.gPowP(group.randomElementModQ()) as ProductionElementModP).byteArray()
