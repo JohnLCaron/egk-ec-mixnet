@@ -1,11 +1,11 @@
-package org.cryptobiotic.prodPow
+package org.cryptobiotic.maths
 
 import java.math.BigInteger
 import kotlin.math.min
 
 /**
  * Port of VCR's spowm.c (GMP version's algorithm) to Java.
- * Also note prodColumnPowGmpW, which calls the gmp c library with same algorithm.
+ * Also note VmnProdPowWGmp, which calls the gmp c library with same algorithm.
  * Also note VmnProdPowWB (in test) that uses instrumented BigInteger for operation counting.
  *
  * @param bases Bases used for pre-computation.

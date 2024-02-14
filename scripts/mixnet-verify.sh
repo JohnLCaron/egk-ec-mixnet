@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source $(dirname "$0")/functions.sh
-
 WORKSPACE_DIR=$1
 
 if [ -z "${WORKSPACE_DIR}" ]; then
@@ -9,19 +7,22 @@ if [ -z "${WORKSPACE_DIR}" ]; then
     exit 1
 fi
 
-rave_print "***mixnet-verify..."
+echo "***mixnet-verify..."
 
-EG_BB="${WORKSPACE_DIR}/bb/eg"
-VF_BB="${WORKSPACE_DIR}/bb/vf"
-
-CLASSPATH="build/libs/egkmixnet-0.7-SNAPSHOT-all.jar"
-
-rave_print "  ... verify mix1 shuffle ..."
+CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.verificabitur.vmn.RunVmnVerifierThreads \
-    --vvbb ${VF_BB} \
-    -threads 1,2,4,6,8,12,16,20,24,28,32,36,40,44,48
+  org.cryptobiotic.mixnet.RunVerifier \
+    -egDir ${WORKSPACE_DIR}/eg \
+    --inputBallots ${WORKSPACE_DIR}/bb/InputBallots.bin \
+    --mixedDir ${WORKSPACE_DIR}/bb/mix1 \
+    -width 34
 
+java -classpath $CLASSPATH \
+  org.cryptobiotic.mixnet.RunVerifier \
+    -egDir ${WORKSPACE_DIR}/eg \
+    --inputBallots ${WORKSPACE_DIR}/bb/mix1/Shuffled.bin \
+    --mixedDir ${WORKSPACE_DIR}/bb/mix2 \
+    -width 34
 
-rave_print " [DONE] Verifying shuffled ballots"
+echo " [DONE] Verifying mix1 and mix2 "
