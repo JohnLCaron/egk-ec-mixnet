@@ -57,7 +57,7 @@ class ProdColumnPow(val nthreads: Int, val alg: ProdColumnAlg? = null) {
         }
     }
 
-    // TODO batching ??
+    // TODO batching, but only if its gmp.
     private fun calcSingleThread(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
         val nrows = rows.size
         require(exps.nelems == nrows)

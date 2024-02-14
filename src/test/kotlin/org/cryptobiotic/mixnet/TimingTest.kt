@@ -100,7 +100,7 @@ class TimingTest {
     }
 
     @Test
-    // compare square vs multiply
+    // time multiply
     fun testMultiplyMod() {
         timeMultiplyMod(1000, 10)
         timeMultiplyMod(2000, 10)
