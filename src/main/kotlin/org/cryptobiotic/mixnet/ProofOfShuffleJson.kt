@@ -96,7 +96,7 @@ fun readProofOfShuffleJsonFromFile(group: GroupContext, filename: String): Resul
     }
 }
 
-fun writeProofOfShuffleJsonToFile(filename: String, shuffleProof: ProofOfShuffle) {
+fun writeProofOfShuffleJsonToFile(shuffleProof: ProofOfShuffle, filename: String) {
     val json = shuffleProof.publishJson()
     val jsonReader = Json { explicitNulls = false; ignoreUnknownKeys = true; prettyPrint = true }
     FileOutputStream(filename).use { out ->

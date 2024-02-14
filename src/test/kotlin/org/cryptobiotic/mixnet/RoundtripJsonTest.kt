@@ -19,7 +19,7 @@ class RoundtripJsonTest {
     @Test
     fun testProofOfShuffleRoundtrip() {
         val (_, _, shuffleProof) = runShuffleProof(3, 4, group)
-        writeProofOfShuffleJsonToFile(filenameProof, shuffleProof)
+        writeProofOfShuffleJsonToFile(shuffleProof, filenameProof)
         val roundtripResult = readProofOfShuffleJsonFromFile(group, filenameProof)
         assertTrue(roundtripResult is Ok)
         assertEquals(shuffleProof, roundtripResult.unwrap())

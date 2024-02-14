@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source $(dirname "$0")/functions.sh
-
 WORKSPACE_DIR=$1
 
 if [ -z "${WORKSPACE_DIR}" ]; then
@@ -14,7 +12,7 @@ rave_print "***mixnet-initialize verificatum..."
 EG_WORKSPACE="${WORKSPACE_DIR}/eg"
 VERIFICATUM_WORKSPACE="${WORKSPACE_DIR}/vf"
 
-CLASSPATH="build/libs/egkmixnet-0.7-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
 java -classpath $CLASSPATH \
   org.cryptobiotic.verificabitur.vmn.RunMixnetConfig \
     -input ${EG_WORKSPACE} \

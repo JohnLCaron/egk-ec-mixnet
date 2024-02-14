@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source $(dirname "$0")/functions.sh
-
 WORKSPACE_DIR=$1
 NUM_BALLOTS=$2
 
@@ -16,9 +14,9 @@ if [ -z "${NUM_BALLOTS}" ]; then
 fi
 
 
-rave_print "***generate and encrypt ballots: ${NUM_BALLOTS} ballots..."
+echo "***generate and encrypt ${NUM_BALLOTS} ballots:"
 
-CLASSPATH="build/libs/egkmixnet-0.7-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
 
 java -classpath $CLASSPATH \
      electionguard.cli.RunCreateInputBallots \
@@ -27,7 +25,7 @@ java -classpath $CLASSPATH \
        --nballots ${NUM_BALLOTS} \
        -json
 
-rave_print " Encrypting ${NUM_BALLOTS} ballots..."
+echo "   Encrypting ${NUM_BALLOTS} ballots..."
 
 java -classpath $CLASSPATH \
   electionguard.cli.RunBatchEncryption \
@@ -36,4 +34,4 @@ java -classpath $CLASSPATH \
     -eballots ${WORKSPACE_DIR}/bb/encryptedBallots \
     -device device42
 
-rave_print " [DONE] Generating encrypted ballots: ${WORKSPACE_DIR}/bb/encryptedBallots"
+echo "   [DONE] Generating encrypted ballots into ${WORKSPACE_DIR}/bb/encryptedBallots/"

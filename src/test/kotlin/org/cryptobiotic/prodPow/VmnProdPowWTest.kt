@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.cryptobiotic.bigint.BigInteger
 import org.cryptobiotic.bigint.showCountResultsPerRow
 import org.cryptobiotic.exp.toBigint
+import org.cryptobiotic.maths.VmnProdPowW
 import org.cryptobiotic.maths.toBigInteger
 import kotlin.test.assertEquals
 

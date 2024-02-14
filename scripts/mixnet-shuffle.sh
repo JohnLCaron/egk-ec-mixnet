@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source $(dirname "$0")/functions.sh
-
 WORKSPACE_DIR=$1
 
 if [ -z "${WORKSPACE_DIR}" ]; then
@@ -9,18 +7,30 @@ if [ -z "${WORKSPACE_DIR}" ]; then
     exit 1
 fi
 
-rave_print "***mixnet shuffle encrypted ballots..."
+echo "***mixnet-shuffle and proof..."
 
-VERIFICATUM_WORKSPACE="${WORKSPACE_DIR}/vf"
+CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
 
-CLASSPATH="build/libs/egkmixnet-0.7-SNAPSHOT-all.jar"
-
-# shuffle once
-rave_print "  now shuffling ..."
+mkdir -p  ${WORKSPACE_DIR}/bb
+mkdir -p  ${WORKSPACE_DIR}/bb/mix1
+mkdir -p  ${WORKSPACE_DIR}/bb/mix2
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.verificabitur.vmn.RunVmnMixnetThreads \
-    -vvvf ${VERIFICATUM_WORKSPACE} \
-    -threads 1,2,4,6,8,12,16,20,24,28,32,36,40,44,48
+  org.cryptobiotic.mixnet.RunMixnet \
+    -egDir ${WORKSPACE_DIR}/eg \
+    -eballots ${WORKSPACE_DIR}/bb/encryptedBallots \
+    -width 34 \
+    --outputDir ${WORKSPACE_DIR}/bb/ \
+    --mixName mix1
 
-rave_print " [DONE] Shuffling encrypted ballots"
+echo "  mixnet-shuffle and proof written to ${WORKSPACE_DIR}/bb/mix1"
+
+java -classpath $CLASSPATH \
+  org.cryptobiotic.mixnet.RunMixnet \
+    -egDir ${WORKSPACE_DIR}/eg \
+    --inputBallots ${WORKSPACE_DIR}/bb/mix1/Shuffled.bin \
+    -width 34 \
+    --outputDir ${WORKSPACE_DIR}/bb/ \
+    --mixName mix2
+
+echo "  [DONE] mixnet-shuffle and proof written to ${WORKSPACE_DIR}/bb/mix2"
