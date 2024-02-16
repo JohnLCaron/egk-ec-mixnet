@@ -1,10 +1,11 @@
 #!/bin/bash
 
-WORKSPACE_DIR=$1
+PRIVATE_DIR=$1
 MANIFEST_DIR=$2
+PUBLIC_DIR=$3
 
-if [ -z "${WORKSPACE_DIR}" ]; then
-    rave_print "No workspace provided."
+if [ -z "${PRIVATE_DIR}" ]; then
+    rave_print "No private workspace provided."
     exit 1
 fi
 
@@ -13,30 +14,43 @@ if [ -z "${MANIFEST_DIR}" ]; then
     exit 1
 fi
 
-echo "***initialize election: ${WORKSPACE_DIR} directory"
+if [ -z "${PUBLIC_DIR}" ]; then
+    rave_print "No public workspace provided."
+    exit 1
+fi
 
-rm -rf ${WORKSPACE_DIR}/*
+echo ""
+echo "***initialize election into ${PRIVATE_DIR} directory"
 
-mkdir -p  ${WORKSPACE_DIR}/eg
+mkdir -p  ${PRIVATE_DIR}
 
-cp  ${MANIFEST_DIR}/manifest.json ${WORKSPACE_DIR}/eg/
+cp  ${MANIFEST_DIR}/manifest.json ${PRIVATE_DIR}/
 
 CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
 
 echo "   create election configuration"
 
  java -classpath $CLASSPATH electionguard.cli.RunCreateElectionConfig \
-    -manifest ${WORKSPACE_DIR}/eg/manifest.json \
+    -manifest ${PRIVATE_DIR}/manifest.json \
     -nguardians 3 \
     -quorum 3 \
-    -out ${WORKSPACE_DIR}/eg \
+    -out ${PRIVATE_DIR} \
     --baux0 device42
 
 echo "   run KeyCeremony to generate the election keypair"
 
 java -classpath $CLASSPATH electionguard.cli.RunTrustedKeyCeremony \
-    -in ${WORKSPACE_DIR}/eg \
-    -trustees ${WORKSPACE_DIR}/eg/trustees \
-    -out ${WORKSPACE_DIR}/eg
+    -in ${PRIVATE_DIR} \
+    -trustees ${PRIVATE_DIR}/trustees \
+    -out ${PRIVATE_DIR}
 
-echo "   [DONE] initialize election into ${WORKSPACE_DIR}/eg/"
+echo "   copy electionguard files to public workspace ${PUBLIC_DIR}"
+
+mkdir -p  ${PUBLIC_DIR}
+
+cp ${PRIVATE_DIR}/constants.json ${PUBLIC_DIR}
+cp ${PRIVATE_DIR}/election_config.json ${PUBLIC_DIR}
+cp ${PRIVATE_DIR}/election_initialized.json ${PUBLIC_DIR}
+cp ${PRIVATE_DIR}/manifest.json ${PUBLIC_DIR}
+
+echo "   [DONE] initialize election into private ${PRIVATE_DIR} and public ${PUBLIC_DIR} directories"

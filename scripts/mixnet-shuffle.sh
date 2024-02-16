@@ -1,36 +1,36 @@
 #!/bin/bash
 
-WORKSPACE_DIR=$1
+PUBLIC_DIR=$1
 
-if [ -z "${WORKSPACE_DIR}" ]; then
-    rave_print "No workspace provided."
+if [ -z "${PUBLIC_DIR}" ]; then
+    rave_print "No public workspace provided."
     exit 1
 fi
 
+echo ""
 echo "***mixnet-shuffle and proof..."
 
 CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
 
-mkdir -p  ${WORKSPACE_DIR}/bb
-mkdir -p  ${WORKSPACE_DIR}/bb/mix1
-mkdir -p  ${WORKSPACE_DIR}/bb/mix2
+mkdir -p  ${PUBLIC_DIR}/mix1
+mkdir -p  ${PUBLIC_DIR}/mix2
 
 java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.RunMixnet \
-    -egDir ${WORKSPACE_DIR}/eg \
-    -eballots ${WORKSPACE_DIR}/bb/encryptedBallots \
+    -egDir ${PUBLIC_DIR} \
+    -eballots ${PUBLIC_DIR}/encryptedBallots \
     -width 34 \
-    --outputDir ${WORKSPACE_DIR}/bb/ \
+    --outputDir ${PUBLIC_DIR}/mix1/ \
     --mixName mix1
 
-echo "  mixnet-shuffle and proof written to ${WORKSPACE_DIR}/bb/mix1"
+echo "  mixnet-shuffle and proof written to ${PUBLIC_DIR}/mix1"
 
 java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.RunMixnet \
-    -egDir ${WORKSPACE_DIR}/eg \
-    --inputBallots ${WORKSPACE_DIR}/bb/mix1/Shuffled.bin \
+    -egDir ${PUBLIC_DIR} \
+    --inputBallots ${PUBLIC_DIR}/mix1/Shuffled.bin \
     -width 34 \
-    --outputDir ${WORKSPACE_DIR}/bb/ \
+    --outputDir ${PUBLIC_DIR}/mix2/ \
     --mixName mix2
 
-echo "  [DONE] mixnet-shuffle and proof written to ${WORKSPACE_DIR}/bb/mix2"
+echo "  [DONE] mixnet-shuffle and proof written to ${PUBLIC_DIR}/mix2"
