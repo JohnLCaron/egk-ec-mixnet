@@ -8,6 +8,10 @@ import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.cryptobiotic.maths.*
+import org.cryptobiotic.writer.readMatrixCiphertextJsonFromFile
+import org.cryptobiotic.writer.readProofOfShuffleJsonFromFile
+import org.cryptobiotic.writer.writeMatrixCiphertextJsonToFile
+import org.cryptobiotic.writer.writeProofOfShuffleJsonToFile
 
 class RoundtripJsonTest {
     val filenameProof = "testOut/proofOfShuffle.json"

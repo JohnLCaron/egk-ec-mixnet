@@ -7,11 +7,13 @@ import electionguard.core.*
 import electionguard.publish.Consumer
 import electionguard.publish.makeConsumer
 import electionguard.util.ErrorMessages
+import electionguard.util.Stopwatch
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.required
 import org.cryptobiotic.maths.VectorCiphertext
 import org.cryptobiotic.writer.BallotReader
+import org.cryptobiotic.writer.readProofOfShuffleJsonFromFile
 
 class RunVerifier {
 
@@ -25,11 +27,16 @@ class RunVerifier {
                 shortName = "egDir",
                 description = "electionguard directory containing the init file"
             ).required()
+            val encryptedBallotDir by parser.option(
+                ArgType.String,
+                shortName = "eballots",
+                description = "Directory of encrypted ballots"
+            )
             val inputBallots by parser.option(
                 ArgType.String,
                 shortName = "in",
-                description = "Input ciphertext file"
-            ).required()
+                description = "Input ciphertext binary file"
+            )
             val mixedDir by parser.option(
                 ArgType.String,
                 shortName = "mix",
@@ -53,7 +60,14 @@ class RunVerifier {
             })
             val verifier = Verifier(electionguardDir, width)
 
-            val ballots: List<VectorCiphertext> = verifier.readInputBallots(inputBallots)
+            val ballots: List<VectorCiphertext>
+            if (encryptedBallotDir != null) {
+                ballots = readEncryptedBallots(verifier.group, encryptedBallotDir!!)
+            } else if (inputBallots != null) {
+                ballots = verifier.readInputBallots(inputBallots!!)
+            } else {
+                throw RuntimeException("Must specify either encryptedBallotDir or inputBallots")
+            }
             val shuffled: List<VectorCiphertext> = verifier.readInputBallots("$mixedDir/Shuffled.bin")
 
             val valid = verifier.runVerifier(ballots, shuffled, "$mixedDir/Proof.json")
@@ -87,6 +101,7 @@ class Verifier(egDir:String, val width: Int) {
         val width = ballots[0].nelems
         val N = nrows * width
         println("  runVerifier nrows=$nrows, width= $width per row, N=$N, nthreads=$nthreads")
+        val stopwatch = Stopwatch()
 
         val result: Result<ProofOfShuffle, ErrorMessages> = readProofOfShuffleJsonFromFile(group, posFilename)
         if (result is Err) {
@@ -103,6 +118,7 @@ class Verifier(egDir:String, val width: Int) {
             pos,
             nthreads,
         )
+        println("  verification took = ${Stopwatch.perRow(stopwatch.stop(), nrows)}")
 
         return valid
     }

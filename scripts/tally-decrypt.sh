@@ -1,23 +1,27 @@
 #!/bin/bash
 
-source $(dirname "$0")/functions.sh
+PUBLIC_DIR=$1
+PRIVATE_DIR=$2
 
-WORKSPACE_DIR=$1
-
-if [ -z "${WORKSPACE_DIR}" ]; then
-    rave_print "No workspace provided."
+if [ -z "${PUBLIC_DIR}" ]; then
+    rave_print "No public workspace provided."
     exit 1
 fi
 
+if [ -z "${PRIVATE_DIR}" ]; then
+    rave_print "No private workspace provided."
+    exit 1
+fi
 
-rave_print "Decrypting encrypted tally..."
+echo ""
+echo "*** Decrypting encrypted tally..."
 
-CLASSPATH="build/libs/egk-rave-all.jar"
+CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
 
 java -classpath $CLASSPATH \
   electionguard.cli.RunTrustedTallyDecryption \
-    -in ${WORKSPACE_DIR}/eg \
-    -trustees ${WORKSPACE_DIR}/eg/trustees \
-    -out ${WORKSPACE_DIR}/eg
+    -in ${PUBLIC_DIR} \
+    -trustees ${PRIVATE_DIR}/trustees \
+    -out ${PUBLIC_DIR}
 
-rave_print "[DONE] Decrypted tally in ${WORKSPACE_DIR}/eg/tally.json"
+echo "   [DONE] Decrypted tally in ${PUBLIC_DIR}/tally.json"

@@ -4,6 +4,7 @@ import electionguard.core.getSystemTimeInMillis
 import electionguard.core.productionGroup
 import electionguard.core.randomElementModQ
 import electionguard.util.Stopwatch
+import electionguard.util.sigfig
 import kotlin.test.Test
 
 class TimingTest {
@@ -14,6 +15,47 @@ class TimingTest {
         System.getProperties().forEach {
             println(it)
         }
+    }
+
+    //  nrows=29411 width=34 psize=512
+    //     Ciphertext pelems= 1999948 elements
+    //     Ciphertext size = 1023 MB
+    //          Proof size =47.0 MB
+    // nrows=29411 width=34 psize=32
+    //     Ciphertext pelems= 1999948 elements
+    //     Ciphertext size = 63.9 MB
+    //          Proof size =4.70 MB
+    @Test
+    fun calcPosSize() {
+        for (nrows in listOf(29411)) {
+            for (width in listOf(34)) {
+                for (psize in listOf(512, 32)) {
+                    val proofSizeBytes = TWproofPelems(nrows, width)*psize + TWproofQelems(nrows, width)*32
+                    val textSizeBytes = CiphertextPelems(nrows, width) * psize
+                    println(" nrows=$nrows width=$width psize=$psize")
+                    println("     Ciphertext pelems= ${CiphertextPelems(nrows, width)} elements")
+                    println("     Ciphertext size = ${(textSizeBytes).toMBytes()} MB")
+                    println("          Proof size =${proofSizeBytes.toMBytes()} MB")
+                }
+            }
+        }
+    }
+
+    fun Long.toMBytes(): String {
+        val numValue = this.toDouble() / 1_000_000
+        return numValue.sigfig(3)
+    }
+
+    fun CiphertextPelems(nrows: Int, width: Int): Long {
+        return 2 * nrows * width.toLong()
+    }
+
+    fun TWproofPelems(nrows: Int, width: Int): Long {
+        return 3 * nrows + 2 * width + 3L
+    }
+
+    fun TWproofQelems(nrows: Int, width: Int): Long {
+        return 2 * nrows + width + 3L
     }
 
     @Test

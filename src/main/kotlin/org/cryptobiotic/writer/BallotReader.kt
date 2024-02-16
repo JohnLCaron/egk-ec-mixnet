@@ -18,7 +18,7 @@ class BallotReader(val group: GroupContext, val width: Int) {
                 result.add(processRow(buffer))
                 totalBytes += bytesRead
             }
-            println("  read ${totalBytes} bytes from $filename")
+            // println("  read ${totalBytes} bytes from $filename")
             return result
         } catch (t: Throwable) {
             println("Exception on $filename")

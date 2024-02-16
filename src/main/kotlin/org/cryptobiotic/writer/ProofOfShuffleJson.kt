@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalSerializationApi::class)
 
-package org.cryptobiotic.mixnet
+package org.cryptobiotic.writer
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -18,6 +18,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import org.cryptobiotic.maths.*
+import org.cryptobiotic.mixnet.ProofOfShuffle
 
 @Serializable
 class ProofOfShuffleJson(

@@ -169,25 +169,6 @@ class ProverV(
         return Pair(B, VectorP(group, Bp))
     }
 
-    // how vmn does it
-    fun computeBold(gexps: VectorQ, hexps: VectorQ): Pair<VectorP, VectorP> {
-        val g_exp_x: VectorP = gexps.gPowP()                            // CE n acc
-        val h0_exp_y: VectorP = hexps.powScalar(h0)                     // CE n acc
-        val B = g_exp_x * h0_exp_y      // B_i = g^{gexps_i} * h0^{hexps_i}
-
-        val xp = gexps.shiftPush(group.ZERO_MOD_Q)
-        val yp = hexps.shiftPush(group.ONE_MOD_Q)
-        val xp_mul_epsilon = xp * epsilon
-        val beta_add_prod = beta + xp_mul_epsilon
-        val g_exp_beta_add_prod = beta_add_prod.gPowP()                 // CE n acc
-        val yp_mul_epsilon = yp * epsilon
-        val h0_exp_yp_mul_epsilon = yp_mul_epsilon.powScalar(h0)         // CE n exp // TODO accelerate h0
-        val Bp = g_exp_beta_add_prod * h0_exp_yp_mul_epsilon
-
-        return Pair(B, Bp)
-    }
-
-
     // CE 2n exp, 2n acc
     fun computeBreg(b: VectorQ, ipe: VectorQ): Pair<VectorP, VectorP>  {
         // The array of bridging commitments is of the form:
