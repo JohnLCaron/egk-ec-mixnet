@@ -59,7 +59,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * value.  Note that this implies that the BigInteger zero has a
      * zero-length mag array.
      */
-    final int[] mag;
+    public int[] mag;
 
     // The following fields are stable variables. A stable variable's value
     // changes at most once from the default zero value to a non-zero stable
@@ -3666,7 +3666,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * @see    #BigInteger(String)
      */
     public String toString() {
-        return toString(10);
+        return toString(16);
     }
 
     /** Short version of the String for readability */
