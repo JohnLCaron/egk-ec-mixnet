@@ -2,7 +2,6 @@ package org.cryptobiotic.mixnet
 
 import electionguard.core.getSystemTimeInMillis
 import electionguard.core.productionGroup
-import electionguard.core.randomElementModQ
 import electionguard.util.Stopwatch
 import electionguard.util.sigfig
 import kotlin.test.Test
@@ -77,14 +76,14 @@ class TimingTest {
         val h = group.gPowP(group.randomElementModQ())
 
         var starting = getSystemTimeInMillis()
-        repeat(n) { require( !group.gPowP(nonces[it]).isZero()) }
+        repeat(n) { group.gPowP(nonces[it]) }
 
         var duration = getSystemTimeInMillis() - starting
         val peracc = duration.toDouble() / n
         println("acc took $duration msec for $n = $peracc msec per acc")
 
         starting = getSystemTimeInMillis()
-        repeat(n) { require(!(h powP nonces[it]).isZero()) }
+        repeat(n) { h powP nonces[it] }
 
         duration = getSystemTimeInMillis() - starting
         val perexp = duration.toDouble() / n

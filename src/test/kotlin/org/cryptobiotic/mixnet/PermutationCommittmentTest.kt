@@ -114,7 +114,7 @@ fun commitN(
     nonces: List<ElementModQ>,
 ): VectorP {
 
-    val pcommitments = MutableList(psi.n) { group.ZERO_MOD_P }
+    val pcommitments = MutableList(psi.n) { group.ONE_MOD_P }
     repeat(psi.n) { idx ->
         val jdx = psi.of(idx)
         val rj = nonces[jdx]
@@ -133,7 +133,7 @@ fun commitNvmn(
     nonces: List<ElementModQ>,
 ): VectorP {
 
-    val pcommitments = Array(psi.n) { group.ZERO_MOD_P }
+    val pcommitments = Array(psi.n) { group.ONE_MOD_P }
     val pnonces = Array(psi.n) { group.ZERO_MOD_Q }
     repeat(psi.n) { idx ->
         val jdx = psi.of(idx)

@@ -7,14 +7,14 @@ plugins {
 }
 
 group = "org.cryptobiotic"
-version = "0.8-SNAPSHOT"
+version = "0.84-SNAPSHOT"
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation(files("libs/egklib-jvm-2.0.3-SNAPSHOT.jar"))
+    implementation(files("libs/egklib-jvm-2.0.4-SNAPSHOT.jar"))
     implementation("net.java.dev.jna:jna:5.14.0")
 
     implementation(libs.bundles.eglib)
@@ -63,6 +63,7 @@ tasks.test {
     useJUnitPlatform()
 }
 
+/*
 tasks.register("fatJar", Jar::class.java) {
     archiveClassifier.set("all")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -78,3 +79,5 @@ tasks.register("fatJar", Jar::class.java) {
     sourcesMain.allSource.forEach { println("add from sources: ${it.name}") }
     from(sourcesMain.output)
 }
+
+ */
