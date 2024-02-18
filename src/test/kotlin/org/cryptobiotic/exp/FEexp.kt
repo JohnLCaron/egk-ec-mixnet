@@ -337,7 +337,7 @@ class FEexp(val group: GroupContext, exps: List<ElementModQ>, show: Boolean = fa
                 println("there")
 
             if (wentry.i1 == 0 || wentry.refCount == 0) { // skip
-                a.add(group.ZERO_MOD_P);
+                a.add(group.ONE_MOD_P);
             } else if (wentry.i1 == SpecialOneFactor) { // first element glitch
                 val f2 = if (wentry.i2 < 0) bases[-wentry.i2 - 1] else a[wentry.i2]
                 a.add(f2)

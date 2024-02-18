@@ -2,7 +2,6 @@ package org.cryptobiotic.exp
 
 import electionguard.core.getSystemTimeInMillis
 import electionguard.core.productionGroup
-import electionguard.core.randomElementModQ
 import electionguard.core.toElementModQ
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals

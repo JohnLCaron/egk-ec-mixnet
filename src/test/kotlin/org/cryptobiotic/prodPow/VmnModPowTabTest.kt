@@ -1,7 +1,6 @@
 package org.cryptobiotic.prodPow
 
 import electionguard.core.productionGroup
-import electionguard.core.randomElementModQ
 import electionguard.util.Stopwatch
 import electionguard.util.sigfig
 import org.junit.jupiter.api.Test

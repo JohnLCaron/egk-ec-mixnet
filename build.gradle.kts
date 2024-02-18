@@ -7,14 +7,14 @@ plugins {
 }
 
 group = "org.cryptobiotic"
-version = "0.8-SNAPSHOT"
+version = "0.84-SNAPSHOT"
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation(files("libs/egklib-jvm-2.0.3-SNAPSHOT.jar"))
+    implementation(files("libs/egklib-jvm-2.0.4-SNAPSHOT.jar"))
     implementation("net.java.dev.jna:jna:5.14.0")
 
     implementation(libs.bundles.eglib)

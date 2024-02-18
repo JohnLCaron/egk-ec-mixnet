@@ -16,7 +16,8 @@ import java.math.BigInteger
 
 // So far, I havent seen any use for order, buts its lurking underneath VCR ECqPGroup. ugh.
 // given that, I dont know that PFieldElement is needed. But leave it for now.
-class ECqPGroup(
+// the order of G is the smallest positive number n such that ng = O (the point at infinity of the curve, and the identity element)
+class VecGroup(
     val curveName: String,
     val a: BigInteger,
     val b: BigInteger,
@@ -25,35 +26,31 @@ class ECqPGroup(
     gx: BigInteger,
     gy: BigInteger
 ) {
-    /** x-coefficient of the polynomial that defines the curve. */
-    //val A: PFieldElement = PFieldElement(a, modulus = primeModulus)
-
-    /** Constant coefficient of the polynomial that defines the curve. */
-    //val B: PFieldElement = PFieldElement(b, modulus = primeModulus)
-
     /** Standard group generator. */
-    val g: ECqPGroupElement = ECqPGroupElement(this, gx, gy)
+    val g: VecGroupElement = VecGroupElement(this, gx, gy)
 
     /** Group unit element. */
-    val ONE: ECqPGroupElement = ECqPGroupElement(this, MINUS_ONE, MINUS_ONE)
+    val ONE: VecGroupElement = VecGroupElement(this, MINUS_ONE, MINUS_ONE)
 
     val bitLength: Int = primeModulus.bitLength()
+    val byteLength = (bitLength + 7) / 8
 
-    override fun toString(): String {
-        return "ECqPGroup($curveName)"
+    fun elementFromByteArray(ba: ByteArray): VecGroupElement {
+        val x = BigInteger(1, ByteArray(byteLength) { ba[it] })
+        val y = BigInteger(1, ByteArray(byteLength) { ba[byteLength+it] })
+        return VecGroupElement(this, x, y)
     }
 
-    fun randomElement(): ECqPGroupElement {
+    fun randomElement(): VecGroupElement {
         val r = java.util.Random()
-        for (j in 0 until Int.MAX_VALUE) {
+        for (j in 0 until 1000) { // limited in case theres a bug
             try {
                 val x = BigInteger(bitLength, r)
                 val fx = equationf(x)
 
                 if (jacobiSymbol(fx, primeModulus) == 1) {
-                    // val y1 = fx.sqrt()
                     val y2 = sqrt(fx)
-                    return ECqPGroupElement(this, x, y2) // LOOK dont need to test if on curve ??
+                    return VecGroupElement(this, x, y2, true)
                 }
             } catch (e: RuntimeException) {
                 throw RuntimeException("Unexpected format exception", e)
@@ -62,7 +59,7 @@ class ECqPGroup(
         throw RuntimeException("Failed to randomize a ro element")
     }
 
-    // note this isnt == BigInteger.sqrt()
+    // note this isnt == BigInteger.sqrt(). This is EC sqrt(), but we only need the x coordinate.
     fun sqrt(x: BigInteger): BigInteger {
         val p: BigInteger = primeModulus
 
@@ -201,7 +198,11 @@ class ECqPGroup(
         return right
     }
 
-    // could also copy out of BigInteger
+
+    override fun toString(): String {
+        return "ECqPGroup($curveName)"
+    }
+
     companion object {
         /** Will be used for the "infinity" element of the group.  */
         val MINUS_ONE = BigInteger((-1).toString(16), 16)

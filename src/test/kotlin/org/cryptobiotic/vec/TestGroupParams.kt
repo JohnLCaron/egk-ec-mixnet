@@ -7,7 +7,7 @@ class TestGroupParams {
     @Test
     fun showParamNames() {
         println(buildString {
-            ECqPGroupParams.curveNames.forEach { println(it) }
+            VecGroups.curveNames.forEach { println(it) }
         })
     }
 

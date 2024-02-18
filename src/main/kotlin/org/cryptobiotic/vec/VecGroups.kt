@@ -3,7 +3,7 @@ package org.cryptobiotic.vec
 import java.math.BigInteger
 import java.util.*
 
-class ECqPGroupParams(
+class VecGroups(
     pString: String,
     aString: String,
     bString: String,
@@ -30,27 +30,27 @@ class ECqPGroupParams(
     /** Order of the elliptic curve group. */
     val n: BigInteger
 
-    /** Co-order of the elliptic curve group. */
+    // Co-order of the elliptic curve group. h*n = |G|. this must be small (h <= 4) and preferably = 1
     val h: BigInteger
 
     init {
-        this.p = BigInteger("00$pString", 16) // why the 00 ?? im guessing they get lost
-        this.a = BigInteger("00$aString", 16)
-        this.b = BigInteger("00$bString", 16)
-        this.gx = BigInteger("00$gxString", 16)
-        this.gy = BigInteger("00$gyString", 16)
-        this.n = BigInteger("00$nString", 16)
-        this.h = BigInteger("00$hString", 16)
+        this.p = BigInteger(pString, 16)
+        this.a = BigInteger(aString, 16)
+        this.b = BigInteger(bString, 16)
+        this.gx = BigInteger(gxString, 16)
+        this.gy = BigInteger(gyString, 16)
+        this.n = BigInteger(nString, 16)
+        this.h = BigInteger(hString, 16)
     }
 
     companion object {
         /** Hashtable containing all named elliptic curve parameters. */
-        val NAMED_PARAMS = mutableMapOf<String, ECqPGroupParams>()
+        val NAMED_PARAMS = mutableMapOf<String, VecGroups>()
 
         init {
             // NIST
 
-            NAMED_PARAMS["prime192v3"] = ECqPGroupParams(
+            NAMED_PARAMS["prime192v3"] = VecGroups(
                 "fffffffffffffffffffffffffffffffeffffffffffffffff",
                 "fffffffffffffffffffffffffffffffefffffffffffffffc",
                 "22123dc2395a05caa7423daeccc94760a7d462256bd56916",
@@ -59,7 +59,7 @@ class ECqPGroupParams(
                 "ffffffffffffffffffffffff7a62d031c83f4294f640ec13",
                 "1"
             )
-            NAMED_PARAMS["prime192v2"] = ECqPGroupParams(
+            NAMED_PARAMS["prime192v2"] = VecGroups(
                 "fffffffffffffffffffffffffffffffeffffffffffffffff",
                 "fffffffffffffffffffffffffffffffefffffffffffffffc",
                 "cc22d6dfb95c6b25e49c0d6364a4e5980c393aa21668d953",
@@ -68,7 +68,7 @@ class ECqPGroupParams(
                 "fffffffffffffffffffffffe5fb1a724dc80418648d8dd31",
                 "1"
             )
-            NAMED_PARAMS["prime192v1"] = ECqPGroupParams(
+            NAMED_PARAMS["prime192v1"] = VecGroups(
                 "fffffffffffffffffffffffffffffffeffffffffffffffff",
                 "fffffffffffffffffffffffffffffffefffffffffffffffc",
                 "64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1",
@@ -77,7 +77,7 @@ class ECqPGroupParams(
                 "ffffffffffffffffffffffff99def836146bc9b1b4d22831",
                 "1"
             )
-            NAMED_PARAMS["prime256v1"] = ECqPGroupParams(
+            NAMED_PARAMS["prime256v1"] = VecGroups(
                 "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
                 "ffffffff00000001000000000000000000000000fffffffffffffffffffffffc",
                 "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
@@ -86,7 +86,7 @@ class ECqPGroupParams(
                 "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
                 "1"
             )
-            NAMED_PARAMS["prime239v3"] = ECqPGroupParams(
+            NAMED_PARAMS["prime239v3"] = VecGroups(
                 "7fffffffffffffffffffffff7fffffffffff8000000000007fffffffffff",
                 "7fffffffffffffffffffffff7fffffffffff8000000000007ffffffffffc",
                 "255705fa2a306654b1f4cb03d6a750a30c250102d4988717d9ba15ab6d3e",
@@ -95,7 +95,7 @@ class ECqPGroupParams(
                 "7fffffffffffffffffffffff7fffff975deb41b3a6057c3c432146526551",
                 "1"
             )
-            NAMED_PARAMS["prime239v2"] = ECqPGroupParams(
+            NAMED_PARAMS["prime239v2"] = VecGroups(
                 "7fffffffffffffffffffffff7fffffffffff8000000000007fffffffffff",
                 "7fffffffffffffffffffffff7fffffffffff8000000000007ffffffffffc",
                 "617fab6832576cbbfed50d99f0249c3fee58b94ba0038c7ae84c8c832f2c",
@@ -104,7 +104,7 @@ class ECqPGroupParams(
                 "7fffffffffffffffffffffff800000cfa7e8594377d414c03821bc582063",
                 "1"
             )
-            NAMED_PARAMS["prime239v1"] = ECqPGroupParams(
+            NAMED_PARAMS["prime239v1"] = VecGroups(
                 "7fffffffffffffffffffffff7fffffffffff8000000000007fffffffffff",
                 "7fffffffffffffffffffffff7fffffffffff8000000000007ffffffffffc",
                 "6b016c3bdcf18941d0d654921475ca71a9db2fb27d1d37796185c2942c0a",
@@ -115,7 +115,7 @@ class ECqPGroupParams(
             )
 
             // SEC
-            NAMED_PARAMS["secp192k1"] = ECqPGroupParams(
+            NAMED_PARAMS["secp192k1"] = VecGroups(
                 "fffffffffffffffffffffffffffffffffffffffeffffee37",
                 "0",
                 "3",
@@ -124,7 +124,7 @@ class ECqPGroupParams(
                 "fffffffffffffffffffffffe26f2fc170f69466a74defd8d",
                 "1"
             )
-            NAMED_PARAMS["secp192r1"] = ECqPGroupParams(
+            NAMED_PARAMS["secp192r1"] = VecGroups(
                 "fffffffffffffffffffffffffffffffeffffffffffffffff",
                 "fffffffffffffffffffffffffffffffefffffffffffffffc",
                 "64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1",
@@ -133,7 +133,7 @@ class ECqPGroupParams(
                 "ffffffffffffffffffffffff99def836146bc9b1b4d22831",
                 "1"
             )
-            NAMED_PARAMS["secp224k1"] = ECqPGroupParams(
+            NAMED_PARAMS["secp224k1"] = VecGroups(
                 "fffffffffffffffffffffffffffffffffffffffffffffffeffffe56d",
                 "0", "5",
                 "a1455b334df099df30fc28a169a467e9e47075a90f7e650eb6b7a45c",
@@ -141,7 +141,7 @@ class ECqPGroupParams(
                 "10000000000000000000000000001dce8d2ec6184caf0a971769fb1f7",
                 "1"
             )
-            NAMED_PARAMS["secp224r1"] = ECqPGroupParams(
+            NAMED_PARAMS["secp224r1"] = VecGroups(
                 "ffffffffffffffffffffffffffffffff000000000000000000000001",
                 "fffffffffffffffffffffffffffffffefffffffffffffffffffffffe",
                 "b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4",
@@ -150,7 +150,7 @@ class ECqPGroupParams(
                 "ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d",
                 "1"
             )
-            NAMED_PARAMS["secp256k1"] = ECqPGroupParams(
+            NAMED_PARAMS["secp256k1"] = VecGroups(
                 "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f",
                 "0",
                 "7",
@@ -159,7 +159,7 @@ class ECqPGroupParams(
                 "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
                 "1"
             )
-            NAMED_PARAMS["secp256r1"] = ECqPGroupParams(
+            NAMED_PARAMS["secp256r1"] = VecGroups(
                 "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
                 "ffffffff00000001000000000000000000000000fffffffffffffffffffffffc",
                 "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
@@ -168,7 +168,7 @@ class ECqPGroupParams(
                 "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
                 "1"
             )
-            NAMED_PARAMS["secp384r1"] = ECqPGroupParams(
+            NAMED_PARAMS["secp384r1"] = VecGroups(
                 "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
                 "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc",
                 "b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",
@@ -177,7 +177,7 @@ class ECqPGroupParams(
                 "ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973",
                 "1"
             )
-            NAMED_PARAMS["secp521r1"] = ECqPGroupParams(
+            NAMED_PARAMS["secp521r1"] = VecGroups(
                 "1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
                 "1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc",
                 "51953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00",
@@ -188,7 +188,7 @@ class ECqPGroupParams(
             )
 
             // TeleTrusT
-            NAMED_PARAMS["brainpoolp512r1"] = ECqPGroupParams(
+            NAMED_PARAMS["brainpoolp512r1"] = VecGroups(
                 "aadd9db8dbe9c48b3fd4e6ae33c9fc07cb308db3b3c9d20ed6639cca703308717d4d9b009bc66842aecda12ae6a380e62881ff2f2d82c68528aa6056583a48f3",
                 "7830a3318b603b89e2327145ac234cc594cbdd8d3df91610a83441caea9863bc2ded5d5aa8253aa10a2ef1c98b9ac8b57f1117a72bf2c7b9e7c1ac4d77fc94ca",
                 "3df91610a83441caea9863bc2ded5d5aa8253aa10a2ef1c98b9ac8b57f1117a72bf2c7b9e7c1ac4d77fc94cadc083e67984050b75ebae5dd2809bd638016f723",
@@ -197,7 +197,7 @@ class ECqPGroupParams(
                 "aadd9db8dbe9c48b3fd4e6ae33c9fc07cb308db3b3c9d20ed6639cca70330870553e5c414ca92619418661197fac10471db1d381085ddaddb58796829ca90069",
                 "1"
             )
-            NAMED_PARAMS["brainpoolp256r1"] = ECqPGroupParams(
+            NAMED_PARAMS["brainpoolp256r1"] = VecGroups(
                 "a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5377",
                 "7d5a0975fc2c3057eef67530417affe7fb8055c126dc5c6ce94a4b44f330b5d9",
                 "26dc5c6ce94a4b44f330b5d9bbd77cbf958416295cf7e1ce6bccdc18ff8c07b6",
@@ -206,7 +206,7 @@ class ECqPGroupParams(
                 "a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a7",
                 "1"
             )
-            NAMED_PARAMS["brainpoolp192r1"] = ECqPGroupParams(
+            NAMED_PARAMS["brainpoolp192r1"] = VecGroups(
                 "c302f41d932a36cda7a3463093d18db78fce476de1a86297",
                 "6a91174076b1e0e19c39c031fe8685c1cae040e5c69a28ef",
                 "469a28ef7c28cca3dc721d044f4496bcca7ef4146fbf25c9",
@@ -214,7 +214,7 @@ class ECqPGroupParams(
                 "14b690866abd5bb88b5f4828c1490002e6773fa2fa299b8f",
                 "c302f41d932a36cda7a3462f9e9e916b5be8f1029ac4acc1", "1"
             )
-            NAMED_PARAMS["brainpoolp224r1"] = ECqPGroupParams(
+            NAMED_PARAMS["brainpoolp224r1"] = VecGroups(
                 "d7c134aa264366862a18302575d1d787b09f075797da89f57ec8c0ff",
                 "68a5e62ca9ce6c1c299803a6c1530b514e182ad8b0042a59cad29f43",
                 "2580f63ccfe44138870713b1a92369e33e2135d266dbb372386c400b",
@@ -223,7 +223,7 @@ class ECqPGroupParams(
                 "d7c134aa264366862a18302575d0fb98d116bc4b6ddebca3a5a7939f",
                 "1"
             )
-            NAMED_PARAMS["brainpoolp320r1"] = ECqPGroupParams(
+            NAMED_PARAMS["brainpoolp320r1"] = VecGroups(
                 "d35e472036bc4fb7e13c785ed201e065f98fcfa6f6f40def4f92b9ec7893ec28fcd412b1f1b32e27",
                 "3ee30b568fbab0f883ccebd46d3f3bb8a2a73513f5eb79da66190eb085ffa9f492f375a97d860eb4",
                 "520883949dfdbc42d3ad198640688a6fe13f41349554b49acc31dccd884539816f5eb4ac8fb1f1a6",
@@ -232,7 +232,7 @@ class ECqPGroupParams(
                 "d35e472036bc4fb7e13c785ed201e065f98fcfa5b68f12a32d482ec7ee8658e98691555b44c59311",
                 "1"
             )
-            NAMED_PARAMS["brainpoolp384r1"] = ECqPGroupParams(
+            NAMED_PARAMS["brainpoolp384r1"] = VecGroups(
                 "8cb91e82a3386d280f5d6f7e50e641df152f7109ed5456b412b1da197fb71123acd3a729901d1a71874700133107ec53",
                 "7bc382c63d8c150c3c72080ace05afa0c2bea28e4fb22787139165efba91f90f8aa5814a503ad4eb04a8c7dd22ce2826",
                 "4a8c7dd22ce28268b39b55416f0447c2fb77de107dcd2a62e880ea53eeb62d57cb4390295dbc9943ab78696fa504c11",
@@ -243,7 +243,7 @@ class ECqPGroupParams(
             )
 
             // X9.62
-            NAMED_PARAMS["P-521"] = ECqPGroupParams(
+            NAMED_PARAMS["P-521"] = VecGroups(
                 "1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
                 "1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc",
                 "51953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00",
@@ -252,7 +252,7 @@ class ECqPGroupParams(
                 "1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409",
                 "1"
             )
-            NAMED_PARAMS["P-256"] = ECqPGroupParams(
+            NAMED_PARAMS["P-256"] = VecGroups(
                 "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
                 "ffffffff00000001000000000000000000000000fffffffffffffffffffffffc",
                 "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
@@ -261,7 +261,7 @@ class ECqPGroupParams(
                 "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
                 "1"
             )
-            NAMED_PARAMS["P-224"] = ECqPGroupParams(
+            NAMED_PARAMS["P-224"] = VecGroups(
                 "ffffffffffffffffffffffffffffffff000000000000000000000001",
                 "fffffffffffffffffffffffffffffffefffffffffffffffffffffffe",
                 "b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4",
@@ -270,7 +270,7 @@ class ECqPGroupParams(
                 "ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d",
                 "1"
             )
-            NAMED_PARAMS["P-384"] = ECqPGroupParams(
+            NAMED_PARAMS["P-384"] = VecGroups(
                 "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
                 "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc",
                 "b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",
@@ -279,7 +279,7 @@ class ECqPGroupParams(
                 "ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973",
                 "1"
             )
-            NAMED_PARAMS["P-192"] = ECqPGroupParams(
+            NAMED_PARAMS["P-192"] = VecGroups(
                 "fffffffffffffffffffffffffffffffeffffffffffffffff",
                 "fffffffffffffffffffffffffffffffefffffffffffffffc",
                 "64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1",
@@ -297,12 +297,12 @@ class ECqPGroupParams(
                 return res
             }
         
-        fun getECqPGroup(name: String): ECqPGroup {
-            val params: ECqPGroupParams? = NAMED_PARAMS.get(name)
+        fun getEcGroup(name: String): VecGroup {
+            val params: VecGroups? = NAMED_PARAMS.get(name)
             if (params == null) {
                 throw RuntimeException("Unknown named curve! ($name)")
             } else {
-                return ECqPGroup(name, params.a, params.b, primeModulus = params.p, order = params.n, params.gx, params.gy)
+                return VecGroup(name, params.a, params.b, primeModulus = params.p, order = params.n, params.gx, params.gy)
             }
         }
     }
