@@ -1,5 +1,5 @@
 # ~/.bashrc
-WORKING=~/tmp/working/
+WORKING=$1
 
 ./scripts/election-initialize.sh ${WORKING}/private src/test/data/mixnetInput ${WORKING}/public
 ./scripts/generate-and-encrypt-ballots.sh ${WORKING}/private 10 ${WORKING}/public

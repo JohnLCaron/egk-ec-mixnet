@@ -1,17 +1,128 @@
 # Egk Mixnet
 
-_last update 02.14.2024_
+_last update 02.22.2024_
 
 (Work in Progress)
 
 Explorations of mixnet implementations to be used with the ElectionGuard Kotlin library. 
 Besides being a port to modern Kotlin, the mixnet has been made parallel using Kotlin coroutines.
-Preliminary measurements show significant speedup vs Verificatum. For details, see [egk mixnet maths](docs/mixnet_maths.pdf)
 
 An optional interface to the GMP library has been added using Java 21 FFM. This means you need java 21 to compile and 
-run. If you remove that, you can use Java 17. 
+run. If you remove that, you can use Java 17. Using this library speeds up the overall workflow by 4-7x.
+For details, see [egk mixnet maths](docs/mixnet_maths.pdf)
 
-An early draft of a mixnet workflow script can be found in scripts/completeWorkflow.sh.
+## Download
+
+````
+cd <install-dir>
+git clone https://github.com/JohnLCaron/egk-mixnet.git
+cd egk-mixnet
+````
+
+## Build
+
+Prerequisites: Java 21
+
+To build the code:
+
+````
+./gradlew clean assemble
+./gradlew fatJar
+````
+
+If the library has changed and you need to update it:
+
+````
+cd ~/dev/github/egk-mixnet:
+git fetch origin
+git rebase -i origin/main
+````
+
+Then rebuild the code:
+
+````
+./gradlew clean assemble
+./gradlew fatJar
+````
+
+## Build the C library using GMP (optional)
+
+Install GMP on your machine into /usr/local/lib. You may use also use one of the other standard library directories, 
+eg /usr/lib, but you may have to modify dev/github/egk-mixnet/src/main/c/Makefile.
+
+Then build the interface to GMP:
+
+````
+cd ~/dev/github/egk-mixnet/src/main/c/:
+make
+sudo cp libegkgmp.so /usr/local/lib
+````
+
+The egk-mixnet library assumes that the library is in _/usr/local/lib/libegkgmp.so_.
+You can modify _src/main/java/org/cryptobiotic/gmp/RuntimeHelper.java_ and rebuild if needed.
+
+## Sample Workflow for testing
+
+````
+~/dev/github/egk-mixnet:$ ./scripts/completeWorkflow.sh working
+````
+
+Runs a complete test of the workflow and writes the output to whatever you set working to.
+Note that you should erase that directory before running.
+
+The components of this workflow are:
+
+###  election-initialize.sh
+
+2. Uses _src/test/data/mixnetInput/manifest.json_ for the electionguard manifest. (Change in election-initialize.sh if you want)
+3. Creates an electiongurad configuration file with default election parameters. (Change in election-initialize.sh if you want)
+4. Runs the electionguard keyceremony to create private electionguard directory.
+5. Copies the public electionguard files to the public mixnet directory.
+
+###  generate-and-encrypt-ballots.sh
+
+1. Generates random plaintext ballots from the given manifest, writes to the private electionguard directory.
+2. Encrypts those ballots with the public key, writes to the public mixnet directory.
+
+###  mixnet-shuffle.sh
+
+1. Shuffles the ballots using two shuffling phases, writes to the public mixnet directory.
+
+###  mixnet-verify.sh
+
+1. Runs the verifier on the mixnet proofs.
+
+###  tally-ballots.sh 
+
+1. Homomorphically accumulates encrypted ballots into an encrypted tally.
+
+###  tally-decrypt.sh working
+
+1. Uses trustee keys to decrypt the tally.
+
+## Public directory file layout (strawman)
+
+working/public
+  encryptedBallots/
+    eballot-id1.json
+    eballot-id2.json
+    ...
+  mix1/
+    Proof.json
+    Shuffled.bin
+  mix2/
+    Proof.json
+    Shuffled.bin
+  ...
+  mixN/
+  
+  constants.json
+  election_config.json
+  election_initialized.json
+  encrypted_tally.json
+  manifest.json
+  tally.json
+
 
 ## Authors
 - [John Caron](https://github.com/JohnLCaron)

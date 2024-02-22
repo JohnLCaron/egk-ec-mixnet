@@ -22,7 +22,7 @@ fi
 echo ""
 echo "***initialize election into ${PRIVATE_DIR} directory"
 
-mkdir -p  ${PRIVATE_DIR}
+mkdir -p ${PRIVATE_DIR}
 
 cp  ${MANIFEST_DIR}/manifest.json ${PRIVATE_DIR}/
 
