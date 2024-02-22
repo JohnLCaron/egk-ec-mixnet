@@ -5,11 +5,9 @@ _last update 02.22.2024_
 (Work in Progress)
 
 Explorations of mixnet implementations to be used with the ElectionGuard Kotlin library. 
-Besides being a port to modern Kotlin, the mixnet has been made parallel using Kotlin coroutines.
 
-An optional interface to the GMP library has been added using Java 21 FFM. This means you need java 21 to compile and 
-run. If you remove that, you can use Java 17. Using this library speeds up the overall workflow by 4-7x.
-For details, see [egk mixnet maths](docs/mixnet_maths.pdf)
+An optional interface to the GMP library has been added using Java 21 FFM. Using this library speeds up the overall workflow by 4-7x.
+For details, see [egk mixnet maths](docs/mixnet_maths.pdf) To use this you need Java 21 to compile and run.
 
 ## Download
 
@@ -74,10 +72,10 @@ The components of this workflow are:
 
 ###  election-initialize.sh
 
-2. Uses _src/test/data/mixnetInput/manifest.json_ for the electionguard manifest. (Change in election-initialize.sh if you want)
-3. Creates an electiongurad configuration file with default election parameters. (Change in election-initialize.sh if you want)
-4. Runs the electionguard keyceremony to create private electionguard directory.
-5. Copies the public electionguard files to the public mixnet directory.
+. Uses _src/test/data/mixnetInput/manifest.json_ for the electionguard manifest. (Change in election-initialize.sh if you want)
+. Creates an electiongurad configuration file with default election parameters. (Change in election-initialize.sh if you want)
+. Runs the electionguard keyceremony to create private electionguard directory.
+. Copies the public electionguard files to the public mixnet directory.
 
 ###  generate-and-encrypt-ballots.sh
 
@@ -102,6 +100,7 @@ The components of this workflow are:
 
 ## Public directory file layout (strawman)
 
+```
 working/public
   encryptedBallots/
     eballot-id1.json
@@ -122,7 +121,7 @@ working/public
   encrypted_tally.json
   manifest.json
   tally.json
-
+```
 
 ## Authors
 - [John Caron](https://github.com/JohnLCaron)
