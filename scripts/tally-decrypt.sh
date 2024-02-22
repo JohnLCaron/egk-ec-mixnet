@@ -16,7 +16,7 @@ fi
 echo ""
 echo "*** Decrypting encrypted tally..."
 
-CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-0.84-SNAPSHOT-all.jar"
 
 java -classpath $CLASSPATH \
   electionguard.cli.RunTrustedTallyDecryption \

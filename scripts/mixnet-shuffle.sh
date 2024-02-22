@@ -10,7 +10,7 @@ fi
 echo ""
 echo "***mixnet-shuffle and proof..."
 
-CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-0.84-SNAPSHOT-all.jar"
 
 mkdir -p  ${PUBLIC_DIR}/mix1
 mkdir -p  ${PUBLIC_DIR}/mix2
