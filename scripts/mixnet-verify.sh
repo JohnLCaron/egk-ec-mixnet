@@ -10,7 +10,7 @@ fi
 echo ""
 echo "***mixnet-verify..."
 
-CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-0.84-SNAPSHOT-all.jar"
 
 java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.RunVerifier \

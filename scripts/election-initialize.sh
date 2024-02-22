@@ -26,7 +26,7 @@ mkdir -p  ${PRIVATE_DIR}
 
 cp  ${MANIFEST_DIR}/manifest.json ${PRIVATE_DIR}/
 
-CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-0.84-SNAPSHOT-all.jar"
 
 echo "   create election configuration"
 

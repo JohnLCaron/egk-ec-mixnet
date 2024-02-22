@@ -25,7 +25,7 @@ echo "***generate and encrypt ballots:"
 mkdir -p  ${PRIVATE_DIR}/inputBallots
 mkdir -p  ${PUBLIC_DIR}/encryptedBallots
 
-CLASSPATH="build/libs/egkmixnet-0.8-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-0.84-SNAPSHOT-all.jar"
 
 echo "   Create ${NUM_BALLOTS} test ballots..."
 
