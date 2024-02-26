@@ -1,11 +1,16 @@
 package org.cryptobiotic.writer
 
 import org.cryptobiotic.eg.core.ElGamalCiphertext
+import org.cryptobiotic.eg.core.ElementModP
 import org.cryptobiotic.eg.core.GroupContext
+import org.cryptobiotic.eg.core.ecgroup.EcElementModP
+import org.cryptobiotic.eg.core.ecgroup.EcGroupContext
+import org.cryptobiotic.eg.core.ecgroup.VecGroup
 import org.cryptobiotic.maths.VectorCiphertext
 import java.io.File
 
-class BallotReader(val group: GroupContext, val width: Int) {
+class BallotReader(val group: GroupContext, val width: Int, val useAlt: Boolean = false) {
+    val show = false
     val textSize = 2 * group.MAX_BYTES_P // assumes both x and y
     val blockSize = 2 * textSize * width
 
@@ -16,10 +21,12 @@ class BallotReader(val group: GroupContext, val width: Int) {
             val file = File(filename) // gulp the entire file to a byte array
 
             file.forEachBlock(blockSize) { buffer, bytesRead ->
-                result.add(processRow(buffer))
+                result.add(
+                    if (useAlt) processRowAlt(buffer) else processRow(buffer)
+                )
                 totalBytes += bytesRead
             }
-            println("  read ${totalBytes} bytes nrows= ${result.size} from $filename")
+            if (show) println("  read ${totalBytes} bytes nrows= ${result.size} from $filename")
             return result
         } catch (t: Throwable) {
             println("Exception on $filename")
@@ -42,5 +49,27 @@ class BallotReader(val group: GroupContext, val width: Int) {
             ))
         }
         return VectorCiphertext(group, result)
+    }
+
+    fun processRowAlt(ba: ByteArray): VectorCiphertext {
+        val ecGroup = (group as EcGroupContext)
+        val result = mutableListOf<ElGamalCiphertext>()
+        var offset = 0
+        repeat(width) {
+            val padArray = ByteArray(textSize) { ba[offset + it] }
+            offset += textSize
+            val dataArray = ByteArray(textSize) { ba[offset + it] }
+            offset += textSize
+            result.add( ElGamalCiphertext(
+                binaryToElementModP(ecGroup, ecGroup.vecGroup, padArray),
+                binaryToElementModP(ecGroup, ecGroup.vecGroup, dataArray),
+            ))
+        }
+        return VectorCiphertext(group, result)
+    }
+
+    fun binaryToElementModP(group: EcGroupContext, vecGroup: VecGroup, b: ByteArray): ElementModP {
+        val elem = vecGroup.elementFromByteArray1(b)
+        return EcElementModP(group, elem!!)
     }
 }

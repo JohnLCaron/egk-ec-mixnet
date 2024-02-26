@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertTrue
 import org.cryptobiotic.maths.*
+import org.cryptobiotic.util.Stopwatch
 
 class ShuffleProofTest {
     private val useRegularB = false
@@ -173,15 +174,15 @@ class ShuffleProofTest {
         println("=========================================")
         println("nrows=$nrows, width= $width per row, N=$N, nthreads=$nthreads")
 
-        var starting = getSystemTimeInMillis()
+        var stopwatch = Stopwatch()
         group.getAndClearOpCounts()
 
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
 
-        stats.of("shuffle", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
+        stats.of("shuffle", "text", "shuffle").accum(stopwatch.stop(), N)
         if (showExps) println("  shuffle: ${group.getAndClearOpCounts()}")
 
-        starting = getSystemTimeInMillis()
+        stopwatch.start()
         runProof(
             group,
             "runShuffleProof",
@@ -191,7 +192,7 @@ class ShuffleProofTest {
             rnonces,
             psi,
             nthreads)
-        stats.of("proof", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
+        stats.of("proof", "text", "shuffle").accum(stopwatch.stop(), N)
         if (showExps) println("  proof: ${group.getAndClearOpCounts()} ${expectProof(nrows, width)}")
 
         if (showTiming) stats.show()
@@ -246,8 +247,8 @@ class ShuffleProofTest {
 
     @Test
     fun testSPVMatrix() {
-        runShuffleProofVerifyWithThreads(100, 34)
-        //runShuffleProofVerifyWithThreads(1000, 34)
+        //runShuffleProofVerifyWithThreads(100, 34)
+        runShuffleProofVerifyWithThreads(1000, 34)
         //runShuffleProofVerifyWithThreads(2000, 34)
     }
 

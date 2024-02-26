@@ -2,7 +2,7 @@
 WORKING=$1
 
 ./scripts/election-initialize.sh ${WORKING}/private src/test/data/mixnetInput ${WORKING}/public
-./scripts/generate-and-encrypt-ballots.sh ${WORKING}/private 100 ${WORKING}/public
+./scripts/generate-and-encrypt-ballots.sh ${WORKING}/private 1000 ${WORKING}/public
 ./scripts/mixnet-shuffle.sh ${WORKING}/public
 ./scripts/mixnet-verify.sh ${WORKING}/public
 # optional

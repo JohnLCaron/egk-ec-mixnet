@@ -1,19 +1,23 @@
-# Egk Mixnet
+# Egk Mixnet Elliptic Curves
 
-_last update 02.22.2024_
+_last update 02.26.2024_
 
 (Work in Progress)
 
 Explorations of mixnet implementations to be used with the ElectionGuard Kotlin library. 
 
-An optional interface to the GMP library has been added using Java 21 FFM. Using this library speeds up the overall workflow by 4-7x.
-For details, see [egk mixnet maths](docs/mixnet_maths.pdf) To use this you need Java 21 to compile and run.
+This version uses the [Egk Elliptic Curves library](https://github.com/JohnLCaron/egk-ec), 
+and the [Verificatum library](https://www.verificatum.org/,
+including the option to use the Verificatum C library. 
+
+Note that the EC implementation is not stable and will change in the future. However, other than
+different build instructions, this should not affect the API.
 
 ## Download
 
 ````
 cd <install-dir>
-git clone https://github.com/JohnLCaron/egk-mixnet.git
+git clone https://github.com/JohnLCaron/egk-ec-mixnet.git
 cd egk-mixnet
 ````
 
@@ -31,7 +35,7 @@ To build the code:
 If the library has changed and you need to update it:
 
 ````
-cd ~/dev/github/egk-mixnet:
+cd ~/dev/github/egk-ec-mixnet:
 git fetch origin
 git rebase -i origin/main
 ````
@@ -43,43 +47,30 @@ Then rebuild the code:
 ./gradlew fatJar
 ````
 
-## Build the C library using GMP (optional)
+## Build the Verificatum C library using GMP (optional)
 
-Install GMP on your machine into /usr/local/lib. You may use also use one of the other standard library directories, 
-eg /usr/lib, but you may have to modify dev/github/egk-mixnet/src/main/c/Makefile.
-
-Then build the interface to GMP:
-
-````
-cd ~/dev/github/egk-mixnet/src/main/c/:
-make
-sudo cp libegkgmp.so /usr/local/lib
-````
-
-The egk-mixnet library assumes that the library is in _/usr/local/lib/libegkgmp.so_.
-You can modify _src/main/java/org/cryptobiotic/gmp/RuntimeHelper.java_ and rebuild if needed.
+Follow the instructions in [Egk-ec Getting Started)(https://github.com/JohnLCaron/egk-ec/blob/main/docs/GettingStarted.md#using-the-verificatum-library-optional)
 
 ## Sample Workflow for testing
 
 ````
-~/dev/github/egk-mixnet:$ ./scripts/completeWorkflow.sh working
+~/dev/github/egk-ec-mixnet:$ ./scripts/completeWorkflow.sh working
 ````
 
-Runs a complete test of the workflow and writes the output to whatever you set working to.
-Note that you should erase that directory before running.
+Runs a complete test of the workflow and writes the output to whatever you set _working_ to.
 
 The components of this workflow are:
 
 ###  election-initialize.sh
 
-* Uses _src/test/data/mixnetInput/manifest.json_ for the electionguard manifest. (Change in election-initialize.sh if you want)
-* Creates an electiongurad configuration file with default election parameters. (Change in election-initialize.sh if you want)
-* Runs the electionguard keyceremony to create private electionguard directory.
-* Copies the public electionguard files to the public mixnet directory.
+* Uses _src/test/data/mixnetInput/manifest.json_ for the egk manifest. (Change in election-initialize.sh if you want)
+* Creates an egk configuration file with default election parameters. (Change in election-initialize.sh if you want)
+* Runs the egk keyceremony to create private egk directory.
+* Copies the public egk files to the public mixnet directory.
 
 ###  generate-and-encrypt-ballots.sh
 
-* Generates random plaintext ballots from the given manifest, writes to the private electionguard directory.
+* Generates random plaintext ballots from the given manifest, writes to the private egk directory.
 * Encrypts those ballots with the public key, writes to the public mixnet directory.
 
 ###  mixnet-shuffle.sh
