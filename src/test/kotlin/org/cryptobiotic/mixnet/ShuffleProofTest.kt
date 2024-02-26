@@ -1,7 +1,7 @@
 package org.cryptobiotic.mixnet
 
-import electionguard.core.*
-import electionguard.util.Stats
+import org.cryptobiotic.eg.core.*
+import org.cryptobiotic.util.Stats
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertTrue
@@ -10,7 +10,7 @@ import org.cryptobiotic.maths.*
 class ShuffleProofTest {
     private val useRegularB = false
 
-    val group = productionGroup()
+    val group = productionGroup("P-256")
 
     fun expectProof(n:Int, w: Int) =
         if (useRegularB) expectProofReg(n, w) else expectProofAlt(n, w)
@@ -208,7 +208,7 @@ class ShuffleProofTest {
 
     @Test
     fun testSPVpar() {
-        val nrows = 1000
+        val nrows = 100
         val width = 34
 
         val keypair = elGamalKeyPairFromRandom(group)

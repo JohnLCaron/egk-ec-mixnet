@@ -16,10 +16,10 @@ fi
 echo ""
 echo "*** Decrypting encrypted tally..."
 
-CLASSPATH="build/libs/egkmixnet-0.84-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-2.1-SNAPSHOT-all.jar"
 
 java -classpath $CLASSPATH \
-  electionguard.cli.RunTrustedTallyDecryption \
+  org.cryptobiotic.eg.cli.RunTrustedTallyDecryption \
     -in ${PUBLIC_DIR} \
     -trustees ${PRIVATE_DIR}/trustees \
     -out ${PUBLIC_DIR}

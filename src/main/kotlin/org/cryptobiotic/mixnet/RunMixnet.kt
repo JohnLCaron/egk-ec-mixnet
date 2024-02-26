@@ -1,13 +1,12 @@
 package org.cryptobiotic.mixnet
 
 import com.github.michaelbull.result.unwrap
-import electionguard.core.*
-import electionguard.publish.Consumer
-import electionguard.publish.makeConsumer
-import electionguard.util.Stopwatch
+import org.cryptobiotic.eg.core.*
+import org.cryptobiotic.eg.publish.Consumer
+import org.cryptobiotic.eg.publish.makeConsumer
+import org.cryptobiotic.util.Stopwatch
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
-import kotlinx.cli.default
 import kotlinx.cli.required
 import org.cryptobiotic.maths.VectorCiphertext
 import org.cryptobiotic.writer.BallotReader
@@ -21,31 +20,21 @@ class RunMixnet {
         @JvmStatic
         fun main(args: Array<String>) {
             val parser = ArgParser("RunMixnet")
-            val electionguardDir by parser.option(
+            val egkMixnetDir by parser.option(
                 ArgType.String,
-                shortName = "egDir",
-                description = "electionguard directory containing the init file"
+                shortName = "publicDir",
+                description = "egk mixnet public directory"
             ).required()
             val encryptedBallotDir by parser.option(
                 ArgType.String,
                 shortName = "eballots",
                 description = "Directory of encrypted ballots"
-            )
-            val inputBallots by parser.option(
+            ).required()
+            val inputBallotFile by parser.option(
                 ArgType.String,
                 shortName = "in",
                 description = "Input ciphertext binary file"
             )
-            val width by parser.option(
-                ArgType.Int,
-                shortName = "width",
-                description = "Number of ciphertexts in each ballot"
-            ).required()
-            val outputDir by parser.option(
-                ArgType.String,
-                shortName = "out",
-                description = "Output directory"
-            ).required()
             val mixName by parser.option(
                 ArgType.String,
                 shortName = "mix",
@@ -56,25 +45,27 @@ class RunMixnet {
             println( buildString {
                 appendLine("=========================================")
                 appendLine("  RunMixnet starting")
-                appendLine( "   electionguardDir= $electionguardDir")
+                appendLine( "   egkMixnetDir= $egkMixnetDir")
                 appendLine( "   encryptedBallotDir= $encryptedBallotDir")
-                appendLine( "   inputBallots= $inputBallots")
-                appendLine( "   width= $width")
-                appendLine( "   outputDir= $outputDir")
+                appendLine( "   inputBallotFile= $inputBallotFile")
                 appendLine( "   mixName= $mixName")
             })
-            val mixnet = Mixnet(electionguardDir, outputDir, width)
 
-            val ballots: List<VectorCiphertext>
-            if (encryptedBallotDir != null) {
-                ballots = readEncryptedBallots(mixnet.group, encryptedBallotDir!!)
-            } else if (inputBallots != null) {
-                ballots = mixnet.readInputBallots(inputBallots!!)
-            } else {
-                throw RuntimeException("Must specify either encryptedBallotDir or inputBallots")
+            val outputDir = "$egkMixnetDir/$mixName"
+            val mixnet = Mixnet(egkMixnetDir, outputDir)
+
+            val width: Int
+            val inputBallots: List<VectorCiphertext>
+            if (inputBallotFile == null) {
+                inputBallots = readEncryptedBallots(mixnet.group, encryptedBallotDir)
+                width = inputBallots[0].nelems
+            } else  {
+                width = readWidthFromEncryptedBallots(mixnet.group, encryptedBallotDir)
+                inputBallots = mixnet.readInputBallots(inputBallotFile!!, width)
             }
+            println(" RunMixnet with ${inputBallots.size} ballots of width $width")
 
-            val (shuffled, proof) = mixnet.runShuffleProof(ballots, mixName)
+            val (shuffled, proof) = mixnet.runShuffleProof(inputBallots, mixName)
             writeBallotsToFile(shuffled, "$outputDir/Shuffled.bin")
             writeProofOfShuffleJsonToFile(proof, "$outputDir/Proof.json")
             println(" RunMixnet complete successfully")
@@ -82,17 +73,18 @@ class RunMixnet {
     }
 }
 
-class Mixnet(egDir:String, outputDir:String, val width: Int) {
-    val group = productionGroup()
-    val consumer : Consumer = makeConsumer(group, egDir, true)
+class Mixnet(egDir:String, outputDir:String) {
+    val consumer : Consumer = makeConsumer(egDir)
+    val group = consumer.group
     val publicKey: ElGamalPublicKey
 
     init {
         val init = consumer.readElectionInitialized().unwrap()
         publicKey = init.jointPublicKey()
+        println("Mixnet using group ${group.constants.name}")
     }
 
-    fun readInputBallots(inputBallots: String): List<VectorCiphertext> {
+    fun readInputBallots(inputBallots: String, width: Int): List<VectorCiphertext> {
         val reader = BallotReader(group, width)
         return reader.readFromFile(inputBallots)
     }
@@ -113,7 +105,7 @@ class Mixnet(egDir:String, outputDir:String, val width: Int) {
 
         stopwatch.start()
         val proof = runProof(
-            group,
+            consumer.group,
             mixName,
             publicKey,
             w = ballots,
@@ -129,7 +121,7 @@ class Mixnet(egDir:String, outputDir:String, val width: Int) {
 }
 
 fun readEncryptedBallots(group: GroupContext, encryptedBallotDir: String): List<VectorCiphertext> {
-    val consumer : Consumer = makeConsumer(group, encryptedBallotDir, true)
+    val consumer : Consumer = makeConsumer(encryptedBallotDir, group)
 
     val mixnetBallots = mutableListOf<VectorCiphertext>()
     var first = true
@@ -144,6 +136,21 @@ fun readEncryptedBallots(group: GroupContext, encryptedBallotDir: String): List<
         }
         mixnetBallots.add(VectorCiphertext(group, ciphertexts))
         if (first) countCiphertexts = ciphertexts.size else require(countCiphertexts == ciphertexts.size)
+        first = false
     }
     return mixnetBallots
+}
+
+fun readWidthFromEncryptedBallots(group: GroupContext, encryptedBallotDir: String): Int {
+    val consumer : Consumer = makeConsumer(encryptedBallotDir, group)
+    var count = 1 // serial number
+    for (encryptedBallot in consumer.iterateEncryptedBallotsFromDir(encryptedBallotDir, null)) {
+        encryptedBallot.contests.forEach { contest ->
+            contest.selections.forEach { selection ->
+                count++
+            }
+        }
+        break
+    }
+    return count
 }

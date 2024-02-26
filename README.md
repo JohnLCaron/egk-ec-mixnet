@@ -72,31 +72,30 @@ The components of this workflow are:
 
 ###  election-initialize.sh
 
-. Uses _src/test/data/mixnetInput/manifest.json_ for the electionguard manifest. (Change in election-initialize.sh if you want)
-. Creates an electiongurad configuration file with default election parameters. (Change in election-initialize.sh if you want)
-. Runs the electionguard keyceremony to create private electionguard directory.
-. Copies the public electionguard files to the public mixnet directory.
+* Uses _src/test/data/mixnetInput/manifest.json_ for the electionguard manifest. (Change in election-initialize.sh if you want)
+* Creates an electiongurad configuration file with default election parameters. (Change in election-initialize.sh if you want)
+* Runs the electionguard keyceremony to create private electionguard directory.
+* Copies the public electionguard files to the public mixnet directory.
 
 ###  generate-and-encrypt-ballots.sh
 
-1. Generates random plaintext ballots from the given manifest, writes to the private electionguard directory.
-2. Encrypts those ballots with the public key, writes to the public mixnet directory.
+* Generates random plaintext ballots from the given manifest, writes to the private electionguard directory.
+* Encrypts those ballots with the public key, writes to the public mixnet directory.
 
 ###  mixnet-shuffle.sh
 
-1. Shuffles the ballots using two shuffling phases, writes to the public mixnet directory.
+* Shuffles the ballots using two shuffling phases, writes to the public mixnet directory.
 
 ###  mixnet-verify.sh
 
-1. Runs the verifier on the mixnet proofs.
+*  Runs the verifier on the mixnet proofs.
 
 ###  tally-ballots.sh 
-
-1. Homomorphically accumulates encrypted ballots into an encrypted tally.
+* Homomorphically accumulates encrypted ballots into an encrypted tally.
 
 ###  tally-decrypt.sh working
 
-1. Uses trustee keys to decrypt the tally.
+* Uses trustee keys to decrypt the tally.
 
 ## Public directory file layout (strawman)
 
@@ -112,7 +111,6 @@ working/public
   mix2/
     Proof.json
     Shuffled.bin
-  ...
   mixN/
   
   constants.json

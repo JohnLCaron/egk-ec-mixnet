@@ -1,6 +1,6 @@
 package org.cryptobiotic.maths
 
-import electionguard.core.*
+import org.cryptobiotic.eg.core.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
@@ -30,7 +30,7 @@ data class VectorP(val group: GroupContext, val elems: List<ElementModP> ) {
 
     fun product(): ElementModP {
         if (elems.isEmpty()) {
-            group.ONE_MOD_Q
+            return group.ONE_MOD_P
         }
         if (elems.count() == 1) {
             return elems[0]

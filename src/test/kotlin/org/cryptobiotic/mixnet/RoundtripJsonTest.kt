@@ -2,7 +2,7 @@ package org.cryptobiotic.mixnet
 
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.unwrap
-import electionguard.core.*
+import org.cryptobiotic.eg.core.*
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertEquals
@@ -17,7 +17,7 @@ class RoundtripJsonTest {
     val filenameProof = "testOut/proofOfShuffle.json"
     val filenameBallots = "testOut/ballots.json"
     val filenameShuffled = "testOut/shuffled.json"
-    val group = productionGroup()
+    val group = productionGroup("P-256")
     val keypair = elGamalKeyPairFromRandom(group)
 
     @Test

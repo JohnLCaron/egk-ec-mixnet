@@ -1,27 +1,28 @@
 package org.cryptobiotic.maths
 
-import electionguard.core.ElGamalCiphertext
-import electionguard.core.ElementModP
-import electionguard.core.GroupContext
+import org.cryptobiotic.eg.core.ElGamalCiphertext
+import org.cryptobiotic.eg.core.ElementModP
+import org.cryptobiotic.eg.core.GroupContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.cryptobiotic.gmp.EgkGmpLib
-import org.cryptobiotic.gmp.VmnProdPowWGmp
 import kotlin.math.max
 import kotlin.math.min
 
-enum class ProdColumnAlg { Gmp, Java }
+enum class ProdColumnAlg { Exp, Sexp }
 
 /** Component-wise product of the ballot's column vectors ^ exps. */
-class ProdColumnPow(val nthreads: Int, val alg: ProdColumnAlg? = null) {
+class ProdColumnPow(val group: GroupContext, val nthreads: Int, val alg: ProdColumnAlg? = null) {
 
     companion object {
+        val maxBatchSize = 84
+        val bitLength = 256 // exps always 256 bits
+        val width = 7       // so this is fixed also
         private val debugCores = false
 
-        val hasGmp by lazy { EgkGmpLib.loadIfAvailable() }
+        // val hasVec by lazy { EgkGmpLib.loadIfAvailable() }
 
         fun calcCores(): Int {
             val cores = Runtime.getRuntime().availableProcessors()
@@ -44,14 +45,13 @@ class ProdColumnPow(val nthreads: Int, val alg: ProdColumnAlg? = null) {
             alg: ProdColumnAlg? = null
         ): VectorCiphertext {
             val useCores = if (nthreads == null) calcCores() else nthreads
-            return ProdColumnPow(useCores, alg).prodColumnPow(rows, exps)
+            return ProdColumnPow(exps.group, useCores, alg).prodColumnPow(rows, exps)
         }
     }
 
     fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
         return if (nthreads < 2) {
             calcSingleThread(rows, exps)
-
         } else {
             PprodColumnPow(rows, exps, nthreads).calc()
         }
@@ -72,18 +72,13 @@ class ProdColumnPow(val nthreads: Int, val alg: ProdColumnAlg? = null) {
     }
 
     // compute Prod (col_i ^ exp_i)
-    private fun prodColumnPow(col: VectorP, exps: VectorQ): ElementModP {
-        require(exps.nelems == col.nelems)
-        return if (alg == ProdColumnAlg.Java) {
-            Prod(col powP exps)
-        } else if (alg == ProdColumnAlg.Gmp) { // force Gmp even if we dont have it
-            VmnProdPowWGmp.prodPow(col.elems, exps)
+    private fun prodColumnPow(bases: VectorP, exps: VectorQ): ElementModP {
+        require(exps.nelems == bases.nelems)
+        return if (alg == ProdColumnAlg.Sexp) {
+            group.prodPowers(bases.elems, exps.elems)
         } else {
-            if (hasGmp) {
-                VmnProdPowWGmp.prodPow(col.elems, exps)
-            } else {
-                Prod(col powP exps)
-            }
+            val pows = List( exps.nelems) { bases.elems[it].powP(exps.elems[it]) }
+            pows.reduce { a, b -> (a * b) }
         }
     }
 
@@ -97,8 +92,11 @@ class ProdColumnPow(val nthreads: Int, val alg: ProdColumnAlg? = null) {
         val pads = mutableMapOf<Int, MutableList<ElementModP>>()
         val datas = mutableMapOf<Int, MutableList<ElementModP>>()
 
+        init {
+            require(exps.nelems == rows.size,) {" exps.nelems ${exps.nelems} != rows.size ${rows.size}" }
+        }
+
         fun calc(): VectorCiphertext {
-            require(exps.nelems == rows.size)
 
             runBlocking {
                 val jobs = mutableListOf<Job>()
@@ -133,7 +131,7 @@ class ProdColumnPow(val nthreads: Int, val alg: ProdColumnAlg? = null) {
                     val columnPad = VectorP(group, column.map { it.pad })
                     var offset = 0
                     while (offset < nrows) {
-                        val batchSize = min(VmnProdPowWGmp.maxBatchSize, nrows - offset)
+                        val batchSize = min(ProdColumnPow.maxBatchSize, nrows - offset)
                         val baseBatch = columnPad.elems.subList(offset, offset + batchSize)
                         val expsBatch = exps.elems.subList(offset, offset + batchSize)
                         send(Triple(VectorP(group, baseBatch), VectorQ(group, expsBatch), col * 2))
@@ -146,7 +144,7 @@ class ProdColumnPow(val nthreads: Int, val alg: ProdColumnAlg? = null) {
                     val columnData = VectorP(group, column.map { it.data })
                     offset = 0
                     while (offset < nrows) {
-                        val batchSize = min(VmnProdPowWGmp.maxBatchSize, nrows - offset)
+                        val batchSize = min(ProdColumnPow.maxBatchSize, nrows - offset)
                         val baseBatch = columnData.elems.subList(offset, offset + batchSize)
                         val expsBatch = exps.elems.subList(offset, offset + batchSize)
                         send(Triple(VectorP(group, baseBatch), VectorQ(group, expsBatch), col * 2 + 1))

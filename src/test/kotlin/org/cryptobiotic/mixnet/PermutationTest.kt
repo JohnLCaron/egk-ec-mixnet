@@ -1,13 +1,13 @@
 package org.cryptobiotic.mixnet
 
-import electionguard.core.*
+import org.cryptobiotic.eg.core.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertNotEquals
 
 class PermutationTest {
-    val group = productionGroup()
+    val group = productionGroup("P-256")
 
     @Test
     fun testPermutation() {

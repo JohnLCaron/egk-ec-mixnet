@@ -22,15 +22,18 @@ fi
 echo ""
 echo "***generate and encrypt ballots:"
 
+rm -rf ${PRIVATE_DIR}/inputBallots/*
+rm -rf ${PUBLIC_DIR}/encryptedBallots/*
+
 mkdir -p  ${PRIVATE_DIR}/inputBallots
 mkdir -p  ${PUBLIC_DIR}/encryptedBallots
 
-CLASSPATH="build/libs/egkmixnet-0.84-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-2.1-SNAPSHOT-all.jar"
 
 echo "   Create ${NUM_BALLOTS} test ballots..."
 
 java -classpath $CLASSPATH \
-     electionguard.cli.RunCreateInputBallots \
+     org.cryptobiotic.eg.cli.RunCreateInputBallots \
        -manifest ${PRIVATE_DIR}/manifest.json \
        -out ${PRIVATE_DIR}/inputBallots \
        --nballots ${NUM_BALLOTS} \
@@ -39,7 +42,7 @@ java -classpath $CLASSPATH \
 echo "   Encrypting ${NUM_BALLOTS} ballots..."
 
 java -classpath $CLASSPATH \
-  electionguard.cli.RunBatchEncryption \
+  org.cryptobiotic.eg.cli.RunBatchEncryption \
     -in ${PRIVATE_DIR} \
     -ballots ${PRIVATE_DIR}/inputBallots \
     -eballots ${PUBLIC_DIR}/encryptedBallots \

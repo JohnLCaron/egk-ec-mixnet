@@ -26,12 +26,13 @@ mkdir -p ${PRIVATE_DIR}
 
 cp  ${MANIFEST_DIR}/manifest.json ${PRIVATE_DIR}/
 
-CLASSPATH="build/libs/egkmixnet-0.84-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-2.1-SNAPSHOT-all.jar"
 
 echo "   create election configuration"
 
- java -classpath $CLASSPATH electionguard.cli.RunCreateElectionConfig \
+java -classpath $CLASSPATH org.cryptobiotic.eg.cli.RunCreateElectionConfig \
     -manifest ${PRIVATE_DIR}/manifest.json \
+    -group P-256 \
     -nguardians 3 \
     -quorum 3 \
     -out ${PRIVATE_DIR} \
@@ -39,7 +40,7 @@ echo "   create election configuration"
 
 echo "   run KeyCeremony to generate the election keypair"
 
-java -classpath $CLASSPATH electionguard.cli.RunTrustedKeyCeremony \
+java -classpath $CLASSPATH org.cryptobiotic.eg.cli.RunTrustedKeyCeremony \
     -in ${PRIVATE_DIR} \
     -trustees ${PRIVATE_DIR}/trustees \
     -out ${PRIVATE_DIR}

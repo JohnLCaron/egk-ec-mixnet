@@ -1,6 +1,6 @@
 package org.cryptobiotic.maths
 
-import electionguard.core.*
+import org.cryptobiotic.eg.core.*
 
 data class VectorCiphertext(val group: GroupContext, val elems: List<ElGamalCiphertext> ) {
     val nelems = elems.size

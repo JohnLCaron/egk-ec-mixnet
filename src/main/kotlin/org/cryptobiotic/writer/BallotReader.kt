@@ -1,12 +1,13 @@
 package org.cryptobiotic.writer
 
-import electionguard.core.ElGamalCiphertext
-import electionguard.core.GroupContext
+import org.cryptobiotic.eg.core.ElGamalCiphertext
+import org.cryptobiotic.eg.core.GroupContext
 import org.cryptobiotic.maths.VectorCiphertext
 import java.io.File
 
 class BallotReader(val group: GroupContext, val width: Int) {
-    val blockSize = 2 * 512 * width
+    val textSize = 2 * group.MAX_BYTES_P // assumes both x and y
+    val blockSize = 2 * textSize * width
 
     fun readFromFile(filename: String): List<VectorCiphertext> {
         val result = mutableListOf<VectorCiphertext>()
@@ -18,7 +19,7 @@ class BallotReader(val group: GroupContext, val width: Int) {
                 result.add(processRow(buffer))
                 totalBytes += bytesRead
             }
-            // println("  read ${totalBytes} bytes from $filename")
+            println("  read ${totalBytes} bytes nrows= ${result.size} from $filename")
             return result
         } catch (t: Throwable) {
             println("Exception on $filename")
@@ -31,10 +32,10 @@ class BallotReader(val group: GroupContext, val width: Int) {
         val result = mutableListOf<ElGamalCiphertext>()
         var offset = 0
         repeat(width) {
-            val padArray = ByteArray(512) { ba[offset + it] }
-            offset += 512
-            val dataArray = ByteArray(512) { ba[offset + it] }
-            offset += 512
+            val padArray = ByteArray(textSize) { ba[offset + it] }
+            offset += textSize
+            val dataArray = ByteArray(textSize) { ba[offset + it] }
+            offset += textSize
             result.add( ElGamalCiphertext(
                 group.binaryToElementModPsafe(padArray, 0),
                 group.binaryToElementModPsafe(dataArray, 0),

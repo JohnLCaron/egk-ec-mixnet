@@ -7,16 +7,15 @@ plugins {
 }
 
 group = "org.cryptobiotic"
-version = "0.84-SNAPSHOT"
+version = "2.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation(files("libs/egklib-jvm-2.0.4-SNAPSHOT.jar"))
-    implementation("net.java.dev.jna:jna:5.14.0")
-
+    implementation(files("libs/egk-ec-2.1-SNAPSHOT.jar"))
+    implementation(files("libs/verificatum-vecj-2.2.0.jar"))
     implementation(libs.bundles.eglib)
     implementation(libs.bundles.xmlutil)
     implementation(libs.bundles.logging)
@@ -69,7 +68,7 @@ tasks.register("fatJar", Jar::class.java) {
     archiveBaseName = "egkmixnet"
 
     manifest {
-        attributes("Main-Class" to "org.cryptobiotic.verificabitur.vmn.RunVmnVerifier")
+        attributes("Main-Class" to "org.cryptobiotic.mixnet.RunVerifier")
     }
     from(configurations.runtimeClasspath.get()
         .onEach { println("add from runtimeClasspath: ${it.name}") }

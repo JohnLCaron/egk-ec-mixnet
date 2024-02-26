@@ -1,13 +1,13 @@
 package org.cryptobiotic.mixnet
 
-import electionguard.core.getSystemTimeInMillis
-import electionguard.core.productionGroup
-import electionguard.util.Stopwatch
-import electionguard.util.sigfig
+import org.cryptobiotic.eg.core.getSystemTimeInMillis
+import org.cryptobiotic.eg.core.productionGroup
+import org.cryptobiotic.util.Stopwatch
+import org.cryptobiotic.util.sigfig
 import kotlin.test.Test
 
 class TimingTest {
-    val group = productionGroup()
+    val group = productionGroup("P-256")
 
     @Test
     fun testProperties() {

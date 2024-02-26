@@ -10,10 +10,10 @@ fi
 echo ""
 echo "*** Tallying encrypted ballots..."
 
-CLASSPATH="build/libs/egkmixnet-0.84-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egkmixnet-2.1-SNAPSHOT-all.jar"
 
 java -classpath $CLASSPATH \
-  electionguard.cli.RunAccumulateTally \
+  org.cryptobiotic.eg.cli.RunAccumulateTally \
     -in ${PUBLIC_DIR} \
     -eballots ${PUBLIC_DIR}/encryptedBallots \
     -out ${PUBLIC_DIR}

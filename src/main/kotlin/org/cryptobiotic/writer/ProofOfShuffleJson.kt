@@ -5,9 +5,9 @@ package org.cryptobiotic.writer
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
-import electionguard.core.*
-import electionguard.json2.*
-import electionguard.util.ErrorMessages
+import org.cryptobiotic.eg.core.*
+import org.cryptobiotic.eg.publish.json.*
+import org.cryptobiotic.util.ErrorMessages
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json

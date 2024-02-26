@@ -1,6 +1,6 @@
 package org.cryptobiotic.mixnet
 
-import electionguard.core.*
+import org.cryptobiotic.eg.core.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
