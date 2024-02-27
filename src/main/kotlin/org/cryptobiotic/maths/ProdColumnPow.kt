@@ -49,15 +49,17 @@ class ProdColumnPow(val group: GroupContext, val nthreads: Int, val alg: ProdCol
         }
     }
 
+    // always use PprodColumnPow, even when nthreads = 1, to divide into batchs
+    // TODO is maxBatchSize optimal for ec ??
     fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
-        return if (nthreads < 2) {
+        /* return if (nthreads < 2) {
             calcSingleThread(rows, exps)
-        } else {
-            PprodColumnPow(rows, exps, nthreads).calc()
-        }
+        } else { */
+            return PprodColumnPow(rows, exps, nthreads).calc()
+        // }
     }
 
-    // TODO batching, but only if its gmp.
+    /*
     private fun calcSingleThread(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
         val nrows = rows.size
         require(exps.nelems == nrows)
@@ -69,7 +71,7 @@ class ProdColumnPow(val group: GroupContext, val nthreads: Int, val alg: ProdCol
             ElGamalCiphertext(padElement, dataElement)
         }
         return VectorCiphertext(exps.group, result)
-    }
+    } */
 
     // compute Prod (col_i ^ exp_i)
     private fun prodColumnPow(bases: VectorP, exps: VectorQ): ElementModP {

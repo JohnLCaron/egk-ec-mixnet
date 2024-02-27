@@ -56,15 +56,16 @@ class ShuffleProofTest {
         }
     }
 
+    // values are millisecs
     class Result(val nthreads: Int, val shuffle: Long, val proof: Long, val verify : Long) {
         val total = (shuffle+proof+verify)
+        val scale = 1.0e-3
 
         override fun toString() =
-            "${nthreads}, ${shuffle*.001}, ${proof*.001}, ${verify*.001}, ${total*.001}"
+            "${nthreads}, ${shuffle*scale}, ${proof*scale}, ${verify*scale}, ${total*scale}"
 
         fun toString3() =
-            "${nthreads}, ${shuffle + proof}, ${verify}"
-
+            "${nthreads}, ${shuffle + proof}, $verify"
     }
 
     @Test
@@ -285,16 +286,15 @@ class ShuffleProofTest {
                                  showExps: Boolean = false, showTiming: Boolean = false) : Result {
         val stats = Stats()
         val N = nrows*width
-        var starting = getSystemTimeInMillis()
+        val stopwatch = Stopwatch()
         group.getAndClearOpCounts()
 
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
-
-        val shuffleTime = getSystemTimeInMillis() - starting
-        stats.of("shuffle", "text", "shuffle").accum(shuffleTime, N)
+        val shuffleTime = stopwatch.elapsed()
+        stats.of("proof", "text", "shuffle").accum(stopwatch.stop(), N)
         if (showExps) println("  shuffle: ${group.getAndClearOpCounts()}")
 
-        starting = getSystemTimeInMillis()
+        stopwatch.start()
         val pos: ProofOfShuffle = runProof(
             group,
             "runShuffleProofAndVerify",
@@ -304,11 +304,11 @@ class ShuffleProofTest {
             rnonces,
             psi,
             nthreads)
-        val proofTime = getSystemTimeInMillis() - starting
-        stats.of("proof", "text", "shuffle").accum(proofTime, N)
+        val proofTime = stopwatch.elapsed()
+        stats.of("proof", "text", "shuffle").accum(stopwatch.stop(), N)
         if (showExps) println("  proof: ${group.getAndClearOpCounts()} ${expectProof(nrows, width)}")
 
-        starting = getSystemTimeInMillis()
+        stopwatch.start()
         val valid = runVerify(
             group,
             keypair.publicKey,
@@ -317,8 +317,8 @@ class ShuffleProofTest {
             pos,
             nthreads,
         )
-        val verifyTime = getSystemTimeInMillis() - starting
-        stats.of("verify", "text", "shuffle").accum(getSystemTimeInMillis() - starting, N)
+        val verifyTime = stopwatch.elapsed()
+        stats.of("verify", "text", "verify").accum(stopwatch.stop(), N)
         if (showExps) println("  verify: ${group.getAndClearOpCounts()} ${expectVerify(nrows, width)}")
 
         assertTrue(valid)
