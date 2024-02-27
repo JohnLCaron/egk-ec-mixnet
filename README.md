@@ -7,18 +7,19 @@ _last update 02.27.2024_
 Explorations of mixnet implementations to be used with the ElectionGuard Kotlin library. 
 
 This version uses the [Egk Elliptic Curves library](https://github.com/JohnLCaron/egk-ec), 
-and the [Verificatum library](https://www.verificatum.org/, including the option to use the Verificatum C library. 
+and the [Verificatum library](https://www.verificatum.org/, including the option to use the Verificatum C library
+for the low-level computation. 
 
-Note that the EC implementation is not stable and will change in the future. However other than
+Note that the EC implementation is not stable and will change in the future. However, other than
 different build instructions, this should not affect the API.
 
 ## Timing
 
-Encrypting a ballot with 12 contests and 4 selections each (total of 60 encryptions) takes about 23 ms per ballot. 
-This is without fixed base acceleration, TBD.
+Encrypting a ballot with 12 contests and 4 selections each (total of 60 encryptions) takes about 6 ms per ballot,
+using pre-computed tables for "fixed base acceleration". This does not appear to be using Montgomery forms for fast mod operation.
 
-Mixing 1000 ballots of width 34 takes ~ 27 secs single threaded with good parallelization. 
-Verification is similar [see plot](docs/egk-ec-mixnet.png).
+Mixing 1000 ballots of width 34 takes ~ 17 secs single threaded with good parallelization. 
+Verification is 30-50% slower, [see plot](docs/egk-ec-mixnet.png).
 
 ## Size
 
@@ -71,6 +72,7 @@ Then rebuild the code:
 ./gradlew clean assemble
 ./gradlew fatJar
 ````
+
 
 ## Build the Verificatum C library using GMP (optional)
 
