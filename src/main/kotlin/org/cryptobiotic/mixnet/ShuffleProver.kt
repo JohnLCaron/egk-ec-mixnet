@@ -1,3 +1,32 @@
+/*
+ * Copyright 2024 John Caron
+ *
+ * Derived work from:
+ * Copyright 2008-2019 Douglas Wikstrom
+ *
+ * This file is part of Verificatum Core Routines (VCR).
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.cryptobiotic.mixnet
 
 import org.cryptobiotic.eg.core.*
@@ -88,12 +117,10 @@ class ProverV(
 
     // CE 2N + 3n exp, 2n + 2*w + 4 acc
     fun commit(nthreads: Int): ProofCommittment {
-       // println("  start commit: ${group.showAndClearCountPowP()}")
 
         //         Ap = g.exp(alpha).mul(h.expProd(epsilon));
         val genEps = prodPowP(generators, epsilon, nthreads)    // CE n-1 exp, 1 acc
         val Ap = group.gPowP(alpha) * genEps                    // CE 1 acc
-        //println("  Ap: ${group.showAndClearCountPowP()}")
 
         // B_0 = g^{b_0} * h0^{e_0'} (1)
         // B_i = g^{b_i} * B_{i-1}^{e_i'} (2)
@@ -107,18 +134,15 @@ class ProverV(
             if (useRegularB) computeBreg(b, ipe) else computeBalt(gexps, hexps) // CE 2n acc, 2n exp else CE 4n acc
         }
             else PcomputeB(gexps, hexps, h0, beta, epsilon, nthreads).calc()
-        //println("  Bp: ${group.showAndClearCountPowP()}")
 
         val Cp = group.gPowP(gamma) // CE 1 acc
         val Dp = group.gPowP(delta) // CE 1 acc
-       // println("  Dp: ${group.showAndClearCountPowP()}")
 
         //// poe
-        //        Fp = pkey.exp(phi.neg()).mul(wp.expProd(epsilon));
+        //   Fp = pkey.exp(phi.neg()).mul(wp.expProd(epsilon));
         val enc0: VectorCiphertext = VectorCiphertext.zeroEncryptNeg(publicKey, phi)  // CE 2 * width acc
         val wp_eps: VectorCiphertext = ProdColumnPow.prodColumnPow(wp, epsilon, nthreads)  // CE 2 * N exp
         val Fp = enc0 * wp_eps
-       // println("  Fp: ${group.showAndClearCountPowP()}")
 
         return ProofCommittment(u, d, e, Ap, B, Bp, Cp, Dp, Fp)
     }

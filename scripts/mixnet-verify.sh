@@ -15,7 +15,7 @@ CLASSPATH="build/libs/egkmixnet-2.1-SNAPSHOT-all.jar"
 java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.RunVerifier \
     -publicDir ${PUBLIC_DIR} \
-    -eballots ${PUBLIC_DIR}/encryptedBallots \
+    -eballots ${PUBLIC_DIR}/encrypted_ballots/device42 \
     --mixDir ${PUBLIC_DIR}/mix1
 
 java -classpath $CLASSPATH \

@@ -34,7 +34,7 @@ tasks {
         // is needed when we wouldn't set the
         // sourceCompatiblity and targetCompatibility
         // properties of the Java plugin extension.
-        options.release.set(21)
+        options.release.set(17)
     }
     withType<Test>().all {
         useJUnitPlatform()
@@ -46,17 +46,17 @@ tasks {
         jvmArgs("--enable-preview")
     }
     withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "21"
+        kotlinOptions.jvmTarget = "17"
     }
 }
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(17)
 }
 tasks.test {
     useJUnitPlatform()

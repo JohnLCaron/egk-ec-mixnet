@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 
 class ProdPowersTest {
     val groups = listOf(
-        productionGroup("Integer group 4096"),
+        productionGroup("Integer4096"),
         EcGroupContext("P-256")
     )
 
