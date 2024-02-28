@@ -23,10 +23,10 @@ echo ""
 echo "***generate and encrypt ballots:"
 
 rm -rf ${PRIVATE_DIR}/inputBallots/*
-rm -rf ${PUBLIC_DIR}/encryptedBallots/*
+rm -rf ${PUBLIC_DIR}/encrypted_ballots/*
 
 mkdir -p  ${PRIVATE_DIR}/inputBallots
-mkdir -p  ${PUBLIC_DIR}/encryptedBallots
+mkdir -p  ${PUBLIC_DIR}/encrypted_ballots
 
 CLASSPATH="build/libs/egkmixnet-2.1-SNAPSHOT-all.jar"
 
@@ -45,7 +45,7 @@ java -classpath $CLASSPATH \
   org.cryptobiotic.eg.cli.RunBatchEncryption \
     -in ${PRIVATE_DIR} \
     -ballots ${PRIVATE_DIR}/inputBallots \
-    -eballots ${PUBLIC_DIR}/encryptedBallots \
+    -eballots ${PUBLIC_DIR}/encrypted_ballots/device42 \
     -device device42
 
-echo "   [DONE] Generating encrypted ballots into ${PUBLIC_DIR}/encryptedBallots/"
+echo "   [DONE] Generating encrypted ballots into ${PUBLIC_DIR}/encrypted_ballots/device42/"

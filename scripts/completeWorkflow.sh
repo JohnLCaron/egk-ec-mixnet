@@ -8,4 +8,5 @@ WORKING=$1
 # optional
 ./scripts/tally-ballots.sh ${WORKING}/public
 ./scripts/tally-decrypt.sh ${WORKING}/public ${WORKING}/private
+./scripts/verify-eg.sh ${WORKING}/public
 

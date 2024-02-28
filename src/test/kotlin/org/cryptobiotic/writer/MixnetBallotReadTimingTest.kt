@@ -16,7 +16,7 @@ class MixnetBallotReadTimingTest {
     @Test
     fun testMixnetRoundtrip() {
         val consumer : Consumer = makeConsumer(egkDir)
-        val width = readWidthFromEncryptedBallots(consumer.group, "$egkDir/encryptedBallots")
+        val width = readWidthFromEncryptedBallots(consumer.group, "$egkDir/encrypted_ballots/device42")
         val reader = BallotReader(consumer.group, width)
         val readerAlt = BallotReader(consumer.group, width, true)
 

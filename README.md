@@ -1,6 +1,6 @@
 # Egk Mixnet Elliptic Curves
 
-_last update 02.27.2024_
+_last update 02.28.2024_
 
 (Work in Progress)
 
@@ -8,7 +8,11 @@ Explorations of mixnet implementations to be used with the ElectionGuard Kotlin 
 
 This version uses the [Egk Elliptic Curves library](https://github.com/JohnLCaron/egk-ec), 
 and the [Verificatum library](https://www.verificatum.org/, including the option to use the Verificatum C library
-for the low-level computation. 
+
+This is a prototype feature and is not part of the ElectionGuard specification.
+The implementation for Elliptical Curves (EC) is taken largely from the [Verificatum library](https://www.verificatum.org/,
+including the option to use the Verificatum C library. See [VCR License](LICENSE_VCR.txt) for the license for this part of
+the library.
 
 Note that the EC implementation is not stable and will change in the future. However, other than
 different build instructions, this should not affect the API.
@@ -119,9 +123,13 @@ The components of this workflow are:
 
 ```
 working/public
-  encryptedBallots/
-    eballot-id1.json
-    eballot-id2.json
+  encrypted_ballots/
+    device1/
+      eballot-id1.json
+      eballot-id2.json
+    device2/
+      eballot-id1.json
+      eballot-id2.json
     ...
   mix1/
     Proof.json
