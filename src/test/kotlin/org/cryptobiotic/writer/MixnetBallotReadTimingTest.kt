@@ -8,8 +8,7 @@ import org.cryptobiotic.util.Stopwatch
 import kotlin.test.Test
 
 class MixnetBallotReadTimingTest {
-    // val egkDir =   "src/test/data/working/public"
-    val egkDir =   "working/public"
+    val egkDir =   "src/test/data/working/public"
     val ballotFile =   "$egkDir/mix1/Shuffled.bin"
     val ballotFile2 =   "$egkDir/mix2/Shuffled.bin"
 

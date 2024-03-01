@@ -11,7 +11,7 @@ import java.io.File
 
 class BallotReader(val group: GroupContext, val width: Int, val useAlt: Boolean = false) {
     val show = false
-    val textSize = 2 * group.MAX_BYTES_P // assumes both x and y
+    val textSize = group.MAX_BYTES_P
     val blockSize = 2 * textSize * width
 
     fun readFromFile(filename: String): List<VectorCiphertext> {
