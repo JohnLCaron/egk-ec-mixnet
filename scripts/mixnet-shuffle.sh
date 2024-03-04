@@ -3,14 +3,14 @@
 PUBLIC_DIR=$1
 
 if [ -z "${PUBLIC_DIR}" ]; then
-    rave_print "No public workspace provided."
+    echo "No public workspace provided."
     exit 1
 fi
 
 echo ""
 echo "***mixnet-shuffle and proof..."
 
-CLASSPATH="build/libs/egkmixnet-2.1-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 
 mkdir -p  ${PUBLIC_DIR}/mix1
 mkdir -p  ${PUBLIC_DIR}/mix2

@@ -3,14 +3,14 @@
 PUBLIC_DIR=$1
 
 if [ -z "${PUBLIC_DIR}" ]; then
-    rave_print "No workspace provided."
+    echo "No workspace provided."
     exit 1
 fi
 
 echo ""
 echo "*** Tallying encrypted ballots..."
 
-CLASSPATH="build/libs/egkmixnet-2.1-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 
 java -classpath $CLASSPATH \
   org.cryptobiotic.eg.cli.RunAccumulateTally \

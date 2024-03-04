@@ -3,6 +3,7 @@ package org.cryptobiotic.mixnet
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.unwrap
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.cryptobiotic.eg.core.*
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
@@ -18,6 +19,7 @@ import org.cryptobiotic.writer.readProofOfShuffleJsonFromFile
 class RunVerifier {
 
     companion object {
+        val logger = KotlinLogging.logger("RunVerifier")
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -45,19 +47,18 @@ class RunVerifier {
 
             parser.parse(args)
 
-            println( buildString {
-                appendLine("=========================================")
-                appendLine("  RunVerifier starting")
-                appendLine( "   egkMixnetDir= $egkMixnetDir")
+            val info = buildString {
+                appendLine("starting verification for $egkMixnetDir")
                 appendLine( "   encryptedBallotDir= $encryptedBallotDir")
-                appendLine( "   inputBallotFile= $inputBallotFile")
-                appendLine( "   mixDir= $mixDir")
-            })
+                append( "   inputBallotFile= $inputBallotFile")
+            }
+            logger.info{ info }
+
             val verifier = Verifier(egkMixnetDir)
 
             val result: Result<ProofOfShuffle, ErrorMessages> = readProofOfShuffleJsonFromFile(verifier.group, "$mixDir/Proof.json")
             if (result is Err) {
-                println("Error reading proof = $result")
+                logger.error { "Error reading proof = $result" }
                 throw RuntimeException("Error reading proof")
             }
             val pos = result.unwrap()
@@ -66,18 +67,27 @@ class RunVerifier {
             val ballots: List<VectorCiphertext>
             if (encryptedBallotDir != null) {
                 ballots = readEncryptedBallots(verifier.group, encryptedBallotDir!!)
-                println(" Read ${ballots.size} encryptedBallots ballots")
+                logger.debug { " Read ${ballots.size} encryptedBallots ballots" }
             } else if (inputBallotFile != null) {
                 ballots = verifier.readInputBallots(inputBallotFile!!, width)
-                println(" Read ${ballots.size} input ballots")
+                logger.debug { " Read ${ballots.size} input ballots" }
             } else {
                 throw RuntimeException("Must specify either encryptedBallotDir or inputBallotFile")
             }
             val shuffled: List<VectorCiphertext> = verifier.readInputBallots("$mixDir/Shuffled.bin", width)
-            println(" Read ${shuffled.size} shuffled ballots")
+            logger.debug { " Read ${shuffled.size} shuffled ballots" }
+
+            if (ballots.size != shuffled.size) {
+                logger.error { "size mismatch ballots ballots ${ballots.size} != ${shuffled.size}" }
+                throw RuntimeException("size mismatch")
+            }
+            if (ballots[0].nelems != shuffled[0].nelems) {
+                logger.error { "width mismatch ballots ${ballots[0].nelems} != ${shuffled[0].nelems}" }
+                throw RuntimeException("width mismatch")
+            }
 
             val valid = verifier.runVerifier(ballots, shuffled, pos)
-            println(" Verify valid = $valid")
+            logger.info { "valid = $valid" }
         }
     }
 }
@@ -106,7 +116,7 @@ class Verifier(egDir:String) {
         val nrows = ballots.size
         val width = ballots[0].nelems
         val N = nrows * width
-        println("  runVerifier nrows=$nrows, width= $width per row, N=$N, nthreads=$nthreads")
+        RunVerifier.logger.info { "nrows=$nrows, width= $width per row, N=$N, nthreads=$nthreads" }
 
         val stopwatch = Stopwatch()
 
@@ -118,7 +128,7 @@ class Verifier(egDir:String) {
             pos,
             nthreads,
         )
-        println("  verification took = ${Stopwatch.perRow(stopwatch.stop(), nrows)}")
+        RunVerifier.logger.debug { "verification took = ${Stopwatch.perRow(stopwatch.stop(), nrows)}" }
 
         return valid
     }
