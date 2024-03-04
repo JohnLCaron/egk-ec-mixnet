@@ -1,6 +1,6 @@
 # Egk Mixnet Elliptic Curves
 
-_last update 02.28.2024_
+_last update 04.04.2024_
 
 (Work in Progress)
 
@@ -27,15 +27,15 @@ Verification is 30-50% slower, [see plot](docs/egk-ec-mixnet.png).
 
 ## Size
 
-Currently we serialize both the x and y coordinates, so storage reduction is O(512/64). 
+We use "point compression" on the elliptic curve ElmeentModP, so we only serialize the x and "sign of y" coordinates, 
+giving a storage reduction of O(64/33) compared to serializing both coordinates, and O(512/33) compared to the integer group. 
 To estimate the computational cost of storing just x and recomputing y: BallotReader reads
 1000 ballots (width 34) in 235 msecs. If one computes y instead of reading it, it takes 1274 msecs.
 So, cost is ~ 1 sec for 34000 texts everytime you have to read the mixed ballots. This reduces size to
 O(512/33).
 
-Currently we store the ballots in binary and the proofs in json in hex which doubles the size.
+Currently we store the ballots in binary and the proofs in json in base64.
 For very large mixnets, you might want to store proofs as efficiently as possible, which argues for a protobuf option.
-If you want to keep json we could at least switch to base64 which would give us 8/6 of binary.
 
 ````
 readMixnetBallots from working/public/mix1/Shuffled.bin nrows = 1000 width=34
@@ -59,7 +59,7 @@ To build the code:
 
 ````
 ./gradlew clean assemble
-./gradlew fatJar
+./gradlew uberJar
 ````
 
 If the library has changed and you need to update it:
@@ -74,13 +74,14 @@ Then rebuild the code:
 
 ````
 ./gradlew clean assemble
-./gradlew fatJar
+./gradlew uberJar
 ````
-
 
 ## Build the Verificatum C library using GMP (optional)
 
 Follow the instructions in [Egk-ec Getting Started)(https://github.com/JohnLCaron/egk-ec/blob/main/docs/GettingStarted.md#using-the-verificatum-library-optional)
+
+This is needed for good performance.
 
 ## Sample Workflow for testing
 
@@ -89,6 +90,8 @@ Follow the instructions in [Egk-ec Getting Started)(https://github.com/JohnLCaro
 ````
 
 Runs a complete test of the workflow and writes the output to whatever you set _working_ to.
+
+After running, examine the log file at **_egkMixnet.log_**.
 
 The components of this workflow are:
 
@@ -101,8 +104,8 @@ The components of this workflow are:
 
 ###  generate-and-encrypt-ballots.sh
 
-* Generates random plaintext ballots from the given manifest, writes to the private egk directory.
-* Encrypts those ballots with the public key, writes to the public mixnet directory.
+* Generates random plaintext ballots from the given manifest, and writes their encryptions to the public mixnet directory.
+* This is the main functionality that needs to be implemented by the election voting system.
 
 ###  mixnet-shuffle.sh
 
@@ -118,6 +121,11 @@ The components of this workflow are:
 ###  tally-decrypt.sh working
 
 * Uses trustee keys to decrypt the tally.
+
+###  verify-eg.sh working
+
+* Runs the egk verifier to do electionguard verification.
+
 
 ## Public directory file layout (strawman)
 

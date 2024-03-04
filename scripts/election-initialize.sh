@@ -5,17 +5,17 @@ MANIFEST_DIR=$2
 PUBLIC_DIR=$3
 
 if [ -z "${PRIVATE_DIR}" ]; then
-    rave_print "No private workspace provided."
+    echo "No private workspace provided."
     exit 1
 fi
 
 if [ -z "${MANIFEST_DIR}" ]; then
-    rave_print "No manifest directory provided."
+    echo "No manifest directory provided."
     exit 1
 fi
 
 if [ -z "${PUBLIC_DIR}" ]; then
-    rave_print "No public workspace provided."
+    echo "No public workspace provided."
     exit 1
 fi
 
@@ -26,7 +26,7 @@ mkdir -p ${PRIVATE_DIR}
 
 cp  ${MANIFEST_DIR}/manifest.json ${PRIVATE_DIR}/
 
-CLASSPATH="build/libs/egkmixnet-2.1-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 
 echo "   create election configuration"
 

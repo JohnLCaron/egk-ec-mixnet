@@ -4,19 +4,19 @@ PUBLIC_DIR=$1
 PRIVATE_DIR=$2
 
 if [ -z "${PUBLIC_DIR}" ]; then
-    rave_print "No public workspace provided."
+    echo "No public workspace provided."
     exit 1
 fi
 
 if [ -z "${PRIVATE_DIR}" ]; then
-    rave_print "No private workspace provided."
+    echo "No private workspace provided."
     exit 1
 fi
 
 echo ""
 echo "*** Decrypting encrypted tally..."
 
-CLASSPATH="build/libs/egkmixnet-2.1-SNAPSHOT-all.jar"
+CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 
 java -classpath $CLASSPATH \
   org.cryptobiotic.eg.cli.RunTrustedTallyDecryption \

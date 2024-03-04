@@ -5,7 +5,7 @@
         </encoder>
     </appender>
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>egkServer.log</file>
+        <file>egkMixnet.log</file>
         <append>true</append>
         <encoder>
             <pattern>%date [%10r] %-5level %logger{15} - %msg %n</pattern>
@@ -15,6 +15,7 @@
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </root>
+    <logger name="ch.qos.logback" level="WARN"/>
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
 </configuration>
