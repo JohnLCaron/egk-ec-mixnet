@@ -8,15 +8,16 @@ import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.cryptobiotic.maths.*
+import org.cryptobiotic.testOut
 import org.cryptobiotic.writer.readMatrixCiphertextJsonFromFile
 import org.cryptobiotic.writer.readProofOfShuffleJsonFromFile
 import org.cryptobiotic.writer.writeMatrixCiphertextJsonToFile
 import org.cryptobiotic.writer.writeProofOfShuffleJsonToFile
 
 class RoundtripJsonTest {
-    val filenameProof = "testOut/proofOfShuffle.json"
-    val filenameBallots = "testOut/ballots.json"
-    val filenameShuffled = "testOut/shuffled.json"
+    val filenameProof = "$testOut/proofOfShuffle.json"
+    val filenameBallots = "$testOut/ballots.json"
+    val filenameShuffled = "$testOut/shuffled.json"
     val group = productionGroup("P-256")
     val keypair = elGamalKeyPairFromRandom(group)
 

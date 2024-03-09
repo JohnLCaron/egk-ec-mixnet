@@ -30,14 +30,14 @@ mkdir -p  ${PUBLIC_DIR}/encrypted_ballots
 
 CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 
-echo "   RunExampleEncryption for ${NUM_BALLOTS} ballots..."
+echo "   RunExampleEncryption for ${NUM_BALLOTS} ballots, 2 devices but single directory"
 
 /usr/bin/java -classpath $CLASSPATH \
   org.cryptobiotic.eg.cli.RunExampleEncryption \
     -config ${PRIVATE_DIR} \
-    -nballots 11 \
+    -nballots 21 \
     -pballotDir ${PRIVATE_DIR}/inputBallots \
-    -eballotDir ${PUBLIC_DIR}/encrypted_ballots/device42 \
-    -device device42
+    -eballotDir ${PUBLIC_DIR}/encrypted_ballots \
+    -device device42,yerDevice
 
-echo "   [DONE] Generating encrypted ballots into ${PUBLIC_DIR}/encrypted_ballots/device42"
+echo "   [DONE] Generating encrypted ballots into ${PUBLIC_DIR}/encrypted_ballots"
