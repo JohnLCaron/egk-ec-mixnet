@@ -35,8 +35,7 @@ java -classpath $CLASSPATH org.cryptobiotic.eg.cli.RunCreateElectionConfig \
     -group P-256 \
     -nguardians 3 \
     -quorum 3 \
-    -out ${PRIVATE_DIR} \
-    --baux0 device42
+    -out ${PRIVATE_DIR}
 
 echo "   run KeyCeremony to generate the election keypair"
 

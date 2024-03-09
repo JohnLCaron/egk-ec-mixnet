@@ -15,7 +15,7 @@ CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 java -classpath $CLASSPATH \
   org.cryptobiotic.eg.cli.RunAccumulateTally \
     -in ${PUBLIC_DIR} \
-    -eballots ${PUBLIC_DIR}/encrypted_ballots/device42 \
+    -eballots ${PUBLIC_DIR}/encrypted_ballots \
     -out ${PUBLIC_DIR}
 
 echo "   [DONE] Tallying encrypted ballots."
