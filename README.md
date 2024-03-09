@@ -1,6 +1,6 @@
 # Egk Mixnet Elliptic Curves
 
-_last update 04.04.2024_
+_last update 03.08.2024_
 
 (Work in Progress)
 
