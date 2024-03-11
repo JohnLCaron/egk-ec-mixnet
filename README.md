@@ -1,20 +1,19 @@
-# Egk Mixnet Elliptic Curves
+# Egk Elliptic Curves Mixnet 
 
-_last update 03.08.2024_
+_last update 03.10.2024_
 
 (Work in Progress)
 
-Explorations of mixnet implementations to be used with the ElectionGuard Kotlin library. 
-
-This version uses the [Egk Elliptic Curves library](https://github.com/JohnLCaron/egk-ec), 
-and the [Verificatum library](https://www.verificatum.org/, including the option to use the Verificatum C library
+Implementation of a mixnet using the [ElectionGuard Kotlin library](https://github.com/JohnLCaron/egk-ec),
+and the [Verificatum library](https://www.verificatum.org/, including the option to use the Verificatum C library.
+This is part of [VotingWork's cacvote project] (https://github.com/votingworks/cacvote).
 
 This is a prototype feature and is not part of the ElectionGuard specification.
 The implementation for Elliptical Curves (EC) is taken largely from the [Verificatum library](https://www.verificatum.org/,
 including the option to use the Verificatum C library. See [VCR License](LICENSE_VCR.txt) for the license for this part of
 the library.
 
-Note that the EC implementation is not stable and will change in the future. However, other than
+Note that the EC implementation is not stable and may change in the future. However, other than
 different build instructions, this should not affect the API.
 
 ## Timing
@@ -27,7 +26,7 @@ Verification is 30-50% slower, [see plot](docs/egk-ec-mixnet.png).
 
 ## Size
 
-We use "point compression" on the elliptic curve ElmeentModP, so we only serialize the x and "sign of y" coordinates, 
+We use "point compression" on the elliptic curve ElementModP, so we only serialize the x and "sign of y" coordinates, 
 giving a storage reduction of O(64/33) compared to serializing both coordinates, and O(512/33) compared to the integer group. 
 To estimate the computational cost of storing just x and recomputing y: BallotReader reads
 1000 ballots (width 34) in 235 msecs. If one computes y instead of reading it, it takes 1274 msecs.
