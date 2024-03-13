@@ -11,6 +11,8 @@ fi
 ./scripts/mixnet-shuffle.sh ${WORKING}/public
 ./scripts/mixnet-verify.sh ${WORKING}/public
 # optional
+#./scripts/mixnet-tally.sh ${WORKING}/public
+#./scripts/mixnet-tally-decrypt.sh ${WORKING}/public ${WORKING}/private
 ./scripts/tally-ballots.sh ${WORKING}/public
 ./scripts/tally-decrypt.sh ${WORKING}/public ${WORKING}/private
 ./scripts/verify-eg.sh ${WORKING}/public

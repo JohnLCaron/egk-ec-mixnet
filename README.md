@@ -1,15 +1,15 @@
 # Egk Elliptic Curves Mixnet 
 
-_last update 03.10.2024_
+_last update 03.12.2024_
 
 (Work in Progress)
 
-Implementation of a mixnet using the [ElectionGuard Kotlin library](https://github.com/JohnLCaron/egk-ec),
-and the [Verificatum library](https://www.verificatum.org/, including the option to use the Verificatum C library.
-This is part of [VotingWork's cacvote project] (https://github.com/votingworks/cacvote).
+Implementation of a mixnet using the [ElectionGuard Kotlin Elliptical Curve library](https://github.com/JohnLCaron/egk-ec),
+and the [Verificatum library](https://www.verificatum.org/), including the option to use the Verificatum C library.
+This is part of [VotingWork's cacvote project](https://github.com/votingworks/cacvote).
 
 This is a prototype feature and is not part of the ElectionGuard specification.
-The implementation for Elliptical Curves (EC) is taken largely from the [Verificatum library](https://www.verificatum.org/,
+The implementation for Elliptical Curves (EC) is taken largely from the [Verificatum library](https://www.verificatum.org/),
 including the option to use the Verificatum C library. See [VCR License](LICENSE_VCR.txt) for the license for this part of
 the library.
 
@@ -78,7 +78,7 @@ Then rebuild the code:
 
 ## Build the Verificatum C library using GMP (optional)
 
-Follow the instructions in [Egk-ec Getting Started)(https://github.com/JohnLCaron/egk-ec/blob/main/docs/GettingStarted.md#using-the-verificatum-library-optional)
+Follow the instructions in [Egk-ec Getting Started](https://github.com/JohnLCaron/egk-ec/blob/main/docs/GettingStarted.md#using-the-verificatum-library-optional)
 
 This is needed for good performance.
 

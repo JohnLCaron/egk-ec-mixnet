@@ -16,6 +16,7 @@ java -classpath $CLASSPATH \
   org.cryptobiotic.eg.cli.RunAccumulateTally \
     -in ${PUBLIC_DIR} \
     -eballots ${PUBLIC_DIR}/encrypted_ballots \
-    -out ${PUBLIC_DIR}
+    -out ${PUBLIC_DIR} \
+    -count
 
 echo "   [DONE] Tallying encrypted ballots."
