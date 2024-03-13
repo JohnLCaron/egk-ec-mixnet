@@ -11,9 +11,12 @@ import kotlinx.cli.required
 import org.cryptobiotic.eg.publish.Consumer
 import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.maths.VectorCiphertext
+import org.cryptobiotic.mixnet.RunMixnet.Companion.proofFilename
+import org.cryptobiotic.mixnet.RunMixnet.Companion.shuffledFilename
 import org.cryptobiotic.util.ErrorMessages
 import org.cryptobiotic.util.Stopwatch
 import org.cryptobiotic.writer.BallotReader
+import org.cryptobiotic.writer.readMixnetConfigFromFile
 import org.cryptobiotic.writer.readProofOfShuffleJsonFromFile
 
 class RunVerifier {
@@ -34,47 +37,64 @@ class RunVerifier {
                 shortName = "eballots",
                 description = "Directory of encrypted ballots"
             )
-            val inputBallotFile by parser.option(
+            val inputMixDir by parser.option(
                 ArgType.String,
                 shortName = "in",
-                description = "Input ciphertext binary file"
+                description = "Input mix directory"
             )
-            val mixDir by parser.option(
+            val outputMixDir by parser.option(
                 ArgType.String,
                 shortName = "mix",
-                description = "Mix directory"
+                description = "Output Mix directory"
             ).required()
 
             parser.parse(args)
 
             val info = buildString {
-                appendLine("starting verification for $egkMixnetDir")
+                appendLine("starting proof verification")
+                appendLine( "   egkMixnetDir= $egkMixnetDir")
                 appendLine( "   encryptedBallotDir= $encryptedBallotDir")
-                append( "   inputBallotFile= $inputBallotFile")
+                appendLine( "   inputMixDir= $inputMixDir")
+                append( "   outputMixDir= $outputMixDir")
             }
             logger.info{ info }
 
             val verifier = Verifier(egkMixnetDir)
-
-            val result: Result<ProofOfShuffle, ErrorMessages> = readProofOfShuffleJsonFromFile(verifier.group, "$mixDir/Proof.json")
-            if (result is Err) {
-                logger.error { "Error reading proof = $result" }
+            val resultPos: Result<ProofOfShuffle, ErrorMessages> = readProofOfShuffleJsonFromFile(verifier.group, "$outputMixDir/$proofFilename")
+            if (resultPos is Err) {
+                logger.error { "Error reading proof = $resultPos" }
                 throw RuntimeException("Error reading proof")
             }
-            val pos = result.unwrap()
-            val width = pos.Fp.nelems
+            val pos = resultPos.unwrap()
+
+            val configFilename = "$outputMixDir/${RunMixnet.configFilename}"
+            val resultConfig = readMixnetConfigFromFile(configFilename)
+            if (resultConfig is Err) {
+                RunMixnet.logger.error {"Error reading MixnetConfig from $configFilename err = $resultConfig" }
+                return
+            }
+            val config = resultConfig.unwrap()
 
             val ballots: List<VectorCiphertext>
-            if (encryptedBallotDir != null) {
-                ballots = readEncryptedBallots(verifier.group, encryptedBallotDir!!)
+            if (encryptedBallotDir != null && inputMixDir != null) {
+                logger.error { "RunVerifier must specify only one of encryptedBallotDir and inputMixDir" }
+                return
+
+            } else if (encryptedBallotDir != null) {
+                val pair = readEncryptedBallots(verifier.group, encryptedBallotDir!!)
+                ballots = pair.first
                 logger.debug { " Read ${ballots.size} encryptedBallots ballots" }
-            } else if (inputBallotFile != null) {
-                ballots = verifier.readInputBallots(inputBallotFile!!, width)
+
+            } else if (inputMixDir != null) {
+                ballots = verifier.readInputBallots("$inputMixDir/$shuffledFilename", config.width)
                 logger.debug { " Read ${ballots.size} input ballots" }
+
             } else {
-                throw RuntimeException("Must specify either encryptedBallotDir or inputBallotFile")
+                RunMixnet.logger.error {"RunVerifier must specify encryptedBallotDir or inputMixDir" }
+                return
             }
-            val shuffled: List<VectorCiphertext> = verifier.readInputBallots("$mixDir/Shuffled.bin", width)
+
+            val shuffled: List<VectorCiphertext> = verifier.readInputBallots("$outputMixDir/$shuffledFilename", config.width)
             logger.debug { " Read ${shuffled.size} shuffled ballots" }
 
             if (ballots.size != shuffled.size) {

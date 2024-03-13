@@ -26,8 +26,7 @@ echo "  mixnet-shuffle and proof written to ${PUBLIC_DIR}/mix1"
 java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.RunMixnet \
     -publicDir ${PUBLIC_DIR} \
-    -eballots ${PUBLIC_DIR}/encrypted_ballots \
-    --inputBallotFile ${PUBLIC_DIR}/mix1/Shuffled.bin \
+    --inputMixDir ${PUBLIC_DIR}/mix1 \
     --mixName mix2
 
 echo "  [DONE] mixnet-shuffle and proof written to ${PUBLIC_DIR}/mix2"

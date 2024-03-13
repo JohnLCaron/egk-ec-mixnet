@@ -16,12 +16,12 @@ java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.RunVerifier \
     -publicDir ${PUBLIC_DIR} \
     -eballots ${PUBLIC_DIR}/encrypted_ballots \
-    --mixDir ${PUBLIC_DIR}/mix1
+    --outputMixDir ${PUBLIC_DIR}/mix1
 
 java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.RunVerifier \
     -publicDir ${PUBLIC_DIR} \
-    --inputBallotFile ${PUBLIC_DIR}/mix1/Shuffled.bin \
-    --mixDir ${PUBLIC_DIR}/mix2
+    --inputMixDir ${PUBLIC_DIR}/mix1 \
+    --outputMixDir ${PUBLIC_DIR}/mix2
 
 echo " [DONE] Verifying mix1 and mix2 "

@@ -14,7 +14,7 @@ if [ -z "${PRIVATE_DIR}" ]; then
 fi
 
 echo ""
-echo "*** Decrypting encrypted tally..."
+echo "*** Decrypting electionguard tally..."
 
 CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 
@@ -24,4 +24,4 @@ java -classpath $CLASSPATH \
     -trustees ${PRIVATE_DIR}/trustees \
     -out ${PUBLIC_DIR}
 
-echo "   [DONE] Decrypted tally in ${PUBLIC_DIR}/tally.json"
+echo "   [DONE] Decrypted electionguard tally into ${PUBLIC_DIR}/tally.json"
