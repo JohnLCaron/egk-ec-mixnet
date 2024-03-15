@@ -1,11 +1,11 @@
 # Egk Elliptic Curves Mixnet 
 
-_last update 03.12.2024_
+_last update 03.13.2024_
 
 (Work in Progress)
 
 Implementation of a mixnet using the [ElectionGuard Kotlin Elliptical Curve library](https://github.com/JohnLCaron/egk-ec),
-and the [Verificatum library](https://www.verificatum.org/), including the option to use the Verificatum C library.
+and the [Verificatum library](https://www.verificatum.org/).
 This is part of [VotingWork's cacvote project](https://github.com/votingworks/cacvote).
 
 This is a prototype feature and is not part of the ElectionGuard specification.
@@ -60,6 +60,8 @@ To build the code:
 ./gradlew clean assemble
 ./gradlew uberJar
 ````
+
+## Rebuild
 
 If the library has changed and you need to update it:
 
@@ -139,12 +141,15 @@ working/public
       eballot-id2.json
     ...
   mix1/
-    Proof.json
-    Shuffled.bin
+    mix_config.json
+    proof_of_shuffle.json
+    ShuffledBallots.bin
   mix2/
-    Proof.json
-    Shuffled.bin
+    mix_config.json
+    proof_of_shuffle.json
+    ShuffledBallots.bin
   mixN/
+    ...
   
   constants.json
   election_config.json
@@ -153,7 +158,6 @@ working/public
   manifest.json
   tally.json
 ```
-
 
 ## Authors
 - [John Caron](https://github.com/JohnLCaron)

@@ -70,7 +70,7 @@ JC Comments:
     Call this "Digital Path table". **DigitalPath.csv**.
 
 **These decrypted K^sn need to be public, to check for duplicates. And the proofs of proper decryption should also be on the BB.
-    decrypted_sn.json: row, encrypted, decrypted, proof. verifier.**
+    decrypted_sns.json: row, encrypted, decrypted, proof. verifier.**
 
 4.5 Ive added an optional tally of the shuffled-ballots, to verify that it agrees with the electionguard tally. 
 (Not sure if you want this as part of the workflow, or if its just an internal sanity check.)
