@@ -20,6 +20,8 @@ class RunMixnet {
         val logger = KotlinLogging.logger("RunMixnet")
         val configFilename = "mix_config.json"
         val proofFilename = "proof_of_shuffle.json"
+        val decryptedSnsFilename = "decrypted_sns.json"
+
         val shuffledFilename = "ShuffledBallots.bin"
 
         @JvmStatic
