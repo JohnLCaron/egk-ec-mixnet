@@ -21,7 +21,7 @@ CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 /usr/bin/java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.cli.RunPballotTable \
     -publicDir ${PUBLIC_DIR} \
-    -pballotDir ${PRIVATE_DIR}/inputBallots \
+    -pballotDir ${PRIVATE_DIR}/input_ballots \
     --missingPct 10
 
 echo "   [DONE] Generated simulated paper ballot table into ${PUBLIC_DIR}/table-pballot.json"

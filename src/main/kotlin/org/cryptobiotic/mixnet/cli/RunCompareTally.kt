@@ -9,6 +9,7 @@ import kotlinx.cli.default
 import kotlinx.cli.required
 import org.cryptobiotic.eg.publish.makeConsumer
 
+// compare the tallies from electionguard and a shuffled mix.
 class RunCompareTally {
 
     companion object {

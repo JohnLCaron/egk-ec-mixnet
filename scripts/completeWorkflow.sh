@@ -24,3 +24,4 @@ fi
 ./scripts/table-mixnet.sh ${WORKING}/public ${WORKING}/private
 ./scripts/table-pballot.sh ${WORKING}/public ${WORKING}/private
 ./scripts/pballot-decrypt.sh ${WORKING}/public ${WORKING}/private
+./scripts/verify-decryptions.sh ${WORKING}/public ${WORKING}/private
