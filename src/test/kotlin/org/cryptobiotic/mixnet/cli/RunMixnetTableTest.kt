@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet
+package org.cryptobiotic.mixnet.cli
 
 import kotlin.test.Test
 

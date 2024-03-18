@@ -1,4 +1,4 @@
-package org.cryptobiotic.writer
+package org.cryptobiotic.mixnet.writer
 
 import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.eg.core.elGamalKeyPairFromRandom

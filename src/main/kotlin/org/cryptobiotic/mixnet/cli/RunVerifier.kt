@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet
+package org.cryptobiotic.mixnet.cli
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
@@ -11,13 +11,15 @@ import kotlinx.cli.required
 import org.cryptobiotic.eg.publish.Consumer
 import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.maths.VectorCiphertext
-import org.cryptobiotic.mixnet.RunMixnet.Companion.proofFilename
-import org.cryptobiotic.mixnet.RunMixnet.Companion.shuffledFilename
+import org.cryptobiotic.mixnet.ProofOfShuffle
+import org.cryptobiotic.mixnet.cli.RunMixnet.Companion.proofFilename
+import org.cryptobiotic.mixnet.cli.RunMixnet.Companion.shuffledFilename
+import org.cryptobiotic.mixnet.runVerify
 import org.cryptobiotic.util.ErrorMessages
 import org.cryptobiotic.util.Stopwatch
-import org.cryptobiotic.writer.BallotReader
-import org.cryptobiotic.writer.readMixnetConfigFromFile
-import org.cryptobiotic.writer.readProofOfShuffleJsonFromFile
+import org.cryptobiotic.mixnet.writer.BallotReader
+import org.cryptobiotic.mixnet.writer.readMixnetConfigFromFile
+import org.cryptobiotic.mixnet.writer.readProofOfShuffleJsonFromFile
 
 class RunVerifier {
 

@@ -3,7 +3,6 @@ package org.cryptobiotic.mixnet
 import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.maths.*
 
-
 // pcommit = u, part of the ProofOfShuffle
 // PoSBasicTW line 452
 // Prover computes a permutation commitment.

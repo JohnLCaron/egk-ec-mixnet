@@ -16,7 +16,7 @@ mkdir -p  ${PUBLIC_DIR}/mix1
 mkdir -p  ${PUBLIC_DIR}/mix2
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.mixnet.RunMixnet \
+  org.cryptobiotic.mixnet.cli.RunMixnet \
     -publicDir ${PUBLIC_DIR} \
     -eballots ${PUBLIC_DIR}/encrypted_ballots \
     --mixName mix1
@@ -24,7 +24,7 @@ java -classpath $CLASSPATH \
 echo "  mixnet-shuffle and proof written to ${PUBLIC_DIR}/mix1"
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.mixnet.RunMixnet \
+  org.cryptobiotic.mixnet.cli.RunMixnet \
     -publicDir ${PUBLIC_DIR} \
     --inputMixDir ${PUBLIC_DIR}/mix1 \
     --mixName mix2
