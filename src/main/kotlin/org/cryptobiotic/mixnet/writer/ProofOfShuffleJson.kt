@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalSerializationApi::class)
 
-package org.cryptobiotic.writer
+package org.cryptobiotic.mixnet.writer
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok

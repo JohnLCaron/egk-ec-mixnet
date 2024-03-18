@@ -1,4 +1,4 @@
-package org.cryptobiotic.mixnet
+package org.cryptobiotic.mixnet.cli
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.unwrap
@@ -7,11 +7,13 @@ import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.required
 import org.cryptobiotic.eg.cli.RunTrustedTallyDecryption
-import org.cryptobiotic.eg.decrypt.Decryptor2
+import org.cryptobiotic.eg.decrypt.CipherDecryptionAndProof
+import org.cryptobiotic.eg.decrypt.CipherDecryptor
+import org.cryptobiotic.eg.decrypt.Ciphertext
 import org.cryptobiotic.eg.decrypt.Guardians
 import org.cryptobiotic.eg.publish.makeConsumer
+import org.cryptobiotic.mixnet.writer.*
 import org.cryptobiotic.util.ErrorMessages
-import org.cryptobiotic.writer.*
 
 class RunMixnetTable {
 
@@ -77,29 +79,33 @@ class RunMixnetTable {
 
             val reader = BallotReader(group, config.width)
             val shuffled = reader.readFromFile("$mixDir/${RunMixnet.shuffledFilename}")
-            val encryptedSns = shuffled.map { it.elems[0] }
+            val encryptedSns = shuffled.map { Ciphertext(it.elems[0]) }
 
             val trustees = RunTrustedTallyDecryption.readDecryptingTrustees(publicDir, trusteeDir)
             val guardians = Guardians(group, electionInit.guardians)
-            val decryptor2 = Decryptor2(group, electionInit.extendedBaseHash, electionInit.jointPublicKey(), guardians, trustees)
+            val decryptor = CipherDecryptor(group, electionInit.extendedBaseHash, electionInit.jointPublicKey(), guardians, trustees)
 
             val errs = ErrorMessages("testEncryptDecryptVerify")
-            val decryptionAndProofs = decryptor2.decrypt(encryptedSns, errs, false)
+            val decryptionAndProofs: List<CipherDecryptionAndProof>? = decryptor.decrypt(encryptedSns, errs)
             if (errs.hasErrors()) {
+                logger.error { "decryptor2.decrypt failed errors = $errs"}
                 println("decryptor2.decrypt failed errors = $errs")
                 return
             }
+            requireNotNull(decryptionAndProofs)
 
             val result = decryptionAndProofs.mapIndexed { rowIdx, (decryption, proof) ->
-                DecryptedSn(rowIdx, decryption.ciphertext, decryption.T, proof)
+                val (T, _) = decryption.decryptCiphertext(electionInit.jointPublicKey(), true)
+                val ciphertext = (decryption.cipher as Ciphertext).delegate
+                DecryptedSn(rowIdx, ciphertext, T, proof)
             }
 
             val resultJson = result.map { it.publishJson() }
-            val outputFile = "$publicDir/${RunMixnet.decryptedSnsFilename}"
-            writeDecryptedSnsToFile( DecryptedSnsJson(resultJson), outputFile)
+            val decryptedSnsFile = "$publicDir/${RunMixnet.decryptedSnsFilename}"
+            writeDecryptedSnsToFile( DecryptedSnsJson(resultJson), decryptedSnsFile)
 
-            logger.info { "wrote ${result.size} decryptedSns to $outputFile" }
-            println( "wrote ${result.size} decryptedSns to $outputFile" )
+            logger.info { "wrote ${result.size} decryptedSns to $decryptedSnsFile" }
+            println( "wrote ${result.size} decryptedSns to $decryptedSnsFile" )
         }
     }
 

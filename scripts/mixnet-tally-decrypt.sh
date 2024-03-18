@@ -26,7 +26,7 @@ java -classpath $CLASSPATH \
     -out ${PUBLIC_DIR}/mix1
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.mixnet.RunCompareTally \
+  org.cryptobiotic.mixnet.cli.RunCompareTally \
     -publicDir ${PUBLIC_DIR} \
     --mixDir ${PUBLIC_DIR}/mix1 \
     -show
@@ -41,7 +41,7 @@ java -classpath $CLASSPATH \
     -out ${PUBLIC_DIR}/mix2
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.mixnet.RunCompareTally \
+  org.cryptobiotic.mixnet.cli.RunCompareTally \
     -publicDir ${PUBLIC_DIR} \
     --mixDir ${PUBLIC_DIR}/mix2 \
     -show

@@ -1,4 +1,4 @@
-package org.cryptobiotic.writer
+package org.cryptobiotic.mixnet.writer
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
@@ -38,12 +38,12 @@ data class DecryptedSn(
 fun DecryptedSn.publishJson() =
     DecryptedSnJson(shuffledRow, encrypted_sn.publishJson(), Ksn.publishJson(),  proof.publishJson())
 
-fun DecryptedSnJson.import(group: GroupContext, errs: ErrorMessages = ErrorMessages("ChaumPedersenJson.import")): DecryptedSn? {
+fun DecryptedSnJson.import(group: GroupContext, errs: ErrorMessages = ErrorMessages("DecryptedSnsJson.import")): DecryptedSn? {
     val encryptedSn = this.encrypted_sn.import(group) ?: errs.addNull("malformed encrypted_sn") as ElGamalCiphertext?
-    val beta = this.Ksn.import(group) ?: errs.addNull("malformed beta") as ElementModP?
+    val Ksn = this.Ksn.import(group) ?: errs.addNull("malformed beta") as ElementModP?
     val proof = this.proof.import(group) ?: errs.addNull("malformed proof") as ChaumPedersenProof?
 
-    return if (errs.hasErrors()) null else DecryptedSn(this.shuffled_row, encryptedSn!!, beta!!, proof!!)
+    return if (errs.hasErrors()) null else DecryptedSn(this.shuffled_row, encryptedSn!!, Ksn!!, proof!!)
 }
 
 fun writeDecryptedSnsToFile(decryptedSns: DecryptedSnsJson, filename: String) {

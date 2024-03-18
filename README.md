@@ -1,6 +1,6 @@
 # Egk Elliptic Curves Mixnet 
 
-_last update 03.13.2024_
+_last update 03.17.2024_
 
 (Work in Progress)
 
@@ -15,6 +15,33 @@ the library.
 
 Note that the EC implementation is not stable and may change in the future. However, other than
 different build instructions, this should not affect the API.
+
+<!-- TOC -->
+* [Egk Elliptic Curves Mixnet](#egk-elliptic-curves-mixnet-)
+  * [Timing](#timing)
+  * [Size](#size)
+  * [Download](#download)
+  * [Build](#build)
+  * [Rebuild](#rebuild)
+  * [Build the Verificatum C library using GMP (optional)](#build-the-verificatum-c-library-using-gmp-optional)
+  * [Sample Workflow for testing](#sample-workflow-for-testing)
+    * [electionguard](#electionguard)
+      * [election-initialize.sh](#election-initializesh)
+      * [generate-and-encrypt-ballots.sh](#generate-and-encrypt-ballotssh)
+      * [eg-tally.sh](#eg-tallysh)
+      * [eg-tally-decrypt.sh working](#eg-tally-decryptsh-working)
+      * [eg-verify.sh working](#eg-verifysh-working)
+    * [mixnet](#mixnet)
+      * [mixnet-shuffle.sh](#mixnet-shufflesh)
+      * [mixnet-verify.sh](#mixnet-verifysh)
+      * [optionally check tallies match](#optionally-check-tallies-match)
+    * [cacvote](#cacvote)
+      * [table-mixnet.sh](#table-mixnetsh)
+      * [table-pballot.sh](#table-pballotsh)
+      * [pballot-decrypt](#pballot-decrypt)
+  * [Directory file layout (strawman)](#directory-file-layout-strawman)
+  * [Authors](#authors)
+<!-- TOC -->
 
 ## Timing
 
@@ -96,39 +123,66 @@ After running, examine the log file at **_egkMixnet.log_**.
 
 The components of this workflow are:
 
-###  election-initialize.sh
+### electionguard
+
+####  election-initialize.sh
 
 * Uses _src/test/data/mixnetInput/manifest.json_ for the egk manifest. (Change in election-initialize.sh if you want)
 * Creates an egk configuration file with default election parameters. (Change in election-initialize.sh if you want)
 * Runs the egk keyceremony to create private egk directory.
 * Copies the public egk files to the public mixnet directory.
 
-###  generate-and-encrypt-ballots.sh
+####  generate-and-encrypt-ballots.sh
 
 * Generates random plaintext ballots from the given manifest, and writes their encryptions to the public mixnet directory.
 * This is the main functionality that needs to be implemented by the election voting system.
 
-###  mixnet-shuffle.sh
+####  eg-tally.sh
 
-* Shuffles the ballots using two shuffling phases, writes to the public mixnet directory.
+* Homomorphically accumulates digital ballots into an encrypted tally.
 
-###  mixnet-verify.sh
-
-*  Runs the verifier on the mixnet proofs.
-
-###  tally-ballots.sh 
-* Homomorphically accumulates encrypted ballots into an encrypted tally.
-
-###  tally-decrypt.sh working
+####  eg-tally-decrypt.sh working
 
 * Uses trustee keys to decrypt the tally.
 
-###  verify-eg.sh working
+####  eg-verify.sh working
 
 * Runs the egk verifier to do electionguard verification.
 
 
-## Public directory file layout (strawman)
+### mixnet
+
+####  mixnet-shuffle.sh
+
+* Shuffles the ballots using two shuffling phases, writes to the public mixnet directory.
+
+####  mixnet-verify.sh
+
+*  Runs the verifier on the mixnet proofs.
+
+####  optionally check tallies match
+
+* mixnet-tally.sh: Homomorphically accumulates shuffled ballots from each mix into an encrypted tally.
+* mixnet-tally-decrypt.sh: decrypt each mix tally, and check that it equals the digital ballot tally.
+
+### cacvote
+
+####  table-mixnet.sh
+
+* From the last mix's ShuffledBallots, generate table of decrypted (K^sn) serial numbers and proofs.
+
+####  table-pballot.sh
+
+* Simulate a table of paper ballot serial numbers and their physical locations.
+  Pass in "--missingPct percent" to simulate some percent of paper ballots were not recieved.
+
+####  pballot-decrypt
+
+* From a paper ballot's serial number, find the corresponding shuffled ballot and decrypt it. 
+  Place decrypted ballot into private directory.
+
+
+## Directory file layout (strawman)
 
 ```
 working/public
@@ -157,6 +211,23 @@ working/public
   encrypted_tally.json
   manifest.json
   tally.json
+  
+  decrypted_sns.json
+  table-pballot.json
+  
+working/private 
+  input_ballots/ 
+    pballot-id1.json
+    pballot-id2.json
+    ...
+  trustees/
+    decrypting_trustee-name1
+    decrypting_trustee-name2
+    ...
+  decrypted_ballots/
+    dballot-sn1.json
+    dballot-sn2.json
+    ...
 ```
 
 ## Authors

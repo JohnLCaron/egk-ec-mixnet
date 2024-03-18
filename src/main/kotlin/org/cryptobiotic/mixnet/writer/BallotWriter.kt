@@ -1,4 +1,4 @@
-package org.cryptobiotic.writer
+package org.cryptobiotic.mixnet.writer
 
 import org.cryptobiotic.maths.VectorCiphertext
 import java.io.FileOutputStream

@@ -1,22 +1,22 @@
-package org.cryptobiotic.mixnet
+package org.cryptobiotic.mixnet.cli
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.unwrap
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.cryptobiotic.eg.core.*
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.required
+import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.eg.election.*
 import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.eg.publish.makePublisher
 import org.cryptobiotic.eg.tally.AccumulateTally
 import org.cryptobiotic.maths.VectorCiphertext
-import org.cryptobiotic.mixnet.RunMixnet.Companion.shuffledFilename
+import org.cryptobiotic.mixnet.cli.RunMixnet.Companion.shuffledFilename
 import org.cryptobiotic.util.ErrorMessages
-import org.cryptobiotic.writer.BallotReader
-import org.cryptobiotic.writer.MixnetConfig
-import org.cryptobiotic.writer.readMixnetConfigFromFile
+import org.cryptobiotic.mixnet.writer.BallotReader
+import org.cryptobiotic.mixnet.writer.MixnetConfig
+import org.cryptobiotic.mixnet.writer.readMixnetConfigFromFile
 
 class RunMixnetTally {
 
@@ -88,7 +88,8 @@ class RunMixnetTally {
             val errs = ErrorMessages("RunAccumulateTally on Shuffled Ballots")
             var nrows = 0
             shuffled.forEach {
-                val eballot: EncryptedBallotIF = rehydrate(manifest, electionInit.extendedBaseHash, it)
+                val ballotId = it.elems[0].hashCode().toString()
+                val eballot: EncryptedBallotIF = rehydrate(manifest, ballotId, electionInit.extendedBaseHash, it)
                 if (!accumulator.addCastBallot(eballot, errs)) {
                     println("  got error $errs")
                 }
@@ -111,33 +112,33 @@ class RunMixnetTally {
             logger.info { "nrows=$nrows, width= ${config.width} per row" }
         }
 
-        fun rehydrate(manifest: ManifestIF, electionId: UInt256, row: VectorCiphertext): EncryptedBallotIF {
+        fun rehydrate(manifest: ManifestIF, ballotId: String, electionId: UInt256, row: VectorCiphertext): EncryptedBallotIF {
             val sn = row.elems[0]
             var colIdx = 1
             val contests = manifest.contests.map { contest ->
                 val selections = contest.selections.map { selection ->
                     ESelection(row.elems[colIdx++], selection.selectionId, selection.sequenceOrder)
                 }
-                EContest(contest.contestId, selections, contest.sequenceOrder)
+                EContest(contest.contestId, selections, contest.sequenceOrder, null)
             }
-            return EBallot(sn, contests, electionId, EncryptedBallot.BallotState.CAST)
+            return EBallot(ballotId, sn, contests, electionId, EncryptedBallot.BallotState.CAST)
         }
     }
 }
 
 private class EBallot(
-    val sn: ElGamalCiphertext,
+    override val ballotId: String,
+    override val encryptedSn: ElGamalCiphertext?,
     override val contests: List<EncryptedBallotIF.Contest>,
     override val electionId: UInt256,
     override val state: EncryptedBallot.BallotState
-): EncryptedBallotIF {
-    override val ballotId = "dunno-${sn.hashCode()}"
-}
+): EncryptedBallotIF
 
 private class EContest(
     override val contestId: String,
     override val selections: List<EncryptedBallotIF.Selection>,
-    override val sequenceOrder: Int
+    override val sequenceOrder: Int,
+    override val contestData: HashedElGamalCiphertext?
 ): EncryptedBallotIF.Contest
 
 private class ESelection(

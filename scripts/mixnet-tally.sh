@@ -13,12 +13,12 @@ echo "***mixnet-tally, compare to electionguard tally..."
 CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.mixnet.RunMixnetTally \
+  org.cryptobiotic.mixnet.cli.RunMixnetTally \
     -publicDir ${PUBLIC_DIR} \
     --mixDir ${PUBLIC_DIR}/mix1
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.mixnet.RunMixnetTally \
+  org.cryptobiotic.mixnet.cli.RunMixnetTally \
     -publicDir ${PUBLIC_DIR} \
     --mixDir ${PUBLIC_DIR}/mix2
 

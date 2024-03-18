@@ -1,8 +1,8 @@
-package org.cryptobiotic.writer
+package org.cryptobiotic.mixnet.writer
 
 import org.cryptobiotic.eg.publish.Consumer
 import org.cryptobiotic.eg.publish.makeConsumer
-import org.cryptobiotic.mixnet.readWidthFromEncryptedBallots
+import org.cryptobiotic.mixnet.cli.readWidthFromEncryptedBallots
 import org.cryptobiotic.util.Stats
 import org.cryptobiotic.util.Stopwatch
 import kotlin.test.Test

@@ -1,18 +1,21 @@
-package org.cryptobiotic.mixnet
+package org.cryptobiotic.mixnet.cli
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.unwrap
+import kotlinx.cli.ArgParser
+import kotlinx.cli.ArgType
+import kotlinx.cli.required
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.eg.publish.Consumer
 import org.cryptobiotic.eg.publish.makeConsumer
-import org.cryptobiotic.util.Stopwatch
-import kotlinx.cli.ArgParser
-import kotlinx.cli.ArgType
-import kotlinx.cli.required
 import org.cryptobiotic.eg.publish.json.publishJson
+import org.cryptobiotic.util.Stopwatch
 import org.cryptobiotic.maths.VectorCiphertext
-import org.cryptobiotic.writer.*
+import org.cryptobiotic.mixnet.ProofOfShuffle
+import org.cryptobiotic.mixnet.runProof
+import org.cryptobiotic.mixnet.shuffle
+import org.cryptobiotic.mixnet.writer.*
 
 class RunMixnet {
 
@@ -21,6 +24,7 @@ class RunMixnet {
         val configFilename = "mix_config.json"
         val proofFilename = "proof_of_shuffle.json"
         val decryptedSnsFilename = "decrypted_sns.json"
+        val pballotTableFilename = "pballot_table.json"
 
         val shuffledFilename = "ShuffledBallots.bin"
 
