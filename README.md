@@ -1,6 +1,6 @@
 # Egk Elliptic Curves Mixnet 
 
-_last update 03.17.2024_
+_last update 03.18.2024_
 
 (Work in Progress)
 
@@ -29,8 +29,8 @@ different build instructions, this should not affect the API.
       * [election-initialize.sh](#election-initializesh)
       * [generate-and-encrypt-ballots.sh](#generate-and-encrypt-ballotssh)
       * [eg-tally.sh](#eg-tallysh)
-      * [eg-tally-decrypt.sh working](#eg-tally-decryptsh-working)
-      * [eg-verify.sh working](#eg-verifysh-working)
+      * [eg-tally-decrypt.sh](#eg-tally-decryptsh)
+      * [eg-verify.sh](#eg-verifysh)
     * [mixnet](#mixnet)
       * [mixnet-shuffle.sh](#mixnet-shufflesh)
       * [mixnet-verify.sh](#mixnet-verifysh)
@@ -39,6 +39,7 @@ different build instructions, this should not affect the API.
       * [table-mixnet.sh](#table-mixnetsh)
       * [table-pballot.sh](#table-pballotsh)
       * [pballot-decrypt](#pballot-decrypt)
+      * [verify-decryptions](#verify-decryptions)
   * [Directory file layout (strawman)](#directory-file-layout-strawman)
   * [Authors](#authors)
 <!-- TOC -->
@@ -141,11 +142,11 @@ The components of this workflow are:
 
 * Homomorphically accumulates digital ballots into an encrypted tally.
 
-####  eg-tally-decrypt.sh working
+####  eg-tally-decrypt.sh
 
 * Uses trustee keys to decrypt the tally.
 
-####  eg-verify.sh working
+####  eg-verify.sh
 
 * Runs the egk verifier to do electionguard verification.
 
@@ -180,6 +181,11 @@ The components of this workflow are:
 
 * From a paper ballot's serial number, find the corresponding shuffled ballot and decrypt it. 
   Place decrypted ballot into private directory.
+
+####  verify-decryptions
+
+* Verify the proofs in the decrypted serial numbers and decrypted ballots.
+  If the original, plaintext ballots are available, compare the ballot decryptions to the originals.
 
 
 ## Directory file layout (strawman)
