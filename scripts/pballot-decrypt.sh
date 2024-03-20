@@ -21,7 +21,7 @@ CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.cli.RunPaperBallotDecrypt \
     -publicDir ${PUBLIC_DIR} \
-    -psn random \
+    -psn all \
     -trustees ${PRIVATE_DIR}/trustees \
     --mixDir ${PUBLIC_DIR}/mix2 \
     -out ${PRIVATE_DIR}/decrypted_ballots

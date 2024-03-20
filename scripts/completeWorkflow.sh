@@ -16,9 +16,6 @@ fi
 # mixnet
 ./scripts/mixnet-shuffle.sh ${WORKING}/public
 ./scripts/mixnet-verify.sh ${WORKING}/public
-# optional check tallies match
-# ./scripts/mixnet-tally.sh ${WORKING}/public
-# ./scripts/mixnet-tally-decrypt.sh ${WORKING}/public ${WORKING}/private
 
 # cacvote
 ./scripts/table-mixnet.sh ${WORKING}/public ${WORKING}/private

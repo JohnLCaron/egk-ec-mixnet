@@ -22,6 +22,7 @@ java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.cli.RunVerifyDecryptions \
     -publicDir ${PUBLIC_DIR} \
     -dballots ${PRIVATE_DIR}/decrypted_ballots \
-    -pballots ${PRIVATE_DIR}/input_ballots
+    -pballots ${PRIVATE_DIR}/input_ballots \
+    --show
 
 echo "   [DONE] verified decrypted ballots"

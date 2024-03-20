@@ -7,6 +7,10 @@ import kotlinx.cli.ArgType
 import kotlinx.cli.required
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.cryptobiotic.eg.core.*
+import org.cryptobiotic.eg.core.encrypt
+import org.cryptobiotic.eg.election.EncryptedBallot
+import org.cryptobiotic.eg.election.Manifest
+import org.cryptobiotic.eg.election.ManifestIF
 import org.cryptobiotic.eg.publish.Consumer
 import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.eg.publish.json.publishJson
@@ -31,7 +35,7 @@ class RunMixnet {
         @JvmStatic
         fun main(args: Array<String>) {
             val parser = ArgParser("RunMixnet")
-            val egkMixnetDir by parser.option(
+            val publicDir by parser.option(
                 ArgType.String,
                 shortName = "publicDir",
                 description = "egk mixnet public directory"
@@ -55,26 +59,26 @@ class RunMixnet {
 
             val info = buildString {
                 appendLine("starting mixnet for '$mixName'")
-                appendLine( "   egkMixnetDir= $egkMixnetDir")
+                appendLine( "   publicDir= $publicDir")
                 appendLine( "   encryptedBallotDir= $encryptedBallotDir")
                 append( "   inputMixDir= $inputMixDir")
             }
             logger.info { info }
 
-            val mixnet = Mixnet(egkMixnetDir)
+            val mixnet = Mixnet(publicDir)
 
             var width = 0
             val inputBallots: List<VectorCiphertext>
-            val ballotStyles = mutableListOf<String>()
+            val ballotStyles: List<String>
 
             if (encryptedBallotDir != null && inputMixDir != null) {
                 logger.error {"RunMixnet must specify only one of encryptedBallotDir and inputMixDir" }
                 return
 
             } else if (encryptedBallotDir != null) {
-                val pair = readEncryptedBallots(mixnet.group, encryptedBallotDir!!)
+                val pair = mixnet.readEncryptedBallots(encryptedBallotDir!!)
                 inputBallots = pair.first
-                ballotStyles.addAll(pair.second)
+                ballotStyles = pair.second
                 if (inputBallots.size > 0) width = inputBallots[0].nelems
 
             } else if (inputMixDir != null) {
@@ -87,7 +91,7 @@ class RunMixnet {
                 val previousConfig = result.unwrap()
                 width = previousConfig.width
                 inputBallots = mixnet.readInputBallots("$inputMixDir/$shuffledFilename", previousConfig.width)
-                ballotStyles.addAll(previousConfig.ballotStyles)
+                ballotStyles = previousConfig.ballotStyles
 
             } else {
                 logger.error {"RunMixnet must specify encryptedBallotDir or inputMixDir" }
@@ -96,7 +100,7 @@ class RunMixnet {
 
             val (shuffled, proof) = mixnet.runShuffleProof(inputBallots, mixName)
 
-            val outputDir = "$egkMixnetDir/$mixName"
+            val outputDir = "$publicDir/$mixName"
             writeBallotsToFile(shuffled, "$outputDir/$shuffledFilename")
             writeProofOfShuffleJsonToFile(proof, "$outputDir/$proofFilename")
 
@@ -108,15 +112,18 @@ class RunMixnet {
 }
 
 class Mixnet(egDir:String) {
-    val consumer : Consumer = makeConsumer(egDir)
+    val consumer: Consumer = makeConsumer(egDir)
     val group = consumer.group
     val publicKey: ElGamalPublicKey
     val electionId: UInt256
+    val manifest: Manifest
 
     init {
         val init = consumer.readElectionInitialized().unwrap()
-        publicKey = init.jointPublicKey()
+        publicKey = init.jointPublicKey
         electionId = init.extendedBaseHash
+        manifest = consumer.makeManifest(init.config.manifestBytes)
+
         RunMixnet.logger.info { "using group ${group.constants.name}" }
     }
 
@@ -154,31 +161,57 @@ class Mixnet(egDir:String) {
 
         return Pair(mixedBallots, proof)
     }
+
+    fun readEncryptedBallots(encryptedBallotDir: String): Pair<List<VectorCiphertext>, List<String>> {
+        val consumerEballots: Consumer = makeConsumer(encryptedBallotDir, group)
+
+        val ballotStyles = mutableSetOf<String>()
+        val mixnetBallots = mutableListOf<VectorCiphertext>()
+
+        val width = consumerEballots.iterateEncryptedBallotsFromDir(encryptedBallotDir, null) { it.state == EncryptedBallot.BallotState.CAST }
+            .map { widthOfBallotStyle(manifest, it.ballotStyleId) }.max()
+        println(" width = $width")
+
+        consumerEballots.iterateEncryptedBallotsFromDir(
+            encryptedBallotDir,
+            null
+        ) { it.state == EncryptedBallot.BallotState.CAST }.forEach { eballot ->
+            val ciphertexts = mutableListOf<ElGamalCiphertext>()
+            ciphertexts.add(eballot.encryptedSn!!) // encryptedSn always the first one
+            val encryptedStyleIndex = indexOfBallotStyle(manifest, eballot.ballotStyleId).encrypt(publicKey)
+            ciphertexts.add(encryptedStyleIndex) // encryptedStyleIndex always the second one
+            ballotStyles.add(eballot.ballotStyleId)
+
+            var count = 0
+            eballot.contests.forEach { contest ->
+                contest.selections.forEach { selection ->
+                    ciphertexts.add(selection.encryptedVote)
+                    count++
+                }
+            }
+            // fill the remaining with encrypted zeroes
+            repeat(width - count) {
+                ciphertexts.add(0.encrypt(publicKey))
+            }
+            require(ciphertexts.size == width + 2)
+            mixnetBallots.add(VectorCiphertext(group, ciphertexts))
+        }
+        return Pair(mixnetBallots, ballotStyles.toList())
+    }
 }
 
-fun readEncryptedBallots(group: GroupContext, encryptedBallotDir: String): Pair<List<VectorCiphertext>, Set<String>> {
-    val consumer : Consumer = makeConsumer(encryptedBallotDir, group)
-
-    val ballotStyles = mutableSetOf<String>()
-    val mixnetBallots = mutableListOf<VectorCiphertext>()
-    var first = true
-    var countCiphertexts = 0
-
-    // TODO CAST only
-    consumer.iterateEncryptedBallotsFromDir(encryptedBallotDir, null, null).forEach { encryptedBallot ->
-        val ciphertexts = mutableListOf<ElGamalCiphertext>()
-        ciphertexts.add(encryptedBallot.encryptedSn!!) // always the first one
-        ballotStyles.add(encryptedBallot.ballotStyleId)
-        encryptedBallot.contests.forEach { contest ->
-            contest.selections.forEach { selection ->
-                ciphertexts.add(selection.encryptedVote)
-            }
-        }
-        mixnetBallots.add(VectorCiphertext(group, ciphertexts))
-        if (first) countCiphertexts = ciphertexts.size else require(countCiphertexts == ciphertexts.size)
-        first = false
+fun widthOfBallotStyle(manifest: ManifestIF, ballotStyleId: String) : Int {
+    val contests = manifest.contestsForBallotStyle(ballotStyleId)
+    return if (contests == null) 0 else {
+        contests.map { it.selections.size }.sum()
     }
-    return Pair(mixnetBallots, ballotStyles)
+}
+
+fun indexOfBallotStyle(manifest: ManifestIF, ballotStyleId: String) : Int {
+    manifest.ballotStyles.forEachIndexed { idx, it ->
+        if (it.ballotStyleId == ballotStyleId) return idx
+    }
+    throw RuntimeException("Cant find ballotStyle $ballotStyleId")
 }
 
 fun readWidthFromEncryptedBallots(group: GroupContext, encryptedBallotDir: String): Int {
@@ -186,7 +219,7 @@ fun readWidthFromEncryptedBallots(group: GroupContext, encryptedBallotDir: Strin
     var count = 1 // serial number
     for (encryptedBallot in consumer.iterateEncryptedBallotsFromDir(encryptedBallotDir, null, null)) {
         encryptedBallot.contests.forEach { contest ->
-            contest.selections.forEach { selection ->
+            contest.selections.forEach {
                 count++
             }
         }

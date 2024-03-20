@@ -1,6 +1,6 @@
 # Egk Elliptic Curves Mixnet 
 
-_last update 03.18.2024_
+_last update 03.20.2024_
 
 (Work in Progress)
 
@@ -34,7 +34,6 @@ different build instructions, this should not affect the API.
     * [mixnet](#mixnet)
       * [mixnet-shuffle.sh](#mixnet-shufflesh)
       * [mixnet-verify.sh](#mixnet-verifysh)
-      * [optionally check tallies match](#optionally-check-tallies-match)
     * [cacvote](#cacvote)
       * [table-mixnet.sh](#table-mixnetsh)
       * [table-pballot.sh](#table-pballotsh)
@@ -161,11 +160,6 @@ The components of this workflow are:
 
 *  Runs the verifier on the mixnet proofs.
 
-####  optionally check tallies match
-
-* mixnet-tally.sh: Homomorphically accumulates shuffled ballots from each mix into an encrypted tally.
-* mixnet-tally-decrypt.sh: decrypt each mix tally, and check that it equals the digital ballot tally.
-
 ### cacvote
 
 ####  table-mixnet.sh
@@ -185,7 +179,7 @@ The components of this workflow are:
 ####  verify-decryptions
 
 * Verify the proofs in the decrypted serial numbers and decrypted ballots.
-  If the original, plaintext ballots are available, compare the ballot decryptions to the originals.
+  If a digital copy of the paper ballots are available, compare the ballot decryptions to the originals.
 
 
 ## Directory file layout (strawman)

@@ -18,6 +18,7 @@ import org.cryptobiotic.mixnet.writer.BallotReader
 import org.cryptobiotic.mixnet.writer.MixnetConfig
 import org.cryptobiotic.mixnet.writer.readMixnetConfigFromFile
 
+// DO NOT USE
 class RunMixnetTally {
 
     companion object {
@@ -58,7 +59,6 @@ class RunMixnetTally {
             logger.info { "valid = $valid" }
         }
 
-
         fun runAccumulateBallots(
             egkMixnetDir: String,
             mixDir: String,
@@ -82,14 +82,14 @@ class RunMixnetTally {
                 manifest,
                 config.mix_name,
                 electionInit.extendedBaseHash,
-                electionInit.jointPublicKey(),
+                electionInit.jointPublicKey,
                 countNumberOfBallots = true,
             )
             val errs = ErrorMessages("RunAccumulateTally on Shuffled Ballots")
             var nrows = 0
             shuffled.forEach {
                 val ballotId = it.elems[0].hashCode().toString()
-                val eballot: EncryptedBallotIF = rehydrate(manifest, ballotId, electionInit.extendedBaseHash, it)
+                val eballot: EncryptedBallotIF = rehydrate(manifest, ballotId, electionInit.extendedBaseHash, 0, it)
                 if (!accumulator.addCastBallot(eballot, errs)) {
                     println("  got error $errs")
                 }
@@ -111,38 +111,5 @@ class RunMixnetTally {
             )
             logger.info { "nrows=$nrows, width= ${config.width} per row" }
         }
-
-        fun rehydrate(manifest: ManifestIF, ballotId: String, electionId: UInt256, row: VectorCiphertext): EncryptedBallotIF {
-            val sn = row.elems[0]
-            var colIdx = 1
-            val contests = manifest.contests.map { contest ->
-                val selections = contest.selections.map { selection ->
-                    ESelection(row.elems[colIdx++], selection.selectionId, selection.sequenceOrder)
-                }
-                EContest(contest.contestId, selections, contest.sequenceOrder, null)
-            }
-            return EBallot(ballotId, sn, contests, electionId, EncryptedBallot.BallotState.CAST)
-        }
     }
 }
-
-private class EBallot(
-    override val ballotId: String,
-    override val encryptedSn: ElGamalCiphertext?,
-    override val contests: List<EncryptedBallotIF.Contest>,
-    override val electionId: UInt256,
-    override val state: EncryptedBallot.BallotState
-): EncryptedBallotIF
-
-private class EContest(
-    override val contestId: String,
-    override val selections: List<EncryptedBallotIF.Selection>,
-    override val sequenceOrder: Int,
-    override val contestData: HashedElGamalCiphertext?
-): EncryptedBallotIF.Contest
-
-private class ESelection(
-    override val encryptedVote: ElGamalCiphertext,
-    override val selectionId: String,
-    override val sequenceOrder: Int
-): EncryptedBallotIF.Selection

@@ -3,6 +3,7 @@ package org.cryptobiotic.mixnet.writer
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.unwrap
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
@@ -20,8 +21,8 @@ data class PballotTable(
 
 @Serializable
 data class PballotEntry(
-    val ballot_id: String,
-    val sn: Long?,
+    // val ballot_id: String, TODO allowed?
+    val sn: Long,
     val location: String,
 )
 
@@ -49,4 +50,14 @@ fun readPballotTableFromFile(filename: String): Result<PballotTable, ErrorMessag
     } catch (t: Throwable) {
         errs.add("Exception= ${t.message} ${t.stackTraceToString()}")
     }
+}
+
+fun makePballotMap(pballotFile: String, errs: ErrorMessages): Map<Long, PballotEntry>? {
+    val pballotTableResult = readPballotTableFromFile(pballotFile)
+    if (pballotTableResult is Err) {
+        errs.add("failed to opwn $pballotTableResult")
+        return null
+    }
+    val pballotTable = pballotTableResult.unwrap()
+    return pballotTable.entries.associateBy { it.sn }
 }

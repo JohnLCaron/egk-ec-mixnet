@@ -59,7 +59,7 @@ class RunPballotTable {
             val ballotIterator = consumerIn.iteratePlaintextBallots(plaintextBallotDir) { true }
             ballotIterator.forEach { pballot ->
                 val present =  (missingPct == 0) || (Random.nextInt(100) < (100 - missingPct))
-                if (present) entries.add( PballotEntry(pballot.ballotId, pballot.sn, "location${count+1}"))
+                if (present) entries.add( PballotEntry(pballot.sn!!, "pballot-${pballot.ballotId}.json"))
                 // else logger.info { " skip pballot ${pballot.ballotId}" }
                 count++
             }
