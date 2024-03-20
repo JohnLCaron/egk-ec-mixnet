@@ -18,7 +18,7 @@ import java.nio.file.StandardOpenOption
 data class MixnetConfig(
     val mix_name: String,
     val election_id: UInt256Json,
-    val ballotStyles: List<String>,
+    val ballotStyles: List<String>, // needed ??
     val width: Int,
 )
 

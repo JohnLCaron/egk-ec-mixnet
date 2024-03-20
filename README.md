@@ -185,7 +185,7 @@ The components of this workflow are:
 ####  verify-decryptions
 
 * Verify the proofs in the decrypted serial numbers and decrypted ballots.
-  If the original, plaintext ballots are available, compare the ballot decryptions to the originals.
+  If a digital copy of the paper ballots are available, compare the ballot decryptions to the originals.
 
 
 ## Directory file layout (strawman)

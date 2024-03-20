@@ -22,10 +22,10 @@ fi
 echo ""
 echo "***generate and encrypt ballots:"
 
-rm -rf ${PRIVATE_DIR}/inputBallots/*
+rm -rf ${PRIVATE_DIR}/input_ballots/*
 rm -rf ${PUBLIC_DIR}/encrypted_ballots/*
 
-mkdir -p  ${PRIVATE_DIR}/inputBallots
+mkdir -p  ${PRIVATE_DIR}/input_ballots
 mkdir -p  ${PUBLIC_DIR}/encrypted_ballots
 
 CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"

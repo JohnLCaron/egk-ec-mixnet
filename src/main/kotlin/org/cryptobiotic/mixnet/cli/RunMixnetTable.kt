@@ -80,32 +80,45 @@ class RunMixnetTable {
             val reader = BallotReader(group, config.width)
             val shuffled = reader.readFromFile("$mixDir/${RunMixnet.shuffledFilename}")
             val encryptedSns = shuffled.map { Ciphertext(it.elems[0]) }
+            val encryptedStyles = shuffled.map { Ciphertext(it.elems[1]) }
 
             val trustees = RunTrustedTallyDecryption.readDecryptingTrustees(publicDir, trusteeDir)
             val guardians = Guardians(group, electionInit.guardians)
-            val decryptor = CipherDecryptor(group, electionInit.extendedBaseHash, electionInit.jointPublicKey(), guardians, trustees)
+            val decryptor = CipherDecryptor(group, electionInit.extendedBaseHash, electionInit.jointPublicKey, guardians, trustees)
 
-            val errs = ErrorMessages("testEncryptDecryptVerify")
+            val errst = ErrorMessages("decryptStyles")
+            val decryptStylesAndProof: List<CipherDecryptionAndProof>? = decryptor.decrypt(encryptedStyles, errst)
+            if (errst.hasErrors()) {
+                logger.error { "failed = $errst"}
+                println("failed errors = $errst")
+                return
+            }
+            requireNotNull(decryptStylesAndProof)
+            val decryptStyles: List<Int> = decryptStylesAndProof.map { (decryption, _) ->
+                decryption.decryptCiphertext(electionInit.jointPublicKey, false).second!!
+            }
+
+            val errs = ErrorMessages("decryptSns")
             val decryptionAndProofs: List<CipherDecryptionAndProof>? = decryptor.decrypt(encryptedSns, errs)
             if (errs.hasErrors()) {
-                logger.error { "decryptor2.decrypt failed errors = $errs"}
-                println("decryptor2.decrypt failed errors = $errs")
+                logger.error { "failed = $errs"}
+                println("failed errors = $errs")
                 return
             }
             requireNotNull(decryptionAndProofs)
 
-            val result = decryptionAndProofs.mapIndexed { rowIdx, (decryption, proof) ->
-                val (T, _) = decryption.decryptCiphertext(electionInit.jointPublicKey(), true)
+            val decryptedSns = decryptionAndProofs.mapIndexed { rowIdx, (decryption, proof) ->
+                val (T, _) = decryption.decryptCiphertext(electionInit.jointPublicKey, true)
                 val ciphertext = (decryption.cipher as Ciphertext).delegate
-                DecryptedSn(rowIdx, ciphertext, T, proof)
+                DecryptedSn(rowIdx, ciphertext, T, proof, decryptStyles[rowIdx])
             }
 
-            val resultJson = result.map { it.publishJson() }
+            val resultJson = decryptedSns.map { it.publishJson() }
             val decryptedSnsFile = "$publicDir/${RunMixnet.decryptedSnsFilename}"
             writeDecryptedSnsToFile( DecryptedSnsJson(resultJson), decryptedSnsFile)
 
-            logger.info { "wrote ${result.size} decryptedSns to $decryptedSnsFile" }
-            println( "wrote ${result.size} decryptedSns to $decryptedSnsFile" )
+            logger.info { "wrote ${decryptedSns.size} decryptedSns to $decryptedSnsFile" }
+            println( "wrote ${decryptedSns.size} decryptedSns to $decryptedSnsFile" )
         }
     }
 

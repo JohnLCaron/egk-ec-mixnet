@@ -29,7 +29,7 @@ class RunVerifier {
         @JvmStatic
         fun main(args: Array<String>) {
             val parser = ArgParser("RunVerifier")
-            val egkMixnetDir by parser.option(
+            val publicDir by parser.option(
                 ArgType.String,
                 shortName = "publicDir",
                 description = "egk mixnet public directory"
@@ -54,14 +54,16 @@ class RunVerifier {
 
             val info = buildString {
                 appendLine("starting proof verification")
-                appendLine( "   egkMixnetDir= $egkMixnetDir")
+                appendLine( "   publicDir= $publicDir")
                 appendLine( "   encryptedBallotDir= $encryptedBallotDir")
                 appendLine( "   inputMixDir= $inputMixDir")
                 append( "   outputMixDir= $outputMixDir")
             }
             logger.info{ info }
 
-            val verifier = Verifier(egkMixnetDir)
+            val mixnet = Mixnet(publicDir)
+            val verifier = Verifier(publicDir)
+
             val resultPos: Result<ProofOfShuffle, ErrorMessages> = readProofOfShuffleJsonFromFile(verifier.group, "$outputMixDir/$proofFilename")
             if (resultPos is Err) {
                 logger.error { "Error reading proof = $resultPos" }
@@ -83,7 +85,7 @@ class RunVerifier {
                 return
 
             } else if (encryptedBallotDir != null) {
-                val pair = readEncryptedBallots(verifier.group, encryptedBallotDir!!)
+                val pair = mixnet.readEncryptedBallots(encryptedBallotDir!!)
                 ballots = pair.first
                 logger.debug { " Read ${ballots.size} encryptedBallots ballots" }
 
@@ -121,7 +123,7 @@ class Verifier(egDir:String) {
 
     init {
         val init = consumer.readElectionInitialized().unwrap()
-        publicKey = init.jointPublicKey()
+        publicKey = init.jointPublicKey
     }
 
     fun readInputBallots(inputBallots: String, width: Int): List<VectorCiphertext> {
