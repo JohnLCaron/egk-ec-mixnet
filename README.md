@@ -213,7 +213,7 @@ working/public
   tally.json
   
   decrypted_sns.json
-  table-pballot.json
+  pballot-table.json
   
 working/private 
   input_ballots/ 

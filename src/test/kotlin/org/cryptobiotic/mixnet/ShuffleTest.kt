@@ -162,7 +162,7 @@ class ShuffleTest {
 
         var stopwatch = Stopwatch()
         group.getAndClearOpCounts()
-        val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
+        shuffle(ballots, keypair.publicKey, nthreads)
         stats.of("shuffle", "text", "shuffle").accum(stopwatch.stop(), N)
 
         stats.show("shuffle")

@@ -308,6 +308,7 @@ class PcomputeB(
         return Pair(VectorP(group, Belems), VectorP(group, Bpelems))
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun CoroutineScope.producer(nrows: Int): ReceiveChannel<Int> =
         produce {
             repeat(nrows) {

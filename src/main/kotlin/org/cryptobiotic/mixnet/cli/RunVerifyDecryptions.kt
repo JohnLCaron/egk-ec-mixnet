@@ -24,12 +24,12 @@ import org.cryptobiotic.util.Stats
 class RunVerifyDecryptions {
 
     companion object {
-        val logger = KotlinLogging.logger("RunVerifyDecryptedBallots")
+        val logger = KotlinLogging.logger("RunVerifyDecryptions")
         val details = false
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val parser = ArgParser("RunVerifyDecryptedBallots")
+            val parser = ArgParser("RunVerifyDecryptions")
             val publicDir by parser.option(
                 ArgType.String,
                 shortName = "publicDir",
@@ -54,7 +54,7 @@ class RunVerifyDecryptions {
             parser.parse(args)
 
             val info = buildString {
-                appendLine("starting RunVerifyDecryptedBallots")
+                appendLine("starting RunVerifyDecryptions")
                 appendLine(" publicDir= $publicDir")
                 appendLine(" decryptedBallotDir= $decryptedBallotDir")
                 append(" originalBallotDir= $originalBallotDir")
@@ -198,7 +198,7 @@ class RunVerifyDecryptions {
                     decryptedBallot.contests.forEach { dcontest ->
                         val pcontest = pcontestMap[dcontest.contestId]
                         if (pcontest == null) {
-                            println(" missing contest ${dcontest.contestId}")
+                            errs.add(" missing contest ${dcontest.contestId}")
                             ballotOk = false
                         } else {
                             if (showDetails) println(" contest ${dcontest.contestId}")
@@ -206,10 +206,13 @@ class RunVerifyDecryptions {
                             dcontest.selections.forEach { dselection ->
                                 val pselection = pselectionMap[dselection.selectionId]
                                 if (pselection == null) {
-                                    println("    missing selection ${dselection.selectionId}")
+                                    errs.add("    missing selection ${dselection.selectionId}")
                                     ballotOk = false
                                 } else {
-                                    if (dselection.tally != pselection.vote) allOk = false
+                                    if (dselection.tally != pselection.vote) {
+                                        errs.add(" ${dselection.selectionId} vote ${dselection.tally} != ${pselection.vote}")
+                                        allOk = false
+                                    }
                                     val isEqual = if (dselection.tally == pselection.vote) "==" else "NOT"
                                     if (showDetails) println("    selection ${dselection.selectionId} ${dselection.tally} $isEqual ${pselection.vote}")
                                 }
