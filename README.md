@@ -1,15 +1,18 @@
 # Egk Elliptic Curves Mixnet 
 
-_last update 03.20.2024_
+_last update 03.22.2024_
 
 (Work in Progress)
 
 Implementation of a mixnet using the [ElectionGuard Kotlin Elliptical Curve library](https://github.com/JohnLCaron/egk-ec),
-and the [Verificatum library](https://www.verificatum.org/).
-This is part of [VotingWork's cacvote project](https://github.com/votingworks/cacvote).
+and the [Verificatum library](https://www.verificatum.org/). The mixnet uses the Terelius / Wikström (TW) mixnet
+algorithm, see  [egk mixnet maths](docs/mixnet_maths.pdf) for details. Note that paper's timings use the older
+integer group; the elliptic curve group is [much faster](docs/egk-ec-mixnet.png).
 
-This is a prototype feature and is not part of the ElectionGuard specification.
-The implementation for Elliptical Curves (EC) is taken largely from the [Verificatum library](https://www.verificatum.org/),
+This is part of [VotingWork's cacvote project](https://github.com/votingworks/cacvote). It is not part of the ElectionGuard specification per se, but follows the
+ElectionGuard 2.0 specification wherever possible.
+
+The implementation for Elliptical Curves (EC) is derived from the [Verificatum library](https://www.verificatum.org/),
 including the option to use the Verificatum C library. See [VCR License](LICENSE_VCR.txt) for the license for this part of
 the library.
 
@@ -49,7 +52,7 @@ Encrypting a ballot with 12 contests and 4 selections each (total of 60 encrypti
 using pre-computed tables for "fixed base acceleration". This does not appear to be using Montgomery forms for fast mod operation.
 
 Mixing 1000 ballots of width 34 takes ~ 17 secs single threaded with good parallelization. 
-Verification is 30-50% slower, [see plot](docs/egk-ec-mixnet.png).
+Verification is 30-50% slower than the shuffle and proof, [see plot](docs/egk-ec-mixnet.png).
 
 ## Size
 
@@ -57,8 +60,7 @@ We use "point compression" on the elliptic curve ElementModP, so we only seriali
 giving a storage reduction of O(64/33) compared to serializing both coordinates, and O(512/33) compared to the integer group. 
 To estimate the computational cost of storing just x and recomputing y: BallotReader reads
 1000 ballots (width 34) in 235 msecs. If one computes y instead of reading it, it takes 1274 msecs.
-So, cost is ~ 1 sec for 34000 texts everytime you have to read the mixed ballots. This reduces size to
-O(512/33).
+So, cost is ~ 1 sec for 34000 texts everytime you have to read the mixed ballots.
 
 Currently we store the ballots in binary and the proofs in json in base64.
 For very large mixnets, you might want to store proofs as efficiently as possible, which argues for a protobuf option.
