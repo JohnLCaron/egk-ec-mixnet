@@ -78,6 +78,7 @@ class PProdPowP(val bases: VectorP, val exps: VectorQ, val nthreads: Int = 10) {
         return result
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun CoroutineScope.producer(vp: VectorP, ve: VectorQ): ReceiveChannel<Pair<ElementModP, ElementModQ>> =
         produce {
             repeat(vp.nelems) {

@@ -156,7 +156,7 @@ class VerifierV(
         // PGroupElementArray B_shift_exp_k_E = B_shift.exp(k_E);
         val B_shift_exp_k_E = B_shift.powP(proof.kE)                // CE n-1 exp, 1 acc
         // PGroupElementArray rightSide = g_exp_k_B.mul(B_shift_exp_k_E);
-        val rightSide = g_exp_k_B.times(B_shift_exp_k_E);
+        val rightSide = g_exp_k_B.times(B_shift_exp_k_E)
         return leftSide.equals(rightSide)                           // total 2n-1 exp, n+1 acc
     }
 }
@@ -186,6 +186,7 @@ class PverifyB(
         return isValid
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun CoroutineScope.producer(nrows: Int): ReceiveChannel<Int> =
         produce {
             repeat(nrows) {

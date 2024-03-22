@@ -119,7 +119,7 @@ class ShuffleProofTest {
         val starting = getSystemTimeInMillis()
         group.getAndClearOpCounts()
 
-        val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
+        shuffle(ballots, keypair.publicKey, nthreads)
 
         val shuffleTime = getSystemTimeInMillis() - starting
         println("  runShuffle nthreads = $nthreads time = $shuffleTime")

@@ -208,8 +208,8 @@ fun widthOfBallotStyle(manifest: ManifestIF, ballotStyleId: String) : Int {
 }
 
 fun indexOfBallotStyle(manifest: ManifestIF, ballotStyleId: String) : Int {
-    manifest.ballotStyles.forEachIndexed { idx, it ->
-        if (it.ballotStyleId == ballotStyleId) return idx
+    manifest.ballotStyleIds.forEachIndexed { idx, it ->
+        if (it == ballotStyleId) return idx
     }
     throw RuntimeException("Cant find ballotStyle $ballotStyleId")
 }

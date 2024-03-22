@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package org.cryptobiotic.maths
 
 import org.cryptobiotic.eg.core.ElGamalCiphertext

@@ -64,6 +64,7 @@ class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey
         return Triple(mixed, MatrixQ(rnonces), psi)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun CoroutineScope.producer(rows: List<VectorCiphertext>): ReceiveChannel<Pair<VectorCiphertext, Int>> =
         produce {
             rows.forEachIndexed { idx, row ->

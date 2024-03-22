@@ -107,13 +107,7 @@ class RunPaperBallotDecrypt {
             if (ballotSn.lowercase() == "random") {
                 val nentries = pballotTable.entries.size
                 val choose = Random.nextInt(nentries)
-                val entry = pballotTable.entries[choose]
-                if (entry.sn == null) {
-                    logger.error { "missing serial number for pballot ${entry}" }
-                    return null
-                } else {
-                    return entry
-                }
+                return pballotTable.entries[choose]
             } else {
                 val psnAsLong = try {
                     ballotSn.toLong()
@@ -162,7 +156,7 @@ class RunPaperBallotDecrypt {
             mixDir: String,
             pballot: PballotEntry,
         ): Pair<DecryptedSn, VectorCiphertext>? {
-            val psnAsLong = pballot.sn!!.toULong()
+            val psnAsLong = pballot.sn.toULong()
             val psnAsQ = group.uLongToElementModQ(psnAsLong)
             val wantKsn = publicKey powP psnAsQ
 
@@ -179,7 +173,7 @@ class RunPaperBallotDecrypt {
                 .find { it?.Ksn == wantKsn }
 
             if (foundBallot == null) {
-                logger.error { "failed to find the psn ${pballot.sn} kpsn = $wantKsn in the decryptedSns file ${decryptedSnsFile}" }
+                logger.error { "failed to find the psn ${pballot.sn} kpsn = $wantKsn in the decryptedSns file $decryptedSnsFile" }
                 return null
             }
             val ballotRow = foundBallot.shuffledRow
@@ -190,7 +184,7 @@ class RunPaperBallotDecrypt {
             val mixFile = "$mixDir/${RunMixnet.shuffledFilename}"
             val shuffled = reader.readFromFile(mixFile)
             if (ballotRow < 0 || ballotRow >= shuffled.size) {
-                logger.error { "ballotRow $ballotRow not in bounds 0 .. ${shuffled.size} in the shuffled file ${mixFile}" }
+                logger.error { "ballotRow $ballotRow not in bounds 0 .. ${shuffled.size} in the shuffled file $mixFile" }
                 return null
             }
             return Pair(foundBallot, shuffled[ballotRow])
@@ -237,9 +231,8 @@ class RunPaperBallotDecrypt {
 
 fun rehydrate(manifest: ManifestIF, ballotId: String, electionId: UInt256, ballotStyleIdx: Int, row: VectorCiphertext): EncryptedBallotIF {
     val encryptedSn = row.elems[0]
-    val encryptedStyle = row.elems[1]
     var colIdx = 2
-    val ballotStyleId = manifest.ballotStyles[ballotStyleIdx].ballotStyleId
+    val ballotStyleId = manifest.ballotStyleIds[ballotStyleIdx]
     val mcontests = manifest.contestsForBallotStyle(ballotStyleId)!!
     val contests = mcontests.map { mcontest ->
         val selections = mcontest.selections.map { mselection ->
@@ -247,13 +240,12 @@ fun rehydrate(manifest: ManifestIF, ballotId: String, electionId: UInt256, ballo
         }
         EContest(mcontest.contestId, selections, mcontest.sequenceOrder, null)
     }
-    return EBallot(ballotId, encryptedSn, encryptedStyle, contests, electionId, EncryptedBallot.BallotState.CAST)
+    return EBallot(ballotId, encryptedSn, contests, electionId, EncryptedBallot.BallotState.CAST)
 }
 
 class EBallot(
     override val ballotId: String,
     override val encryptedSn: ElGamalCiphertext?,
-    override val encryptedStyle: ElGamalCiphertext?, // dont actually need this
     override val contests: List<EncryptedBallotIF.Contest>,
     override val electionId: UInt256,
     override val state: EncryptedBallot.BallotState

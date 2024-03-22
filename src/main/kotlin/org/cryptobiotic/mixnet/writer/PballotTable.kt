@@ -1,9 +1,12 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package org.cryptobiotic.mixnet.writer
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.unwrap
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
