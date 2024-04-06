@@ -112,6 +112,7 @@ class RunVerifier {
     }
 }
 
+
 class Verifier(egDir:String) {
     val consumer : Consumer = makeConsumer(egDir)
     val group = consumer.group
