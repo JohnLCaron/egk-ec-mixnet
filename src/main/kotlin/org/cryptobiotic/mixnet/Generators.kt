@@ -15,6 +15,7 @@ fun getGeneratorsVmn(group: GroupContext, n: Int, mixName: String): VectorP {
     val nonces = Nonces(prgSeed.toElementModQ(group), mixName).take(n)
     val h0 = group.gPowP(nonces[0]).acceleratePow() // LOOK accelerated
     val generators = List(n) { if (it == 0) h0 else ( h0 powP nonces[it]) } // CE n acc
+
     return VectorP(group, generators)
 }
 

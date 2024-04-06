@@ -1,8 +1,11 @@
 package org.cryptobiotic.mixnet.writer
 
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.unwrap
 import org.cryptobiotic.eg.publish.Consumer
 import org.cryptobiotic.eg.publish.makeConsumer
-import org.cryptobiotic.mixnet.cli.readWidthFromEncryptedBallots
+import org.cryptobiotic.mixnet.cli.RunMixnet
+import org.cryptobiotic.mixnet.cli.RunVerifier.Companion.logger
 import org.cryptobiotic.util.Stats
 import org.cryptobiotic.util.Stopwatch
 import kotlin.test.Test
@@ -15,7 +18,16 @@ class MixnetBallotReadTimingTest {
     @Test
     fun testMixnetRoundtrip() {
         val consumer : Consumer = makeConsumer(egkDir)
-        val width = readWidthFromEncryptedBallots(consumer.group, "$egkDir/encrypted_ballots/device42")
+
+        val configFilename = "$egkDir/mix1/${RunMixnet.configFilename}"
+        val resultConfig = readMixnetConfigFromFile(configFilename)
+        if (resultConfig is Err) {
+            logger.error {"Error reading MixnetConfig from $configFilename err = $resultConfig" }
+            return
+        }
+        val config = resultConfig.unwrap()
+        val width = config.width
+
         val reader = BallotReader(consumer.group, width)
         val readerAlt = BallotReader(consumer.group, width, true)
 

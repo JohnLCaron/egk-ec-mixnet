@@ -9,6 +9,7 @@ import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.required
 import org.cryptobiotic.eg.publish.Consumer
+import org.cryptobiotic.eg.publish.json.import
 import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.maths.VectorCiphertext
 import org.cryptobiotic.mixnet.ProofOfShuffle
@@ -34,11 +35,6 @@ class RunVerifier {
                 shortName = "publicDir",
                 description = "egk mixnet public directory"
             ).required()
-            val encryptedBallotDir by parser.option(
-                ArgType.String,
-                shortName = "eballots",
-                description = "Directory of encrypted ballots"
-            )
             val inputMixDir by parser.option(
                 ArgType.String,
                 shortName = "in",
@@ -55,7 +51,6 @@ class RunVerifier {
             val info = buildString {
                 appendLine("starting proof verification")
                 appendLine( "   publicDir= $publicDir")
-                appendLine( "   encryptedBallotDir= $encryptedBallotDir")
                 appendLine( "   inputMixDir= $inputMixDir")
                 append( "   outputMixDir= $outputMixDir")
             }
@@ -74,32 +69,28 @@ class RunVerifier {
             val configFilename = "$outputMixDir/${RunMixnet.configFilename}"
             val resultConfig = readMixnetConfigFromFile(configFilename)
             if (resultConfig is Err) {
-                RunMixnet.logger.error {"Error reading MixnetConfig from $configFilename err = $resultConfig" }
+                logger.error {"Error reading MixnetConfig from $configFilename err = $resultConfig" }
                 return
             }
             val config = resultConfig.unwrap()
 
             val ballots: List<VectorCiphertext>
-            if (encryptedBallotDir != null && inputMixDir != null) {
-                logger.error { "RunVerifier must specify only one of encryptedBallotDir and inputMixDir" }
-                return
-
-            } else if (encryptedBallotDir != null) {
-                val pair = mixnet.readEncryptedBallots(encryptedBallotDir!!)
-                ballots = pair.first
-                logger.debug { " Read ${ballots.size} encryptedBallots ballots" }
-
-            } else if (inputMixDir != null) {
+            if (inputMixDir != null) {
                 ballots = verifier.readInputBallots("$inputMixDir/$shuffledFilename", config.width)
-                logger.debug { " Read ${ballots.size} input ballots" }
+                logger.info { " Read ${ballots.size} input ballots" }
 
             } else {
-                RunMixnet.logger.error {"RunVerifier must specify encryptedBallotDir or inputMixDir" }
-                return
+                val seed: ElementModQ = config.nonces_seed?.import()?.toElementModQ(verifier.group)!!
+                val nonces = Nonces(seed, config.mix_name) // used for the extra ciphertexts to make even rows
+                val pair = mixnet.readEncryptedBallots(nonces)
+                ballots = pair.first
+                logger.info { " Read ${ballots.size} encryptedBallots ballots" }
+                val ciphertexts = ballots.flatMap { it.elems }
+                println("readEncryptedBallots ${ciphertexts.size} hash(ciphertexts) ${hashFunction(mixnet.electionId.bytes, ciphertexts)}")
             }
 
             val shuffled: List<VectorCiphertext> = verifier.readInputBallots("$outputMixDir/$shuffledFilename", config.width)
-            logger.debug { " Read ${shuffled.size} shuffled ballots" }
+            logger.info { " Read ${shuffled.size} shuffled ballots" }
 
             if (ballots.size != shuffled.size) {
                 logger.error { "size mismatch ballots ballots ${ballots.size} != ${shuffled.size}" }
@@ -111,7 +102,12 @@ class RunVerifier {
             }
 
             val valid = verifier.runVerifier(ballots, shuffled, pos)
-            logger.info { "valid = $valid" }
+            if (!valid) {
+                logger.error {"Validate failed!!" }
+                throw RuntimeException("Validate failed!!")
+            } else {
+                logger.info {"Validation of ${config.mix_name} success" }
+            }
         }
     }
 }

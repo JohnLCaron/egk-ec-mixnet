@@ -162,6 +162,7 @@ The components of this workflow are:
 
 *  Runs the verifier on the mixnet proofs.
 
+
 ### cacvote
 
 ####  table-mixnet.sh
@@ -171,7 +172,7 @@ The components of this workflow are:
 ####  table-pballot.sh
 
 * Simulate a table of paper ballot serial numbers and their physical locations.
-  Pass in "--missingPct percent" to simulate some percent of paper ballots were not recieved.
+  Pass in "--missingPct percent" to simulate some percent of paper ballots were not received.
 
 ####  pballot-decrypt
 

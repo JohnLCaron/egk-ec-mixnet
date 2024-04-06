@@ -4,7 +4,6 @@ import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.eg.core.ecgroup.EcGroupContext
 import org.cryptobiotic.eg.core.elGamalKeyPairFromRandom
 import org.cryptobiotic.eg.core.encrypt
-import org.cryptobiotic.eg.core.intgroup.tinyGroup
 import org.cryptobiotic.eg.core.productionGroup
 import org.cryptobiotic.util.Stopwatch
 import kotlin.random.Random

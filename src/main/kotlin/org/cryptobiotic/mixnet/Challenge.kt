@@ -18,6 +18,7 @@ fun getBatchingVectorAndChallenge(
     val ciphertexts = w.flatMap { it.elems }
     val shuffled = wp.flatMap { it.elems }
     val prgSeed = hashFunction(baseHash.bytes, 0x101.toByte(), h.elems, u.elems, pk, ciphertexts, shuffled)
+
     // generate "batching vector"
     val batchVector = VectorQ(group, Nonces(prgSeed.toElementModQ(group), mixName).take(h.nelems))
     // create another nonce for the challenge

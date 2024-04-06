@@ -29,6 +29,7 @@
 
 package org.cryptobiotic.mixnet
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.cryptobiotic.eg.core.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -115,7 +116,6 @@ class VerifierV(
         val rightF: VectorCiphertext = right1 * right2
         val verdictF = (leftF == rightF)
 
-        // println("$verdictA && $verdictB && $verdictC && $verdictD && $verdictF")
         return verdictA && verdictB && verdictC && verdictD && verdictF
     }
 
@@ -159,6 +159,11 @@ class VerifierV(
         val rightSide = g_exp_k_B.times(B_shift_exp_k_E)
         return leftSide.equals(rightSide)                           // total 2n-1 exp, n+1 acc
     }
+
+    companion object {
+        val logger = KotlinLogging.logger("VerifierV")
+    }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

@@ -15,7 +15,6 @@ CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.cli.RunVerifier \
     -publicDir ${PUBLIC_DIR} \
-    -eballots ${PUBLIC_DIR}/encrypted_ballots \
     --outputMixDir ${PUBLIC_DIR}/mix1
 
 java -classpath $CLASSPATH \
