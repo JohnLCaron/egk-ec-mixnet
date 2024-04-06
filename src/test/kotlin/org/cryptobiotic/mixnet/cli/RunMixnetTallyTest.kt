@@ -6,7 +6,7 @@ class RunMixnetTallyTest {
 
     @Test
     fun testRunMixnetTally() {
-        val publicDir = "/home/stormy/tmp/testOut/egmixnet/working/public"
+        val publicDir = "/home/stormy/tmp/testOut/egmixnet/public"
         RunMixnetTally.main(
             arrayOf(
                 "-publicDir", publicDir,

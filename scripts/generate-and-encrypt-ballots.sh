@@ -34,7 +34,7 @@ echo "   RunExampleEncryption for ${NUM_BALLOTS} ballots, 2 devices but single d
 
 /usr/bin/java -classpath $CLASSPATH \
   org.cryptobiotic.eg.cli.RunExampleEncryption \
-    -config ${PRIVATE_DIR} \
+    -in ${PUBLIC_DIR} \
     -nballots 21 \
     -pballotDir ${PRIVATE_DIR}/input_ballots \
     -eballotDir ${PUBLIC_DIR}/encrypted_ballots \

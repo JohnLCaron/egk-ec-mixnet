@@ -6,7 +6,7 @@ class RunVerifyDecryptionsTest {
 
     @Test
     fun testRunVerifyDecryptions() {
-        val publicDir = "/home/stormy/tmp/testOut/egmixnet/working/public"
+        val publicDir = "/home/stormy/tmp/testOut/egmixnet/public"
         RunVerifyDecryptions.main(
             arrayOf(
                 "-publicDir", publicDir,

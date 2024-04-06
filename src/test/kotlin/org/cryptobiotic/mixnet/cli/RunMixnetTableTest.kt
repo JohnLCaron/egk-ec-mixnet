@@ -6,7 +6,7 @@ class RunMixnetTableTest {
 
     @Test
     fun testRunMixnetTable() {
-        val topDir = "/home/stormy/tmp/testOut/egmixnet/working"
+        val topDir = "/home/stormy/tmp/testOut/egmixnet"
         RunMixnetTable.main(
             arrayOf(
                 "-publicDir", "$topDir/public",

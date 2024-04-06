@@ -23,6 +23,7 @@ data class MixnetConfig(
     val election_id: UInt256Json,
     val ballotStyles: List<String>, // needed ??
     val width: Int,
+    val nonces_seed: UInt256Json?,
 )
 
 fun writeMixnetConfigToFile(mixnetConfig: MixnetConfig, filename: String) {

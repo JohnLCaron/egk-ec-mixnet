@@ -8,10 +8,10 @@ import kotlinx.cli.required
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.eg.core.encrypt
-import org.cryptobiotic.eg.election.EncryptedBallot
 import org.cryptobiotic.eg.election.Manifest
 import org.cryptobiotic.eg.election.ManifestIF
 import org.cryptobiotic.eg.publish.Consumer
+import org.cryptobiotic.eg.publish.json.UInt256Json
 import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.eg.publish.json.publishJson
 import org.cryptobiotic.util.Stopwatch
@@ -40,11 +40,6 @@ class RunMixnet {
                 shortName = "publicDir",
                 description = "egk mixnet public directory"
             ).required()
-            val encryptedBallotDir by parser.option(
-                ArgType.String,
-                shortName = "eballots",
-                description = "Directory of encrypted ballots"
-            )
             val inputMixDir by parser.option(
                 ArgType.String,
                 shortName = "in",
@@ -60,7 +55,7 @@ class RunMixnet {
             val info = buildString {
                 appendLine("starting mixnet for '$mixName'")
                 appendLine( "   publicDir= $publicDir")
-                appendLine( "   encryptedBallotDir= $encryptedBallotDir")
+                appendLine( "   mixName= $mixName")
                 append( "   inputMixDir= $inputMixDir")
             }
             logger.info { info }
@@ -70,22 +65,13 @@ class RunMixnet {
             var width = 0
             val inputBallots: List<VectorCiphertext>
             val ballotStyles: List<String>
+            var noncesSeed : UInt256Json? = null
 
-            if (encryptedBallotDir != null && inputMixDir != null) {
-                logger.error {"RunMixnet must specify only one of encryptedBallotDir and inputMixDir" }
-                return
-
-            } else if (encryptedBallotDir != null) {
-                val pair = mixnet.readEncryptedBallots(encryptedBallotDir!!)
-                inputBallots = pair.first
-                ballotStyles = pair.second
-                if (inputBallots.size > 0) width = inputBallots[0].nelems
-
-            } else if (inputMixDir != null) {
+            if (inputMixDir != null) {
                 val lastFilename = "$inputMixDir/$configFilename"
                 val result = readMixnetConfigFromFile(lastFilename)
                 if (result is Err) {
-                    logger.error {"Error reading MixnetConfig from $lastFilename err = $result" }
+                    logger.error {"Error reading MixnetConfig err = $result" }
                     return
                 }
                 val previousConfig = result.unwrap()
@@ -94,19 +80,25 @@ class RunMixnet {
                 ballotStyles = previousConfig.ballotStyles
 
             } else {
-                logger.error {"RunMixnet must specify encryptedBallotDir or inputMixDir" }
-                return
+                val seed = mixnet.group.randomElementModQ(minimum = 1)
+                val nonces = Nonces(seed, mixName) // used for the extra ciphertexts to make even rows
+                val pair = mixnet.readEncryptedBallots(nonces)
+                inputBallots = pair.first
+                ballotStyles = pair.second
+                if (inputBallots.size > 0) width = inputBallots[0].nelems
+                noncesSeed = seed.toUInt256safe().publishJson()
             }
 
+            logger.info { "runShuffleProof with ${inputBallots.size} ballots" }
             val (shuffled, proof) = mixnet.runShuffleProof(inputBallots, mixName)
 
             val outputDir = "$publicDir/$mixName"
             writeBallotsToFile(shuffled, "$outputDir/$shuffledFilename")
             writeProofOfShuffleJsonToFile(proof, "$outputDir/$proofFilename")
 
-            val config = MixnetConfig(mixName, mixnet.electionId.publishJson(), ballotStyles, width)
+            val config = MixnetConfig(mixName, mixnet.electionId.publishJson(), ballotStyles, width, noncesSeed)
             writeMixnetConfigToFile(config, "$outputDir/$configFilename")
-            logger.info{ "success" }
+            logger.info { "success" }
         }
     }
 }
@@ -162,23 +154,21 @@ class Mixnet(egDir:String) {
         return Pair(mixedBallots, proof)
     }
 
-    fun readEncryptedBallots(encryptedBallotDir: String): Pair<List<VectorCiphertext>, List<String>> {
-        val consumerEballots: Consumer = makeConsumer(encryptedBallotDir, group)
-
+    fun readEncryptedBallots(nonces: Nonces): Pair<List<VectorCiphertext>, List<String>> {
         val ballotStyles = mutableSetOf<String>()
         val mixnetBallots = mutableListOf<VectorCiphertext>()
 
-        val width = consumerEballots.iterateEncryptedBallotsFromDir(encryptedBallotDir, null) { it.state == EncryptedBallot.BallotState.CAST }
-            .map { widthOfBallotStyle(manifest, it.ballotStyleId) }.max()
-        println(" width = $width")
+        // must be in some definite order
+        val ballots = consumer.iterateAllCastBallots().toList().sortedBy { it.ballotId }
 
-        consumerEballots.iterateEncryptedBallotsFromDir(
-            encryptedBallotDir,
-            null
-        ) { it.state == EncryptedBallot.BallotState.CAST }.forEach { eballot ->
+        val width = ballots.map { widthOfBallotStyle(manifest, it.ballotStyleId) }.max()
+        println(" width = ${width+2}")
+        var ncount = 0
+
+        ballots.forEach { eballot ->
             val ciphertexts = mutableListOf<ElGamalCiphertext>()
             ciphertexts.add(eballot.encryptedSn!!) // encryptedSn always the first one
-            val encryptedStyleIndex = indexOfBallotStyle(manifest, eballot.ballotStyleId).encrypt(publicKey)
+            val encryptedStyleIndex = indexOfBallotStyle(manifest, eballot.ballotStyleId).encrypt(publicKey, nonces.get(ncount++))
             ciphertexts.add(encryptedStyleIndex) // encryptedStyleIndex always the second one
             ballotStyles.add(eballot.ballotStyleId)
 
@@ -189,9 +179,9 @@ class Mixnet(egDir:String) {
                     count++
                 }
             }
-            // fill the remaining with encrypted zeroes
+            // fill the remaining with encrypted zeroes. nonce must be deterministic.
             repeat(width - count) {
-                ciphertexts.add(0.encrypt(publicKey))
+                ciphertexts.add(0.encrypt(publicKey, nonces.get(ncount++)))
             }
             require(ciphertexts.size == width + 2)
             mixnetBallots.add(VectorCiphertext(group, ciphertexts))
@@ -212,18 +202,4 @@ fun indexOfBallotStyle(manifest: ManifestIF, ballotStyleId: String) : Int {
         if (it == ballotStyleId) return idx
     }
     throw RuntimeException("Cant find ballotStyle $ballotStyleId")
-}
-
-fun readWidthFromEncryptedBallots(group: GroupContext, encryptedBallotDir: String): Int {
-    val consumer : Consumer = makeConsumer(encryptedBallotDir, group)
-    var count = 1 // serial number
-    for (encryptedBallot in consumer.iterateEncryptedBallotsFromDir(encryptedBallotDir, null, null)) {
-        encryptedBallot.contests.forEach { contest ->
-            contest.selections.forEach {
-                count++
-            }
-        }
-        break
-    }
-    return count
 }
