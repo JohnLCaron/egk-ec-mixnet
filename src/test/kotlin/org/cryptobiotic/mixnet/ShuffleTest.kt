@@ -165,7 +165,7 @@ class ShuffleTest {
         shuffle(ballots, keypair.publicKey, nthreads)
         stats.of("shuffle", "text", "shuffle").accum(stopwatch.stop(), N)
 
-        stats.show("shuffle")
+        stats.show(3)
     }
 
     fun multiply(term1: ElGamalCiphertext, term2: ElGamalCiphertext) : ElGamalCiphertext {

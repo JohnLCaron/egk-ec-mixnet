@@ -16,7 +16,7 @@ class RunVerifierTest {
     //    --outputMixDir ${PUBLIC_DIR}/mix2
     @Test
     fun testRunVerifier() {
-        val publicDir = "/home/stormy/tmp/testOut/egmixnet/public"
+        val publicDir = "src/test/data/working/public"
         RunVerifier.main(
             arrayOf(
                 "-publicDir", publicDir,

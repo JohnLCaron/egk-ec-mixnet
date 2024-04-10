@@ -2,11 +2,11 @@ package org.cryptobiotic.mixnet
 
 import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.util.Stats
-import org.junit.jupiter.api.Test
 import kotlin.random.Random
-import kotlin.test.assertTrue
 import org.cryptobiotic.maths.*
 import org.cryptobiotic.util.Stopwatch
+import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class ShuffleProofTest {
     private val useRegularB = false
@@ -248,8 +248,9 @@ class ShuffleProofTest {
 
     @Test
     fun testSPVMatrix() {
-        //runShuffleProofVerifyWithThreads(100, 34)
-        runShuffleProofVerifyWithThreads(1000, 34)
+        runShuffleProofVerifyWithThreads(10, 34)
+        runShuffleProofVerifyWithThreads(100, 34)
+        // runShuffleProofVerifyWithThreads(1000, 34)
         //runShuffleProofVerifyWithThreads(2000, 34)
     }
 
@@ -292,7 +293,7 @@ class ShuffleProofTest {
         val (mixedBallots, rnonces, psi) = shuffle(ballots, keypair.publicKey, nthreads)
         val shuffleTime = stopwatch.elapsed()
         stats.of("proof", "text", "shuffle").accum(stopwatch.stop(), N)
-        if (showExps) println("  shuffle: ${group.getAndClearOpCounts()}")
+        if (showExps) println(group.showOpCountResults("shuffle"))
 
         stopwatch.start()
         val pos: ProofOfShuffle = runProof(
@@ -306,7 +307,10 @@ class ShuffleProofTest {
             nthreads)
         val proofTime = stopwatch.elapsed()
         stats.of("proof", "text", "shuffle").accum(stopwatch.stop(), N)
-        if (showExps) println("  proof: ${group.getAndClearOpCounts()} ${expectProof(nrows, width)}")
+        if (showExps) {
+            println(group.showOpCountResults("proof"))
+            println("  ${expectProof(nrows, width)}")
+        }
 
         stopwatch.start()
         val valid = runVerify(
@@ -319,7 +323,10 @@ class ShuffleProofTest {
         )
         val verifyTime = stopwatch.elapsed()
         stats.of("verify", "text", "verify").accum(stopwatch.stop(), N)
-        if (showExps) println("  verify: ${group.getAndClearOpCounts()} ${expectVerify(nrows, width)}")
+        if (showExps) {
+            println(group.showOpCountResults("verify"))
+            println("  ${expectVerify(nrows, width)}")
+        }
 
         assertTrue(valid)
         if (showTiming) stats.show()

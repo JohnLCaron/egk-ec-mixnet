@@ -46,34 +46,16 @@ class ProdColumnPow(val group: GroupContext, val nthreads: Int, val alg: ProdCol
             nthreads: Int? = null,
             alg: ProdColumnAlg? = null
         ): VectorCiphertext {
-            val useCores = if (nthreads == null) calcCores() else nthreads
+            val useCores = if (nthreads == null) calcCores() else if (nthreads == 0) 1 else nthreads
             return ProdColumnPow(exps.group, useCores, alg).prodColumnPow(rows, exps)
         }
     }
 
-    // always use PprodColumnPow, even when nthreads = 1, to divide into batchs
+    // always use PprodColumnPow, even when nthreads = 1, to divide into batches
     // TODO is maxBatchSize optimal for ec ??
     fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
-        /* return if (nthreads < 2) {
-            calcSingleThread(rows, exps)
-        } else { */
             return PprodColumnPow(rows, exps, nthreads).calc()
-        // }
     }
-
-    /*
-    private fun calcSingleThread(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
-        val nrows = rows.size
-        require(exps.nelems == nrows)
-        val width = rows[0].nelems
-        val result = List(width) { col ->
-            val column = List(nrows) { row -> rows[row].elems[col] }
-            val padElement = prodColumnPow(VectorP(exps.group, column.map { it.pad }), exps)
-            val dataElement = prodColumnPow(VectorP(exps.group, column.map { it.data }), exps)
-            ElGamalCiphertext(padElement, dataElement)
-        }
-        return VectorCiphertext(exps.group, result)
-    } */
 
     // compute Prod (col_i ^ exp_i)
     private fun prodColumnPow(bases: VectorP, exps: VectorQ): ElementModP {

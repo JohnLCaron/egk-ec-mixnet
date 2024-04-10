@@ -77,7 +77,6 @@ class VerifierV(
     val challenge: ElementModQ,
     val w: List<VectorCiphertext>, // org ciphertexts
     val wp: List<VectorCiphertext>, // permuted ciphertexts
-    val nthreads: Int = 10,
 ) {
     val size = w.size
     val h0 = generators.elems[0]

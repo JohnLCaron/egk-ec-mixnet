@@ -12,8 +12,8 @@ import kotlin.test.Test
 
 class MixnetBallotReadTimingTest {
     val egkDir =   "src/test/data/working/public"
-    val ballotFile =   "$egkDir/mix1/Shuffled.bin"
-    val ballotFile2 =   "$egkDir/mix2/Shuffled.bin"
+    val ballotFile =   "$egkDir/mix1/ShuffledBallots.bin"
+    val ballotFile2 =   "$egkDir/mix2/ShuffledBallots.bin"
 
     @Test
     fun testMixnetRoundtrip() {
@@ -46,8 +46,7 @@ class MixnetBallotReadTimingTest {
             val inputBallots2 = readerAlt.readFromFile(ballotFile2)
             stats.of("BallotReaderAlt", "text", "trial").accum(stopwatch.stop(), N)
         }
-        stats.show("BallotReader")
-        stats.show("BallotReaderAlt")
+        stats.show()
     }
 }
 // BallotReader with 1000 ballots of width 34 took 404 ms

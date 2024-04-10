@@ -30,14 +30,13 @@ fun shuffle(
     val reencr = mutableListOf<VectorCiphertext>()
     val rnonces = mutableListOf<VectorQ>()
 
-    val psi = Permutation.random(rows.size)
     repeat(rows.size) { idx ->
         val (reencrypt, nonceV) = rows[idx].reencrypt(publicKey)
         reencr.add(reencrypt)
         rnonces.add(nonceV)
     }
-    val mixed = psi.permute(reencr) // dunno why using inverse.
-    // note rnonces now correspond to W, not W'
+    val psi = Permutation.random(rows.size)
+    val mixed = psi.permute(reencr)
     return Triple(mixed, MatrixQ(rnonces), psi)
 }
 
@@ -60,7 +59,7 @@ class PShuffle(val rows: List<VectorCiphertext>, val publicKey: ElGamalPublicKey
         }
         // now we shuffle
         val psi = Permutation.random(n)
-        val mixed = psi.permute(reencr) // dunno why using inverse.
+        val mixed = psi.permute(reencr)
         return Triple(mixed, MatrixQ(rnonces), psi)
     }
 

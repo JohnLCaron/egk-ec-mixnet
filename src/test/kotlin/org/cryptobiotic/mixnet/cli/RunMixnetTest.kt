@@ -1,5 +1,6 @@
 package org.cryptobiotic.mixnet.cli
 
+import org.cryptobiotic.testOut
 import kotlin.test.Test
 
 class RunMixnetTest {
@@ -8,7 +9,7 @@ class RunMixnetTest {
     //   encryptedBallotDir= /home/stormy/tmp/testOut/egmixnet/public/encrypted_ballots
     @Test
     fun testRunMixnet() {
-        val publicDir = "/home/stormy/tmp/testOut/egmixnet/public"
+        val publicDir = "$testOut/public"
         RunMixnet.main(
             arrayOf(
                 "-publicDir", publicDir,
