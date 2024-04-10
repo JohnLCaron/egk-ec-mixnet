@@ -1,17 +1,19 @@
 package org.cryptobiotic.mixnet.cli
 
+import org.cryptobiotic.testOut
 import kotlin.test.Test
 
 class RunVerifyDecryptionsTest {
 
     @Test
     fun testRunVerifyDecryptions() {
-        val publicDir = "/home/stormy/tmp/testOut/egmixnet/public"
+        val publicDir = "$testOut/public"
+        val privateDir = "$testOut/private"
         RunVerifyDecryptions.main(
             arrayOf(
                 "-publicDir", publicDir,
-                "-dballots", "/home/stormy/tmp/testOut/egmixnet/working/private/decrypted_ballots",
-                "-pballots", "/home/stormy/tmp/testOut/egmixnet/working/private/input_ballots",
+                "-dballots", "$privateDir/decrypted_ballots",
+                "-pballots", "$privateDir/input_ballots",
                 "--show"
             )
         )

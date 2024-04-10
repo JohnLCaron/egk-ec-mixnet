@@ -1,17 +1,17 @@
 package org.cryptobiotic.mixnet.cli
 
+import org.cryptobiotic.testOut
 import kotlin.test.Test
 
 class RunMixnetTableTest {
 
     @Test
     fun testRunMixnetTable() {
-        val topDir = "/home/stormy/tmp/testOut/egmixnet"
         RunMixnetTable.main(
             arrayOf(
-                "-publicDir", "$topDir/public",
-                "--trusteeDir", "$topDir/private/trustees",
-                "--mixDir", "$topDir/public/mix2",
+                "-publicDir", "$testOut/public",
+                "--trusteeDir", "$testOut/private/trustees",
+                "--mixDir", "$testOut/public/mix2",
             )
         )
     }

@@ -38,9 +38,15 @@ tasks {
     }
     withType<Test>().all {
         useJUnitPlatform()
-        jvmArgs("--enable-preview")
         minHeapSize = "512m"
-        maxHeapSize = "4g"
+        maxHeapSize = "8g"
+        jvmArgs = listOf("-Xss128m", "--enable-preview")
+
+        // Make tests run in parallel
+        // More info: https://www.jvt.me/posts/2021/03/11/gradle-speed-parallel/
+        systemProperties["junit.jupiter.execution.parallel.enabled"] = "true"
+        systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
+        systemProperties["junit.jupiter.execution.parallel.mode.classes.default"] = "concurrent"
     }
     withType<JavaExec>().all {
         jvmArgs("--enable-preview")

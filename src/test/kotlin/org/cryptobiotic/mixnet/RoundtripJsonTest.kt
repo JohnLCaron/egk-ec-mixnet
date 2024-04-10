@@ -13,11 +13,11 @@ import org.cryptobiotic.mixnet.writer.readMatrixCiphertextJsonFromFile
 import org.cryptobiotic.mixnet.writer.readProofOfShuffleJsonFromFile
 import org.cryptobiotic.mixnet.writer.writeMatrixCiphertextJsonToFile
 import org.cryptobiotic.mixnet.writer.writeProofOfShuffleJsonToFile
+import java.nio.file.Files
+import java.nio.file.Path
 
 class RoundtripJsonTest {
     val filenameProof = "$testOut/proofOfShuffle.json"
-    val filenameBallots = "$testOut/ballots.json"
-    val filenameShuffled = "$testOut/shuffled.json"
     val group = productionGroup("P-256")
     val keypair = elGamalKeyPairFromRandom(group)
 
@@ -33,6 +33,10 @@ class RoundtripJsonTest {
     @Test
     fun testBallotsRoundtrip() {
         val (w, wp, _) = runShuffleProof(3, 4, group)
+
+        Files.createDirectories(Path.of("$testOut/testBallotsRoundtrip"))
+        val filenameBallots = "$testOut/testBallotsRoundtrip/ballots.json"
+        val filenameShuffled = "$testOut/testBallotsRoundtrip/shuffled.json"
 
         writeMatrixCiphertextJsonToFile(filenameBallots, w)
         val roundtripResult = readMatrixCiphertextJsonFromFile(group, filenameBallots)
@@ -50,6 +54,10 @@ class RoundtripJsonTest {
     @Test
     fun testProofOfShuffleWriteReadVerify() {
         val (w, wp, pos) = runShuffleProof(3, 4, group)
+
+        Files.createDirectories(Path.of("$testOut/testWRV"))
+        val filenameBallots = "$testOut/testWRV/ballots.json"
+        val filenameShuffled = "$testOut/testWRV/shuffled.json"
 
         writeMatrixCiphertextJsonToFile(filenameBallots, w)
         val roundtripResult = readMatrixCiphertextJsonFromFile(group, filenameBallots)

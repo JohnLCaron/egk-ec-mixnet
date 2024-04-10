@@ -132,8 +132,9 @@ class ProverV(
         val hexps: VectorQ = hexpsCalc(ipe)
         val (B, Bp) = if (nthreads == 0) {
             if (useRegularB) computeBreg(b, ipe) else computeBalt(gexps, hexps) // CE 2n acc, 2n exp else CE 4n acc
+        } else {
+            PcomputeB(gexps, hexps, h0, beta, epsilon, nthreads).calc()
         }
-            else PcomputeB(gexps, hexps, h0, beta, epsilon, nthreads).calc()
 
         val Cp = group.gPowP(gamma) // CE 1 acc
         val Dp = group.gPowP(delta) // CE 1 acc
