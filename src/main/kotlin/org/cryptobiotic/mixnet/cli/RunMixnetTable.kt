@@ -38,14 +38,19 @@ class RunMixnetTable {
                 shortName = "mix",
                 description = "Mix directory for shuffled ballots"
             ).required()
-
+            val outputDir by parser.option(
+                ArgType.String,
+                shortName = "out",
+                description = "output directory (default is publicDir)"
+            )
             parser.parse(args)
 
             val info = buildString {
-                appendLine("starting RunMixnetTable")
-                appendLine("   egkMixnetDir= $egkMixnetDir")
-                appendLine("   trusteeDir= $trusteeDir")
-                append("   mixDir= $mixDir")
+                append("starting RunMixnetTable")
+                append("   egkMixnetDir= $egkMixnetDir,")
+                append("   trusteeDir= $trusteeDir,")
+                append("   mixDir= $mixDir,")
+                append("   outputDir= $outputDir")
             }
             logger.info { info }
 
@@ -57,7 +62,7 @@ class RunMixnetTable {
             }
             val config = resultConfig.unwrap()
 
-            val valid = runGenerateMixnetTable(egkMixnetDir, trusteeDir, mixDir, config)
+            val valid = runGenerateMixnetTable(egkMixnetDir, trusteeDir, mixDir, outputDir, config)
             logger.info { "valid = $valid" }
         }
 
@@ -66,6 +71,7 @@ class RunMixnetTable {
             publicDir: String,
             trusteeDir: String,
             mixDir: String,
+            outputDir: String?,
             config: MixnetConfig
         ) {
             val consumerIn = makeConsumer(publicDir)
@@ -114,7 +120,8 @@ class RunMixnetTable {
             }
 
             val resultJson = decryptedSns.map { it.publishJson() }
-            val decryptedSnsFile = "$publicDir/${RunMixnet.decryptedSnsFilename}"
+            val topdir = outputDir ?: publicDir
+            val decryptedSnsFile = "$topdir/${RunMixnet.decryptedSnsFilename}"
             writeDecryptedSnsToFile( DecryptedSnsJson(resultJson), decryptedSnsFile)
 
             logger.info { "wrote ${decryptedSns.size} decryptedSns to $decryptedSnsFile" }

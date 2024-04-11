@@ -22,14 +22,14 @@ import org.cryptobiotic.mixnet.writer.BallotReader
 import org.cryptobiotic.mixnet.writer.readMixnetConfigFromFile
 import org.cryptobiotic.mixnet.writer.readProofOfShuffleJsonFromFile
 
-class RunVerifier {
+class RunProofOfShuffleVerifier {
 
     companion object {
-        val logger = KotlinLogging.logger("RunVerifier")
+        val logger = KotlinLogging.logger("RunProofOfShuffleVerifier")
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val parser = ArgParser("RunVerifier")
+            val parser = ArgParser("RunProofOfShuffleVerifier")
             val publicDir by parser.option(
                 ArgType.String,
                 shortName = "publicDir",
@@ -49,9 +49,9 @@ class RunVerifier {
             parser.parse(args)
 
             val info = buildString {
-                appendLine("starting proof verification")
-                appendLine( "   publicDir= $publicDir")
-                appendLine( "   inputMixDir= $inputMixDir")
+                append("start")
+                append( "   publicDir= $publicDir,")
+                append( "   inputMixDir= $inputMixDir,")
                 append( "   outputMixDir= $outputMixDir")
             }
             logger.info{ info }
@@ -138,7 +138,7 @@ class Verifier(egDir:String) {
         val nrows = ballots.size
         val width = ballots[0].nelems
         val N = nrows * width
-        RunVerifier.logger.info { "nrows=$nrows, width= $width per row, N=$N, nthreads=$nthreads" }
+        RunProofOfShuffleVerifier.logger.info { "nrows=$nrows, width= $width per row, N=$N, nthreads=$nthreads" }
 
         val stopwatch = Stopwatch()
 
@@ -150,7 +150,7 @@ class Verifier(egDir:String) {
             pos,
             nthreads,
         )
-        RunVerifier.logger.debug { "verification took = ${Stopwatch.perRow(stopwatch.stop(), nrows)}" }
+        RunProofOfShuffleVerifier.logger.debug { "verification took = ${Stopwatch.perRow(stopwatch.stop(), nrows)}" }
 
         return valid
     }

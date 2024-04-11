@@ -1,20 +1,23 @@
 package org.cryptobiotic.mixnet.cli
 
-import org.cryptobiotic.testOut
+import org.cryptobiotic.eg.core.createDirectories
+import org.cryptobiotic.util.Testing
 import kotlin.test.Test
 
 class RunMixnetTest {
 
-    //    publicDir= /home/stormy/tmp/testOut/egmixnet/public
-    //   encryptedBallotDir= /home/stormy/tmp/testOut/egmixnet/public/encrypted_ballots
     @Test
     fun testRunMixnet() {
-        val publicDir = "$testOut/public"
+        val publicDir = "src/test/data/working/public"
+        val outputDir = "${Testing.testOutMixnet}/testRunMixnet"
+        createDirectories("$outputDir/mix1")
+        createDirectories("$outputDir/mix2")
+
         RunMixnet.main(
             arrayOf(
                 "-publicDir", publicDir,
-                "--mixName", "mix1"
-
+                "--mixName", "mix1",
+                "--outputDir",  outputDir
             )
         )
 
@@ -22,7 +25,8 @@ class RunMixnetTest {
             arrayOf(
                 "-publicDir", publicDir,
                 "--inputMixDir", "$publicDir/mix1",
-                "--mixName", "mix2"
+                "--mixName", "mix2",
+                "--outputDir",  outputDir
             )
         )
     }

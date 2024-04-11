@@ -1,14 +1,14 @@
 package org.cryptobiotic.mixnet.cli
 
-import org.cryptobiotic.testOut
 import kotlin.test.Test
 
 class RunVerifyDecryptionsTest {
 
     @Test
     fun testRunVerifyDecryptions() {
-        val publicDir = "$testOut/public"
-        val privateDir = "$testOut/private"
+        val publicDir = "src/test/data/working/public"
+        val privateDir = "src/test/data/working/private"
+
         RunVerifyDecryptions.main(
             arrayOf(
                 "-publicDir", publicDir,

@@ -50,13 +50,19 @@ class RunMixnet {
                 shortName = "mix",
                 description = "output mix name"
             ).required()
+            val outputDir by parser.option(
+                ArgType.String,
+                shortName = "out",
+                description = "output directory (default is publicDir)"
+            )
             parser.parse(args)
 
             val info = buildString {
-                appendLine("starting mixnet for '$mixName'")
-                appendLine( "   publicDir= $publicDir")
-                appendLine( "   mixName= $mixName")
-                append( "   inputMixDir= $inputMixDir")
+                append("RunMixnet for '$mixName',")
+                append( "   publicDir= $publicDir,")
+                append( "   mixName= $mixName,")
+                append( "   inputMixDir= $inputMixDir,")
+                append( "   outputDir= $outputDir")
             }
             logger.info { info }
 
@@ -92,12 +98,13 @@ class RunMixnet {
             logger.info { "runShuffleProof with ${inputBallots.size} ballots" }
             val (shuffled, proof) = mixnet.runShuffleProof(inputBallots, mixName)
 
-            val outputDir = "$publicDir/$mixName"
-            writeBallotsToFile(shuffled, "$outputDir/$shuffledFilename")
-            writeProofOfShuffleJsonToFile(proof, "$outputDir/$proofFilename")
+            val topdir = outputDir ?: publicDir
+            val outputDirMix = "$topdir/$mixName"
+            writeBallotsToFile(shuffled, "$outputDirMix/$shuffledFilename")
+            writeProofOfShuffleJsonToFile(proof, "$outputDirMix/$proofFilename")
 
             val config = MixnetConfig(mixName, mixnet.electionId.publishJson(), ballotStyles, width, noncesSeed)
-            writeMixnetConfigToFile(config, "$outputDir/$configFilename")
+            writeMixnetConfigToFile(config, "$outputDirMix/$configFilename")
             logger.info { "success" }
         }
     }

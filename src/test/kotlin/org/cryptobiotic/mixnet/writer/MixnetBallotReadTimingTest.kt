@@ -5,24 +5,23 @@ import com.github.michaelbull.result.unwrap
 import org.cryptobiotic.eg.publish.Consumer
 import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.mixnet.cli.RunMixnet
-import org.cryptobiotic.mixnet.cli.RunVerifier.Companion.logger
 import org.cryptobiotic.util.Stats
 import org.cryptobiotic.util.Stopwatch
 import kotlin.test.Test
 
 class MixnetBallotReadTimingTest {
-    val egkDir =   "src/test/data/working/public"
-    val ballotFile =   "$egkDir/mix1/ShuffledBallots.bin"
-    val ballotFile2 =   "$egkDir/mix2/ShuffledBallots.bin"
+    val publicDir =   "src/test/data/working/public"
+    val ballotFile =   "$publicDir/mix1/ShuffledBallots.bin"
+    val ballotFile2 =   "$publicDir/mix2/ShuffledBallots.bin"
 
     @Test
     fun testMixnetRoundtrip() {
-        val consumer : Consumer = makeConsumer(egkDir)
+        val consumer : Consumer = makeConsumer(publicDir)
 
-        val configFilename = "$egkDir/mix1/${RunMixnet.configFilename}"
+        val configFilename = "$publicDir/mix1/${RunMixnet.configFilename}"
         val resultConfig = readMixnetConfigFromFile(configFilename)
         if (resultConfig is Err) {
-            logger.error {"Error reading MixnetConfig from $configFilename err = $resultConfig" }
+            RunMixnet.logger.error {"Error reading MixnetConfig from $configFilename err = $resultConfig" }
             return
         }
         val config = resultConfig.unwrap()

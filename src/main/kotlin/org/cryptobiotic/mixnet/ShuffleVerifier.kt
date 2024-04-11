@@ -160,7 +160,7 @@ class VerifierV(
     }
 
     companion object {
-        val logger = KotlinLogging.logger("VerifierV")
+        val logger = KotlinLogging.logger("ProofOfShuffleVerifier")
     }
 
 }

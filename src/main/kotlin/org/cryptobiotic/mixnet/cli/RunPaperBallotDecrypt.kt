@@ -62,7 +62,7 @@ class RunPaperBallotDecrypt {
             parser.parse(args)
 
             val info = buildString {
-                appendLine("RunPaperBallotDecrypt publicDir= $publicDir\n trusteeDir= $trusteeDir\n mixDir= $mixDir\n psn= $ballotSn\n outputDir=$outputDir")
+                appendLine("RunPaperBallotDecrypt publicDir= $publicDir trusteeDir= $trusteeDir mixDir= $mixDir psn= $ballotSn outputDir=$outputDir")
             }
             logger.info { info }
 
