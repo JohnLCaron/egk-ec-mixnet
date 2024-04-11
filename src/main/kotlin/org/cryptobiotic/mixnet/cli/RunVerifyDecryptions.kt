@@ -54,9 +54,9 @@ class RunVerifyDecryptions {
             parser.parse(args)
 
             val info = buildString {
-                appendLine("starting RunVerifyDecryptions")
-                appendLine(" publicDir= $publicDir")
-                appendLine(" decryptedBallotDir= $decryptedBallotDir")
+                append("starting RunVerifyDecryptions")
+                append(" publicDir= $publicDir,")
+                append(" decryptedBallotDir= $decryptedBallotDir,")
                 append(" originalBallotDir= $originalBallotDir")
             }
             logger.info { info }

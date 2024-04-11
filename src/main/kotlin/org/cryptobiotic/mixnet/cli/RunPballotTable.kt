@@ -33,19 +33,25 @@ class RunPballotTable {
                 shortName = "missing",
                 description = "Percent missing paper ballots"
             ).default(0)
-
+            val outputDir by parser.option(
+                ArgType.String,
+                shortName = "out",
+                description = "output directory (default is publicDir)"
+            )
             parser.parse(args)
 
-            val info = "starting RunPballotTable publicDir= $publicDir\n plaintextBallotDir= $plaintextBallotDir\n missingPct=$missingPct"
+            val info = "starting RunPballotTable publicDir= $publicDir\n plaintextBallotDir= $plaintextBallotDir\n" +
+                    " missingPct=$missingPct\n outputDir=$outputDir"
             logger.info { info }
 
-            runPballotTable(publicDir, plaintextBallotDir, missingPct)
+            runPballotTable(publicDir, plaintextBallotDir, missingPct, outputDir)
         }
 
         fun runPballotTable(
             publicDir: String,
             plaintextBallotDir: String,
             missingPct: Int,
+            outputDir: String?
         ) {
             val consumerIn = makeConsumer(publicDir)
             val initResult = consumerIn.readElectionInitialized()
@@ -64,7 +70,8 @@ class RunPballotTable {
                 count++
             }
 
-            val pballotFile = "$publicDir/${RunMixnet.pballotTableFilename}"
+            val topdir = outputDir ?: publicDir
+            val pballotFile = "$topdir/${RunMixnet.pballotTableFilename}"
             writePballotTableToFile(PballotTable(entries), pballotFile)
 
             logger.info { "wrote ${entries.size} pballots to $pballotFile" }

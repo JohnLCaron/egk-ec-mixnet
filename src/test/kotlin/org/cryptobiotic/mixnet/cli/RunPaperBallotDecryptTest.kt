@@ -1,6 +1,7 @@
 package org.cryptobiotic.mixnet.cli
 
-import org.cryptobiotic.testOut
+import org.cryptobiotic.eg.core.createDirectories
+import org.cryptobiotic.util.Testing
 import kotlin.test.Test
 
 class RunPaperBallotDecryptTest {
@@ -13,13 +14,16 @@ class RunPaperBallotDecryptTest {
     @Test
     fun testPaperBallotDecrypt() {
         val workingDir = "src/test/data/working"
+        val outputDir = "${Testing.testOutMixnet}/testPaperBallotDecrypt"
+        createDirectories(outputDir)
+
         RunPaperBallotDecrypt.main(
             arrayOf(
                 "-publicDir", "$workingDir/public",
                 "-psn", "all",
                 "-trustees", "$workingDir/private/trustees",
                 "--mixDir", "$workingDir/public/mix2",
-                "-out", "$testOut/testPaperBallotDecrypt",
+                "-out", outputDir,
             )
         )
     }

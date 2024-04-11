@@ -8,7 +8,7 @@ import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.cryptobiotic.maths.*
-import org.cryptobiotic.testOut
+import org.cryptobiotic.util.Testing
 import org.cryptobiotic.mixnet.writer.readMatrixCiphertextJsonFromFile
 import org.cryptobiotic.mixnet.writer.readProofOfShuffleJsonFromFile
 import org.cryptobiotic.mixnet.writer.writeMatrixCiphertextJsonToFile
@@ -17,7 +17,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 class RoundtripJsonTest {
-    val filenameProof = "$testOut/proofOfShuffle.json"
+    val filenameProof = "${Testing.testOutMixnet}/proofOfShuffle.json"
     val group = productionGroup("P-256")
     val keypair = elGamalKeyPairFromRandom(group)
 
@@ -34,9 +34,9 @@ class RoundtripJsonTest {
     fun testBallotsRoundtrip() {
         val (w, wp, _) = runShuffleProof(3, 4, group)
 
-        Files.createDirectories(Path.of("$testOut/testBallotsRoundtrip"))
-        val filenameBallots = "$testOut/testBallotsRoundtrip/ballots.json"
-        val filenameShuffled = "$testOut/testBallotsRoundtrip/shuffled.json"
+        Files.createDirectories(Path.of("${Testing.testOutMixnet}/testBallotsRoundtrip"))
+        val filenameBallots = "${Testing.testOutMixnet}/testBallotsRoundtrip/ballots.json"
+        val filenameShuffled = "${Testing.testOutMixnet}/testBallotsRoundtrip/shuffled.json"
 
         writeMatrixCiphertextJsonToFile(filenameBallots, w)
         val roundtripResult = readMatrixCiphertextJsonFromFile(group, filenameBallots)
@@ -55,9 +55,9 @@ class RoundtripJsonTest {
     fun testProofOfShuffleWriteReadVerify() {
         val (w, wp, pos) = runShuffleProof(3, 4, group)
 
-        Files.createDirectories(Path.of("$testOut/testWRV"))
-        val filenameBallots = "$testOut/testWRV/ballots.json"
-        val filenameShuffled = "$testOut/testWRV/shuffled.json"
+        Files.createDirectories(Path.of("${Testing.testOutMixnet}/testWRV"))
+        val filenameBallots = "${Testing.testOutMixnet}/testWRV/ballots.json"
+        val filenameShuffled = "${Testing.testOutMixnet}/testWRV/shuffled.json"
 
         writeMatrixCiphertextJsonToFile(filenameBallots, w)
         val roundtripResult = readMatrixCiphertextJsonFromFile(group, filenameBallots)

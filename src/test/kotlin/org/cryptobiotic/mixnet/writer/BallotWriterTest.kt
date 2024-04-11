@@ -5,7 +5,7 @@ import org.cryptobiotic.eg.core.elGamalKeyPairFromRandom
 import org.cryptobiotic.eg.core.encrypt
 import org.cryptobiotic.eg.core.productionGroup
 import org.cryptobiotic.maths.*
-import org.cryptobiotic.testOut
+import org.cryptobiotic.util.Testing
 import java.io.File
 import kotlin.random.Random
 import kotlin.test.Test
@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 
 class BallotWriterTest {
     val group = productionGroup("P-256")
-    val testOutDir = "$testOut/BallotWriterTest"
+    val testOutDir = "${Testing.testOutMixnet}/BallotWriterTest"
 
     @Test
     fun testBallotWriter() {
