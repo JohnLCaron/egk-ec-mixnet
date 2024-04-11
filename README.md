@@ -1,6 +1,6 @@
 [![License](https://img.shields.io/github/license/JohnLCaron/egk-ec)](https://github.com/JohnLCaron/egk-ec-mixnet/blob/main/LICENSE.txt)
-![GitHub branch checks state](https://img.shields.io/github/actions/workflow/status/JohnLCaron/egk-ec/unit-tests.yml)
-[![Coverage](https://img.shields.io/badge/coverage-90.2%25%20LOC%20(6890/7642)-blue)](https://github.com/JohnLCaron/egk-ec/blob/main/htmlReport/index.html)
+![GitHub branch checks state](https://img.shields.io/github/actions/workflow/status/JohnLCaron/egk-ec-mixnet/unit-tests.yml)
+[![Coverage](https://img.shields.io/badge/coverage-88.7%25%20LOC%20(1345/1516)-blue)](https://github.com/JohnLCaron/egk-ec-mixnet/blob/main/htmlReport/index.html)
 
 # Egk Elliptic Curves Mixnet 
 
