@@ -52,7 +52,6 @@ class ProdColumnPow(val group: GroupContext, val nthreads: Int, val alg: ProdCol
     }
 
     // always use PprodColumnPow, even when nthreads = 1, to divide into batches
-    // TODO is maxBatchSize optimal for ec ??
     fun prodColumnPow(rows: List<VectorCiphertext>, exps: VectorQ): VectorCiphertext {
             return PprodColumnPow(rows, exps, nthreads).calc()
     }

@@ -178,8 +178,7 @@ class RunPaperBallotDecrypt {
             }
             val ballotRow = foundBallot.shuffledRow
 
-            // TODO only open Shuffled ballots once?
-            // then open the Shuffled ballots and fetch that row
+            // TODO only open Shuffled ballots once? then open the Shuffled ballots and fetch that row
             val reader = BallotReader(group, width)
             val mixFile = "$mixDir/${RunMixnet.shuffledFilename}"
             val shuffled = reader.readFromFile(mixFile)

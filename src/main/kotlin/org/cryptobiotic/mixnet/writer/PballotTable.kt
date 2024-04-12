@@ -24,7 +24,6 @@ data class PballotTable(
 
 @Serializable
 data class PballotEntry(
-    // val ballot_id: String, TODO allowed?
     val sn: Long,
     val location: String,
 )

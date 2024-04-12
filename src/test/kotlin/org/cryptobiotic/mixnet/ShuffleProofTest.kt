@@ -46,7 +46,6 @@ class ShuffleProofTest {
     }
 
     fun makeBallots(keypair: ElGamalKeypair, nrows: Int, width: Int) : List<VectorCiphertext> {
-        // TODO in parallel to save time
         return List(nrows) {
             val ciphertexts = List(width) {
                 val vote = if (Random.nextBoolean()) 0 else  1
