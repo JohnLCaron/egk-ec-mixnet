@@ -13,7 +13,7 @@ fun getBatchingVectorAndChallenge(
     w: List<VectorCiphertext>,
     wp: List<VectorCiphertext>,
 ): Pair<VectorQ, ElementModQ> {
-    // Generate a seed to the PRG for batching.
+    // Generate a seed to the PRG for batching. TODO cryptographer review.
     val baseHash = parameterBaseHash(group.constants)
     val ciphertexts = w.flatMap { it.elems }
     val shuffled = wp.flatMap { it.elems }

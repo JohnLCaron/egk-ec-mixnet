@@ -182,8 +182,8 @@ class RunVerifyDecryptions {
             var allOk = true
             val consumerIn = makeConsumer(egkMixnetDir)
             consumerIn.iterateDecryptedBallots(decryptedBallotDir).forEach { decryptedBallot ->
-                val psn = decryptedBallot.id.toLong() // TODO err
-                val location = pballotMap[psn]!!.location
+                val psn = decryptedBallot.id.toLong()
+                val location = pballotMap[psn]!!.location // TODO handle error
 
                 val pballotFilename = "$originalBallotDir/$location"
                 val orgBallotResult = consumerIn.readPlaintextBallot(pballotFilename)
