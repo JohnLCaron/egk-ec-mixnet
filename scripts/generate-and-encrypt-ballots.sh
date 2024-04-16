@@ -37,7 +37,8 @@ echo "   RunExampleEncryption for ${NUM_BALLOTS} ballots, 2 devices but single d
     -in ${PUBLIC_DIR} \
     -nballots 21 \
     -pballotDir ${PRIVATE_DIR}/input_ballots \
-    -eballotDir ${PUBLIC_DIR}/encrypted_ballots \
-    -device device42,yerDevice
+    -out ${PUBLIC_DIR} \
+    -device device42,yerDevice \
+    --noDeviceNameInDir
 
 echo "   [DONE] Generating encrypted ballots into ${PUBLIC_DIR}/encrypted_ballots"

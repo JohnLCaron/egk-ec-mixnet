@@ -1,0 +1,767 @@
+{
+    "election_scope_id": "TestManifest",
+    "spec_version": "v2.0.0",
+    "type": "general",
+    "start_date": "start",
+    "end_date": "end",
+    "geopolitical_units": [
+        {
+            "object_id": "gpu1",
+            "name": "gpu1",
+            "type": "congressional"
+        },
+        {
+            "object_id": "gpu2",
+            "name": "gpu2",
+            "type": "congressional"
+        },
+        {
+            "object_id": "gpu3",
+            "name": "gpu3",
+            "type": "congressional"
+        },
+        {
+            "object_id": "gpu4",
+            "name": "gpu4",
+            "type": "congressional"
+        },
+        {
+            "object_id": "gpu5",
+            "name": "gpu5",
+            "type": "congressional"
+        },
+        {
+            "object_id": "gpu6",
+            "name": "gpu6",
+            "type": "congressional"
+        },
+        {
+            "object_id": "gpu7",
+            "name": "gpu7",
+            "type": "congressional"
+        }
+    ],
+    "ballot_styles": [
+        {
+            "object_id": "BallotStyle1",
+            "geopolitical_unit_ids": [
+                "gpu1",
+                "gpu2",
+                "gpu3"
+            ],
+            "party_ids": [
+            ]
+        },
+        {
+            "object_id": "BallotStyle2",
+            "geopolitical_unit_ids": [
+                "gpu2",
+                "gpu3",
+                "gpu4"
+            ],
+            "party_ids": [
+            ]
+        },
+        {
+            "object_id": "BallotStyle3",
+            "geopolitical_unit_ids": [
+                "gpu3",
+                "gpu4",
+                "gpu5"
+            ],
+            "party_ids": [
+            ]
+        },
+        {
+            "object_id": "BallotStyle4",
+            "geopolitical_unit_ids": [
+                "gpu4",
+                "gpu5",
+                "gpu6"
+            ],
+            "party_ids": [
+            ]
+        },
+        {
+            "object_id": "BallotStyle5",
+            "geopolitical_unit_ids": [
+                "gpu5",
+                "gpu6",
+                "gpu7"
+            ],
+            "party_ids": [
+            ]
+        }
+    ],
+    "contests": [
+        {
+            "object_id": "contest1",
+            "sequence_order": 1,
+            "electoral_district_id": "gpu5",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest1",
+            "ballot_selections": [
+                {
+                    "object_id": "selection1",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate1"
+                },
+                {
+                    "object_id": "selection2",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate2"
+                },
+                {
+                    "object_id": "selection3",
+                    "sequence_order": 3,
+                    "candidate_id": "candidate3"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest2",
+            "sequence_order": 2,
+            "electoral_district_id": "gpu6",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest2",
+            "ballot_selections": [
+                {
+                    "object_id": "selection4",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate4"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest3",
+            "sequence_order": 3,
+            "electoral_district_id": "gpu6",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest3",
+            "ballot_selections": [
+                {
+                    "object_id": "selection5",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate5"
+                },
+                {
+                    "object_id": "selection6",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate6"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest4",
+            "sequence_order": 4,
+            "electoral_district_id": "gpu2",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest4",
+            "ballot_selections": [
+                {
+                    "object_id": "selection7",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate7"
+                },
+                {
+                    "object_id": "selection8",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate8"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest5",
+            "sequence_order": 5,
+            "electoral_district_id": "gpu3",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest5",
+            "ballot_selections": [
+                {
+                    "object_id": "selection9",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate9"
+                },
+                {
+                    "object_id": "selection10",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate10"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest6",
+            "sequence_order": 6,
+            "electoral_district_id": "gpu2",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest6",
+            "ballot_selections": [
+                {
+                    "object_id": "selection11",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate11"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest7",
+            "sequence_order": 7,
+            "electoral_district_id": "gpu2",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest7",
+            "ballot_selections": [
+                {
+                    "object_id": "selection12",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate12"
+                },
+                {
+                    "object_id": "selection13",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate13"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest8",
+            "sequence_order": 8,
+            "electoral_district_id": "gpu1",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest8",
+            "ballot_selections": [
+                {
+                    "object_id": "selection14",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate14"
+                },
+                {
+                    "object_id": "selection15",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate15"
+                },
+                {
+                    "object_id": "selection16",
+                    "sequence_order": 3,
+                    "candidate_id": "candidate16"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest9",
+            "sequence_order": 9,
+            "electoral_district_id": "gpu7",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest9",
+            "ballot_selections": [
+                {
+                    "object_id": "selection17",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate17"
+                },
+                {
+                    "object_id": "selection18",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate18"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest10",
+            "sequence_order": 10,
+            "electoral_district_id": "gpu1",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest10",
+            "ballot_selections": [
+                {
+                    "object_id": "selection19",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate19"
+                },
+                {
+                    "object_id": "selection20",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate20"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest11",
+            "sequence_order": 11,
+            "electoral_district_id": "gpu4",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest11",
+            "ballot_selections": [
+                {
+                    "object_id": "selection21",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate21"
+                },
+                {
+                    "object_id": "selection22",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate22"
+                },
+                {
+                    "object_id": "selection23",
+                    "sequence_order": 3,
+                    "candidate_id": "candidate23"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest12",
+            "sequence_order": 12,
+            "electoral_district_id": "gpu3",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest12",
+            "ballot_selections": [
+                {
+                    "object_id": "selection24",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate24"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest13",
+            "sequence_order": 13,
+            "electoral_district_id": "gpu6",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest13",
+            "ballot_selections": [
+                {
+                    "object_id": "selection25",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate25"
+                },
+                {
+                    "object_id": "selection26",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate26"
+                },
+                {
+                    "object_id": "selection27",
+                    "sequence_order": 3,
+                    "candidate_id": "candidate27"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest14",
+            "sequence_order": 14,
+            "electoral_district_id": "gpu2",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest14",
+            "ballot_selections": [
+                {
+                    "object_id": "selection28",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate28"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest15",
+            "sequence_order": 15,
+            "electoral_district_id": "gpu7",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest15",
+            "ballot_selections": [
+                {
+                    "object_id": "selection29",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate29"
+                },
+                {
+                    "object_id": "selection30",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate30"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest16",
+            "sequence_order": 16,
+            "electoral_district_id": "gpu3",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest16",
+            "ballot_selections": [
+                {
+                    "object_id": "selection31",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate31"
+                },
+                {
+                    "object_id": "selection32",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate32"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest17",
+            "sequence_order": 17,
+            "electoral_district_id": "gpu2",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest17",
+            "ballot_selections": [
+                {
+                    "object_id": "selection33",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate33"
+                },
+                {
+                    "object_id": "selection34",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate34"
+                },
+                {
+                    "object_id": "selection35",
+                    "sequence_order": 3,
+                    "candidate_id": "candidate35"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest18",
+            "sequence_order": 18,
+            "electoral_district_id": "gpu5",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest18",
+            "ballot_selections": [
+                {
+                    "object_id": "selection36",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate36"
+                },
+                {
+                    "object_id": "selection37",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate37"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest19",
+            "sequence_order": 19,
+            "electoral_district_id": "gpu6",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest19",
+            "ballot_selections": [
+                {
+                    "object_id": "selection38",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate38"
+                },
+                {
+                    "object_id": "selection39",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate39"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        },
+        {
+            "object_id": "contest20",
+            "sequence_order": 20,
+            "electoral_district_id": "gpu7",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest20",
+            "ballot_selections": [
+                {
+                    "object_id": "selection40",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate40"
+                },
+                {
+                    "object_id": "selection41",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate41"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle",
+            "option_selection_limit": 1
+        }
+    ],
+    "candidates": [
+        {
+            "object_id": "candidate21",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate22",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate41",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate20",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate25",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate26",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate23",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate24",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate29",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate27",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate28",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate10",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate32",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate11",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate33",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate30",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate31",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate14",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate36",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate15",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate37",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate12",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate34",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate13",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate35",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate18",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate19",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate16",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate38",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate17",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate39",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate2",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate1",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate4",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate3",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate6",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate5",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate8",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate7",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate9",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate40",
+            "is_write_in": false
+        }
+    ],
+    "contact_information": {
+        "address_line": [
+        ],
+        "phone": "911",
+        "name": "contact"
+    },
+    "name": [
+    ],
+    "parties": [
+        {
+            "object_id": "dog",
+            "name": ""
+        },
+        {
+            "object_id": "cat",
+            "name": ""
+        }
+    ]
+}
