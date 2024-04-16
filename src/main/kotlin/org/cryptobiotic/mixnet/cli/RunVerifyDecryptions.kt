@@ -12,10 +12,7 @@ import org.cryptobiotic.eg.election.ElectionInitialized
 import org.cryptobiotic.eg.publish.Consumer
 import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.eg.verifier.VerifyDecryption
-import org.cryptobiotic.mixnet.writer.PballotEntry
-import org.cryptobiotic.mixnet.writer.import
-import org.cryptobiotic.mixnet.writer.makePballotMap
-import org.cryptobiotic.mixnet.writer.readDecryptedSnsFromFile
+import org.cryptobiotic.mixnet.writer.*
 import org.cryptobiotic.util.ErrorMessages
 import org.cryptobiotic.util.Stats
 
@@ -70,11 +67,11 @@ class RunVerifyDecryptions {
             val electionInit = initResult.unwrap()
 
             val errsSns = ErrorMessages("runVerifySnDecryptions")
-            val verifySns = runVerifySnDecryptions(publicDir, consumerIn, electionInit, errsSns, show)
+            val snMap = runVerifySnDecryptions(publicDir, consumerIn, electionInit, errsSns, show)
             if (errsSns.hasErrors()) {
                 logger.error { errsSns.toString() }
             } else {
-                logger.info { "verify sn decryptions = $verifySns" }
+                logger.info { "verify sn decryptions all ok" }
             }
 
             if (decryptedBallotDir != null) {
@@ -111,7 +108,8 @@ class RunVerifyDecryptions {
             electionInit: ElectionInitialized,
             errs: ErrorMessages,
             show: Boolean,
-        ): Boolean {
+        ): List<DecryptedSn> {
+            val decSns = mutableListOf<DecryptedSn>()
             var allOk = true
 
             val decryptedSnsFile = "$publicDir/${RunMixnet.decryptedSnsFilename}"
@@ -121,7 +119,6 @@ class RunVerifyDecryptions {
                 throw RuntimeException("failed $decryptedSnsResult")
             }
             val decryptedSns = decryptedSnsResult.unwrap()
-
             decryptedSns.decryptedSnJsons.forEach { json ->
                 val decryptedSn =
                     json.import(consumerIn.group, errs.nested("import decrypted ballot row=${json.shuffled_row}"))
@@ -134,11 +131,12 @@ class RunVerifyDecryptions {
                         electionInit.extendedBaseHash, electionInit.jointPublicKey, decryptedSn.encrypted_sn,
                         decryptedSn.Ksn
                     )
+                    decSns.add(decryptedSn)
                     if (show) println(" verify decryptedSn row=${decryptedSn.shuffledRow} is $verify")
                     allOk = allOk && verify
                 }
             }
-            return allOk
+            return decSns
         }
 
         fun runVerifyBallots(
@@ -178,7 +176,6 @@ class RunVerifyDecryptions {
             errs: ErrorMessages,
             show: Boolean,
         ): Boolean {
-            val showDetails = show && details
             var allOk = true
             val consumerIn = makeConsumer(egkMixnetDir)
             consumerIn.iterateDecryptedBallots(decryptedBallotDir).forEach { decryptedBallot ->
@@ -192,36 +189,14 @@ class RunVerifyDecryptions {
                     allOk = false
                 } else {
                     val orgBallot = orgBallotResult.unwrap()
-                    val pcontestMap = orgBallot.contests.associateBy { it.contestId }
-                    var ballotOk = true
-
-                    decryptedBallot.contests.forEach { dcontest ->
-                        val pcontest = pcontestMap[dcontest.contestId]
-                        if (pcontest == null) {
-                            errs.add(" missing contest ${dcontest.contestId}")
-                            ballotOk = false
-                        } else {
-                            if (showDetails) println(" contest ${dcontest.contestId}")
-                            val pselectionMap = pcontest.selections.associateBy { it.selectionId }
-                            dcontest.selections.forEach { dselection ->
-                                val pselection = pselectionMap[dselection.selectionId]
-                                if (pselection == null) {
-                                    errs.add("    missing selection ${dselection.selectionId}")
-                                    ballotOk = false
-                                } else {
-                                    if (dselection.tally != pselection.vote) {
-                                        errs.add(" ${dselection.selectionId} vote ${dselection.tally} != ${pselection.vote}")
-                                        allOk = false
-                                    }
-                                    val isEqual = if (dselection.tally == pselection.vote) "==" else "NOT"
-                                    if (showDetails) println("    selection ${dselection.selectionId} ${dselection.tally} $isEqual ${pselection.vote}")
-                                }
-                            }
-                        }
+                    val errs = ErrorMessages("Compare Original and Decrypted Ballot id=${orgBallot.ballotId} psn=$psn")
+                    if (!decryptedBallot.compare(orgBallot, errs)) {
+                        logger.error { errs.toString() }
+                        allOk = false
+                    } else {
+                        val decryptedFilename = "$decryptedBallotDir/dballot-${decryptedBallot.id}.json" // TODO
+                        logger.info { "decrypted $decryptedFilename compare plaintext $pballotFilename ($psn) is ok" }
                     }
-                    val decryptedFilename = "$decryptedBallotDir/dballot-${decryptedBallot.id}.json" // TODO
-                    logger.info { "decrypted $decryptedFilename compare plaintext $pballotFilename ($psn) == $ballotOk" }
-                    allOk = allOk && ballotOk
                 }
             }
             println("all ballots compare equal == $allOk")

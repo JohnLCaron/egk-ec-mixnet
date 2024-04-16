@@ -2,12 +2,9 @@
 ![GitHub branch checks state](https://img.shields.io/github/actions/workflow/status/JohnLCaron/egk-ec-mixnet/unit-tests.yml)
 ![Coverage](https://img.shields.io/badge/coverage-88.7%25%20LOC%20(1345/1516)-blue)
 
-
 # Egk Elliptic Curves Mixnet 
 
-_last update 04/10/2024_
-
-(Work in Progress)
+_last update 04/16/2024_
 
 Implementation of a mixnet using the [ElectionGuard Kotlin Elliptical Curve library](https://github.com/JohnLCaron/egk-ec),
 and the [Verificatum library](https://www.verificatum.org/). The mixnet uses the Terelius / Wikström (TW) mixnet
@@ -102,7 +99,7 @@ If the library has changed and you need to update it:
 ````
 cd ~/dev/github/egk-ec-mixnet:
 git fetch origin
-git rebase -i origin/main
+git rebase origin/main
 ````
 
 Then rebuild the code:
@@ -142,7 +139,8 @@ The components of this workflow are:
 ####  generate-and-encrypt-ballots.sh
 
 * Generates random plaintext ballots from the given manifest, and writes their encryptions to the public mixnet directory.
-* This is the main functionality that needs to be implemented by the election voting system.
+* This is the main functionality that needs to be implemented by the election voting system. Likely the voting system will 
+  write the plaintext ballot to disk and call RunEncryptBallot.main() with appropriate parameters. 
 
 ####  eg-tally.sh
 
@@ -172,22 +170,26 @@ The components of this workflow are:
 
 ####  table-mixnet.sh
 
-* From the last mix's ShuffledBallots, generate table of decrypted (K^sn) serial numbers and proofs.
+* From the last mix's ShuffledBallots, generate table of decrypted (K^sn) serial numbers and proofs. 
+* This table is written to _working/public/decrypted_sns.json_.
 
 ####  table-pballot.sh
 
 * Simulate a table of paper ballot serial numbers and their physical locations.
-  Pass in "--missingPct percent" to simulate some percent of paper ballots were not received.
+* Pass in "--missingPct percent" to simulate some percent of paper ballots were not received.
+* This table is written to _working/public/pballot_table.json_.
 
 ####  pballot-decrypt
 
-* From a paper ballot's serial number, find the corresponding shuffled ballot and decrypt it. 
-  Place decrypted ballot into private directory.
+* From a paper ballot's serial number (psn), find the corresponding shuffled ballot and decrypt it. 
+* Place decrypted ballot into _private/decrypted_ballots/_ directory. 
+* Use psn as the decrypted ballot id, and the filename is _dballlot-psn.json_.
 
 ####  verify-decryptions
 
-* Verify the proofs in the decrypted serial numbers and decrypted ballots.
-  If a digital copy of the paper ballots are available, compare the ballot decryptions to the originals.
+* Verify the proofs in the decrypted serial numbers (decrypted_sns.json). 
+* Verify the decrypted ballot proofs.
+* If digital copies of the paper ballots are available, compare the ballot decryptions to the originals.
 
 
 ## Directory file layout (strawman)

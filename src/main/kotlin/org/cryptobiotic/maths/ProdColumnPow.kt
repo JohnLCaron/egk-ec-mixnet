@@ -150,7 +150,6 @@ class ProdColumnPow(val group: GroupContext, val nthreads: Int, val alg: ProdCol
 
             for (pair in producer) {
                 val (column, idx) = calculate(pair)
-                // println("calculated column $idx")
                 mutex.withLock {
                     val colIdx = idx / 2
                     val mlist = if (idx % 2 == 0) pads.getOrPut(colIdx) { mutableListOf() }
