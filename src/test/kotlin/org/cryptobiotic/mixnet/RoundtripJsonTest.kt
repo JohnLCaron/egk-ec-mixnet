@@ -8,11 +8,8 @@ import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.cryptobiotic.maths.*
+import org.cryptobiotic.mixnet.writer.*
 import org.cryptobiotic.util.Testing
-import org.cryptobiotic.mixnet.writer.readMatrixCiphertextJsonFromFile
-import org.cryptobiotic.mixnet.writer.readProofOfShuffleJsonFromFile
-import org.cryptobiotic.mixnet.writer.writeMatrixCiphertextJsonToFile
-import org.cryptobiotic.mixnet.writer.writeProofOfShuffleJsonToFile
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -32,7 +29,7 @@ class RoundtripJsonTest {
 
     @Test
     fun testBallotsRoundtrip() {
-        val (w, wp, _) = runShuffleProof(3, 4, group)
+        val (w, wp, _) = runShuffleProof(100, 34, group)
 
         Files.createDirectories(Path.of("${Testing.testOutMixnet}/testBallotsRoundtrip"))
         val filenameBallots = "${Testing.testOutMixnet}/testBallotsRoundtrip/ballots.json"
@@ -49,6 +46,10 @@ class RoundtripJsonTest {
         assertTrue(roundtripResult2 is Ok)
         val wpround = roundtripResult2.unwrap()
         assertEquals(wp, wpround)
+
+        // compare with binary
+        val filenameShuffledBin = "${Testing.testOutMixnet}/testBallotsRoundtrip/shuffled.bin"
+        writeBallotsToFile(wp, filenameShuffledBin)
     }
 
     @Test
