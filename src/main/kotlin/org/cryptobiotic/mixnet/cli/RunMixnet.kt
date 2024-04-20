@@ -106,6 +106,9 @@ class RunMixnet {
             val config = MixnetConfig(mixName, mixnet.electionId.publishJson(), ballotStyles, width, noncesSeed)
             writeMixnetConfigToFile(config, "$outputDirMix/$configFilename")
             logger.info { "success" }
+
+            // compare with json
+            // writeMatrixCiphertextJsonToFile("$outputDirMix/ShuffledBallots.json", shuffled)
         }
     }
 }

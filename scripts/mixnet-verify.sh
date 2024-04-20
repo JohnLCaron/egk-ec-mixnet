@@ -13,12 +13,12 @@ echo "***mixnet-verify..."
 CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.mixnet.cli.RunVerifier \
+  org.cryptobiotic.mixnet.cli.RunProofOfShuffleVerifier \
     -publicDir ${PUBLIC_DIR} \
     --outputMixDir ${PUBLIC_DIR}/mix1
 
 java -classpath $CLASSPATH \
-  org.cryptobiotic.mixnet.cli.RunVerifier \
+  org.cryptobiotic.mixnet.cli.RunProofOfShuffleVerifier \
     -publicDir ${PUBLIC_DIR} \
     --inputMixDir ${PUBLIC_DIR}/mix1 \
     --outputMixDir ${PUBLIC_DIR}/mix2

@@ -1,17 +1,18 @@
 [![License](https://img.shields.io/github/license/JohnLCaron/egk-ec)](https://github.com/JohnLCaron/egk-ec-mixnet/blob/main/LICENSE.txt)
 ![GitHub branch checks state](https://img.shields.io/github/actions/workflow/status/JohnLCaron/egk-ec-mixnet/unit-tests.yml)
-![Coverage](https://img.shields.io/badge/coverage-88.7%25%20LOC%20(1345/1516)-blue)
+![Coverage](https://img.shields.io/badge/coverage-90.1%25%20LOC%20(1353/1502)-blue)
 
 # Egk Elliptic Curves Mixnet 
 
-_last update 04/16/2024_
+_last update 04/20/2024_
 
 Implementation of a mixnet using the [ElectionGuard Kotlin Elliptical Curve library](https://github.com/JohnLCaron/egk-ec),
 and the [Verificatum library](https://www.verificatum.org/). The mixnet uses the Terelius / Wikström (TW) mixnet
 algorithm, see  [egk mixnet maths](docs/mixnet_maths.pdf) for details. Note that paper's timings use the older
 integer group; the elliptic curve group is [much faster](docs/egk-ec-mixnet.png).
 
-This is part of [VotingWork's cacvote project](https://github.com/votingworks/cacvote). It is not part of the ElectionGuard specification per se, but follows the
+This is part of [VotingWork's cacvote project](https://github.com/votingworks/cacvote). 
+It is not part of the ElectionGuard specification per se, but follows the
 ElectionGuard 2.0 specification wherever possible.
 
 The implementation for Elliptical Curves (EC) is derived from the [Verificatum library](https://www.verificatum.org/),
@@ -20,6 +21,8 @@ the library.
 
 Note that the EC implementation is not stable and may change in the future. However, other than
 different build instructions, this should not affect the API.
+
+Also see: [Workflow Notes](docs/cacvote-workflow.md)
 
 <!-- TOC -->
 * [Egk Elliptic Curves Mixnet](#egk-elliptic-curves-mixnet-)

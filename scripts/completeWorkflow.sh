@@ -8,7 +8,7 @@ fi
 
 # electionguard
 ./scripts/election-initialize.sh ${WORKING}/private src/test/data/mixnetInput ${WORKING}/public
-./scripts/generate-and-encrypt-ballots.sh ${WORKING}/private 10 ${WORKING}/public
+./scripts/generate-and-encrypt-ballots.sh ${WORKING}/private 100 ${WORKING}/public
 ./scripts/eg-tally.sh ${WORKING}/public
 ./scripts/eg-tally-decrypt.sh ${WORKING}/public ${WORKING}/private
 ./scripts/eg-verify.sh ${WORKING}/public
