@@ -69,8 +69,8 @@ class RunPaperBallotDecrypt {
             val configFilename = "$mixDir/${RunMixnet.configFilename}"
             val resultConfig = readMixnetConfigFromFile(configFilename)
             if (resultConfig is Err) {
-                RunMixnet.logger.error { "Error reading MixnetConfig from $configFilename err = $resultConfig" }
-                return
+                logger.error { "Error reading MixnetConfig from $configFilename err = $resultConfig" }
+                throw RuntimeException("Error reading MixnetConfig from $configFilename err = $resultConfig")
             }
             val config = resultConfig.unwrap()
             val decryptor = DecryptFromSn(publicDir, config.width, mixDir)
@@ -83,18 +83,24 @@ class RunPaperBallotDecrypt {
                 throw RuntimeException("failed $pballotTableResult")
             }
             val pballotTable = pballotTableResult.unwrap()
+            val errs = ErrorMessages("findAndDecrypt")
 
             if (ballotSn.lowercase() == "all") {
                 pballotTable.entries.forEach { paperBallotEntry ->
-                    decryptor.findAndDecrypt(trusteeDir, outputDir, paperBallotEntry)
+                    decryptor.findAndDecrypt(trusteeDir, outputDir, paperBallotEntry, errs)
                 }
 
             } else {
                 val paperBallotEntry = findPaperBallot(pballotTable, ballotSn)
                 if (paperBallotEntry == null) {
+                    logger.error { "Cant find paperBallot with serial number= '${ballotSn}'" }
                     throw RuntimeException("Cant find paperBallot with serial number= '${ballotSn}'")
                 }
-                decryptor.findAndDecrypt(trusteeDir, outputDir, paperBallotEntry)
+                decryptor.findAndDecrypt(trusteeDir, outputDir, paperBallotEntry, errs)
+            }
+            if (errs.hasErrors()) {
+                logger.error { "decryptShuffledBallot failed errors = $errs" }
+                throw RuntimeException("decryptShuffledBallot failed errors = $errs")
             }
         }
 
@@ -127,8 +133,8 @@ class RunPaperBallotDecrypt {
     ) {
         val consumerIn = makeConsumer(publicDir)
         val group = consumerIn.group
-        val electionInit: ElectionInitialized
-        val publicKey: ElGamalPublicKey
+        private val electionInit: ElectionInitialized
+        private val publicKey: ElGamalPublicKey
 
         init {
             val initResult = consumerIn.readElectionInitialized()
@@ -140,13 +146,14 @@ class RunPaperBallotDecrypt {
             publicKey = electionInit.jointPublicKey
         }
 
-        fun findAndDecrypt(trusteeDir: String, outputDir: String, pballot: PballotEntry) {
+        fun findAndDecrypt(trusteeDir: String, outputDir: String, pballot: PballotEntry, errs: ErrorMessages) {
             val pair = findShuffledBallot(publicKey, width, mixDir, pballot)
             if (pair == null) {
-                throw RuntimeException("Cant find shuffled ballot for ${pballot}")
+                errs.add( "Cant find shuffled ballot for ${pballot}" )
+                return
             }
             val (dsn, ballot) = pair
-            decryptShuffledBallot(trusteeDir, pballot, dsn, ballot, outputDir)
+            decryptShuffledBallot(trusteeDir, pballot, dsn, ballot, errs, outputDir)
         }
 
         // open the mixnet ballot table and find matching K^psn, then open the Shuffled ballots and fetch that row
@@ -178,12 +185,15 @@ class RunPaperBallotDecrypt {
             }
             val ballotRow = foundBallot.shuffledRow
 
-            // TODO only open Shuffled ballots once? then open the Shuffled ballots and fetch that row
-            val reader = BallotReader(group, width)
-            val mixFile = "$mixDir/${RunMixnet.shuffledFilename}"
-            val shuffled = reader.readFromFile(mixFile)
+            val ballotResult = readShuffledBallotsFromFile( group, mixDir, width)
+            if (ballotResult is Err) {
+                logger.error {"Error reading input ballots in $mixDir = $ballotResult" }
+                return null
+            }
+            val shuffled = ballotResult.unwrap()
+
             if (ballotRow < 0 || ballotRow >= shuffled.size) {
-                logger.error { "ballotRow $ballotRow not in bounds 0 .. ${shuffled.size} in the shuffled file $mixFile" }
+                logger.error { "ballotRow $ballotRow not in bounds 0 .. ${shuffled.size} in the ballot file in $mixDir" }
                 return null
             }
             return Pair(foundBallot, shuffled[ballotRow])
@@ -194,6 +204,7 @@ class RunPaperBallotDecrypt {
             pballot: PballotEntry,
             dsn: DecryptedSn,
             ballot: VectorCiphertext,
+            errs: ErrorMessages,
             outputDir: String,
         ) {
             val group = consumerIn.group
@@ -205,12 +216,9 @@ class RunPaperBallotDecrypt {
             val manifest = consumerIn.makeManifest(electionInit.config.manifestBytes)
             val eballot = rehydrate(manifest, pballot.sn.toString(), electionInit.extendedBaseHash, dsn.ballotStyleIdx, ballot)
 
-            val errs = ErrorMessages("runPaperBallotDecrypt")
             try {
-                val decryptedBallot = decryptor.decrypt(eballot, errs)
+                val decryptedBallot = decryptor.decrypt(eballot, errs.nested("Ballot id='${eballot.ballotId}"))
                 if (errs.hasErrors()) {
-                    logger.error { "decryptShuffledBallot failed errors = $errs" }
-                    println("decryptShuffledBallot failed errors = $errs")
                     return
                 }
                 requireNotNull(decryptedBallot)
@@ -221,7 +229,6 @@ class RunPaperBallotDecrypt {
                 logger.info { "decrypt and write shuffled ballot sn=${pballot.sn} to output directory $outputDir " }
             } catch (t: Throwable) {
                 errs.add("Exception= ${t.message} ${t.stackTraceToString()}")
-                logger.error { errs }
             }
         }
     }

@@ -14,13 +14,12 @@ import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.maths.VectorCiphertext
 import org.cryptobiotic.mixnet.ProofOfShuffle
 import org.cryptobiotic.mixnet.cli.RunMixnet.Companion.proofFilename
-import org.cryptobiotic.mixnet.cli.RunMixnet.Companion.shuffledFilename
 import org.cryptobiotic.mixnet.runVerify
 import org.cryptobiotic.util.ErrorMessages
 import org.cryptobiotic.util.Stopwatch
-import org.cryptobiotic.mixnet.writer.BallotReader
 import org.cryptobiotic.mixnet.writer.readMixnetConfigFromFile
 import org.cryptobiotic.mixnet.writer.readProofOfShuffleJsonFromFile
+import org.cryptobiotic.mixnet.writer.readShuffledBallotsFromFile
 
 class RunProofOfShuffleVerifier {
 
@@ -76,7 +75,12 @@ class RunProofOfShuffleVerifier {
 
             val ballots: List<VectorCiphertext>
             if (inputMixDir != null) {
-                ballots = verifier.readInputBallots("$inputMixDir/$shuffledFilename", config.width)
+                val ballotResult = readShuffledBallotsFromFile( verifier.group, inputMixDir!!, config.width)
+                if (ballotResult is Err) {
+                    logger.error {"Error reading input ballots in $inputMixDir = $ballotResult" }
+                    return
+                }
+                ballots = ballotResult.unwrap()
                 logger.info { " Read ${ballots.size} input ballots" }
 
             } else {
@@ -89,7 +93,12 @@ class RunProofOfShuffleVerifier {
                 println("readEncryptedBallots ${ciphertexts.size} hash(ciphertexts) ${hashFunction(mixnet.electionId.bytes, ciphertexts)}")
             }
 
-            val shuffled: List<VectorCiphertext> = verifier.readInputBallots("$outputMixDir/$shuffledFilename", config.width)
+            val shuffledResult = readShuffledBallotsFromFile( verifier.group, outputMixDir, config.width)
+            if (shuffledResult is Err) {
+                logger.error {"Error reading shuffled ballots in $outputMixDir = $shuffledResult" }
+                return
+            }
+            val shuffled = shuffledResult.unwrap()
             logger.info { " Read ${shuffled.size} shuffled ballots" }
 
             if (ballots.size != shuffled.size) {
@@ -122,11 +131,6 @@ class Verifier(egDir:String) {
     init {
         val init = consumer.readElectionInitialized().unwrap()
         publicKey = init.jointPublicKey
-    }
-
-    fun readInputBallots(inputBallots: String, width: Int): List<VectorCiphertext> {
-        val reader = BallotReader(group, width)
-        return reader.readFromFile(inputBallots)
     }
 
     fun runVerifier(

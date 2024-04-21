@@ -30,7 +30,8 @@ class RunMixnet {
         val decryptedSnsFilename = "decrypted_sns.json"
         val pballotTableFilename = "pballot_table.json"
 
-        val shuffledFilename = "ShuffledBallots.bin"
+        val shuffledBinFilename = "ShuffledBallots.bin"
+        val shuffledJsonFilename = "ShuffledBallots.json"
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -82,7 +83,12 @@ class RunMixnet {
                 }
                 val previousConfig = result.unwrap()
                 width = previousConfig.width
-                inputBallots = mixnet.readInputBallots("$inputMixDir/$shuffledFilename", previousConfig.width)
+                val ballotResult = readShuffledBallotsFromFile( mixnet.group, inputMixDir!!, previousConfig.width)
+                if (ballotResult is Err) {
+                    logger.error {"Error reading input ballots in $inputMixDir = $ballotResult" }
+                    return
+                }
+                inputBallots = ballotResult.unwrap()
                 ballotStyles = previousConfig.ballotStyles
 
             } else {
@@ -100,15 +106,12 @@ class RunMixnet {
 
             val topdir = outputDir ?: publicDir
             val outputDirMix = "$topdir/$mixName"
-            writeBallotsToFile(shuffled, "$outputDirMix/$shuffledFilename")
+            writeShuffledBallotsToFile(true, outputDirMix, shuffled)
             writeProofOfShuffleJsonToFile(proof, "$outputDirMix/$proofFilename")
 
             val config = MixnetConfig(mixName, mixnet.electionId.publishJson(), ballotStyles, width, noncesSeed)
             writeMixnetConfigToFile(config, "$outputDirMix/$configFilename")
             logger.info { "success" }
-
-            // compare with json
-            // writeMatrixCiphertextJsonToFile("$outputDirMix/ShuffledBallots.json", shuffled)
         }
     }
 }
@@ -127,11 +130,6 @@ class Mixnet(egDir:String) {
         manifest = consumer.makeManifest(init.config.manifestBytes)
 
         RunMixnet.logger.info { "using group ${group.constants.name}" }
-    }
-
-    fun readInputBallots(inputBallots: String, width: Int): List<VectorCiphertext> {
-        val reader = BallotReader(group, width)
-        return reader.readFromFile(inputBallots)
     }
 
     fun runShuffleProof(

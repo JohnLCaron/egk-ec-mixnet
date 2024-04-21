@@ -11,15 +11,13 @@ data class MatrixQ(val elems: List<VectorQ> ) {
 
     constructor(group: GroupContext, llist: List<List<ElementModQ>>): this(llist.map{ VectorQ(group, it) })
 
-    // right multiply
-    fun rmultiply(colv: VectorQ) : List<ElementModQ> {
+    fun rightMultiply(colv: VectorQ) : List<ElementModQ> {
         require(colv.nelems == width)
         return elems.map{ row -> row.innerProduct(colv) }
     }
 
     fun invert(psi: Permutation) = MatrixQ(psi.invert(this.elems))
     fun permute(psi: Permutation) = MatrixQ(psi.permute(this.elems))
-
 }
 
 data class VectorQ(val group: GroupContext, val elems: List<ElementModQ> ) {
@@ -30,7 +28,7 @@ data class VectorQ(val group: GroupContext, val elems: List<ElementModQ> ) {
 
     fun product(): ElementModQ {
         if (elems.isEmpty()) {
-            group.ONE_MOD_Q
+            return group.ONE_MOD_Q
         }
         if (elems.count() == 1) {
             return elems[0]
@@ -40,7 +38,7 @@ data class VectorQ(val group: GroupContext, val elems: List<ElementModQ> ) {
 
     fun sum(): ElementModQ {
         if (elems.isEmpty()) {
-            group.ZERO_MOD_Q
+            return group.ZERO_MOD_Q
         }
         if (elems.count() == 1) {
             return elems[0]
@@ -83,14 +81,6 @@ data class VectorQ(val group: GroupContext, val elems: List<ElementModQ> ) {
         fun empty(group: GroupContext): VectorQ {
             return VectorQ(group, emptyList())
         }
-    }
-
-    fun gPowP(vp: VectorQ): VectorP {
-        return vp.gPowP()
-    }
-
-    fun shiftPush(elem0: ElementModQ): VectorQ {
-        return VectorQ(group, List (this.nelems) { if (it == 0) elem0 else this.elems[it - 1] })
     }
 }
 
