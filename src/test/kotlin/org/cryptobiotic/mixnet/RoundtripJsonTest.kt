@@ -10,17 +10,22 @@ import kotlin.test.assertTrue
 import org.cryptobiotic.maths.*
 import org.cryptobiotic.mixnet.writer.*
 import org.cryptobiotic.util.Testing
-import java.nio.file.Files
-import java.nio.file.Path
 
 class RoundtripJsonTest {
-    val filenameProof = "${Testing.testOutMixnet}/proofOfShuffle.json"
+    val testDir = "${Testing.testOutMixnet}/testBallotsRoundtrip"
+    val testDir2 = "${Testing.testOutMixnet}/testBallotsRoundtrip2"
     val group = productionGroup("P-256")
     val keypair = elGamalKeyPairFromRandom(group)
+
+    init {
+        createDirectories(testDir)
+        createDirectories(testDir2)
+    }
 
     @Test
     fun testProofOfShuffleRoundtrip() {
         val (_, _, shuffleProof) = runShuffleProof(3, 4, group)
+        val filenameProof = "$testDir/proofOfShuffle.json"
         writeProofOfShuffleJsonToFile(shuffleProof, filenameProof)
         val roundtripResult = readProofOfShuffleJsonFromFile(group, filenameProof)
         assertTrue(roundtripResult is Ok)
@@ -30,44 +35,37 @@ class RoundtripJsonTest {
     @Test
     fun testBallotsRoundtrip() {
         val (w, wp, _) = runShuffleProof(100, 34, group)
+        assertEquals(w.size, wp.size)
+        assertEquals(w[0].nelems, wp[0].nelems)
 
-        Files.createDirectories(Path.of("${Testing.testOutMixnet}/testBallotsRoundtrip"))
-        val filenameBallots = "${Testing.testOutMixnet}/testBallotsRoundtrip/ballots.json"
-        val filenameShuffled = "${Testing.testOutMixnet}/testBallotsRoundtrip/shuffled.json"
+        val width = w[0].nelems
 
-        writeMatrixCiphertextJsonToFile(filenameBallots, w)
-        val roundtripResult = readMatrixCiphertextJsonFromFile(group, filenameBallots)
+        writeShuffledBallotsToFile(true, testDir, w)
+        val roundtripResult = readShuffledBallotsFromFile(group, testDir, width)
         assertTrue(roundtripResult is Ok)
         val wround = roundtripResult.unwrap()
         assertEquals(w, wround)
 
-        writeMatrixCiphertextJsonToFile(filenameShuffled, wp)
-        val roundtripResult2 = readMatrixCiphertextJsonFromFile(group, filenameShuffled)
+        writeShuffledBallotsToFile(true, testDir, wp)
+        val roundtripResult2 = readShuffledBallotsFromFile(group, testDir, width)
         assertTrue(roundtripResult2 is Ok)
         val wpround = roundtripResult2.unwrap()
         assertEquals(wp, wpround)
-
-        // compare with binary
-        val filenameShuffledBin = "${Testing.testOutMixnet}/testBallotsRoundtrip/shuffled.bin"
-        writeBallotsToFile(wp, filenameShuffledBin)
     }
 
     @Test
     fun testProofOfShuffleWriteReadVerify() {
         val (w, wp, pos) = runShuffleProof(3, 4, group)
+        val width = w[0].nelems
 
-        Files.createDirectories(Path.of("${Testing.testOutMixnet}/testWRV"))
-        val filenameBallots = "${Testing.testOutMixnet}/testWRV/ballots.json"
-        val filenameShuffled = "${Testing.testOutMixnet}/testWRV/shuffled.json"
-
-        writeMatrixCiphertextJsonToFile(filenameBallots, w)
-        val roundtripResult = readMatrixCiphertextJsonFromFile(group, filenameBallots)
+        writeShuffledBallotsToFile(true, testDir2, w)
+        val roundtripResult = readShuffledBallotsFromFile(group, testDir2, width)
         assertTrue(roundtripResult is Ok)
         val wround = roundtripResult.unwrap()
         assertEquals(w, wround)
 
-        writeMatrixCiphertextJsonToFile(filenameShuffled, wp)
-        val roundtripResult2 = readMatrixCiphertextJsonFromFile(group, filenameShuffled)
+        writeShuffledBallotsToFile(true, testDir2, wp)
+        val roundtripResult2 = readShuffledBallotsFromFile(group, testDir2, width)
         assertTrue(roundtripResult2 is Ok)
         val wpround = roundtripResult2.unwrap()
         assertEquals(wp, wpround)

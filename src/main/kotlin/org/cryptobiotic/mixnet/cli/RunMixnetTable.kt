@@ -83,8 +83,14 @@ class RunMixnetTable {
             val electionInit = initResult.unwrap()
             val group = consumerIn.group
 
-            val reader = BallotReader(group, config.width)
-            val shuffled = reader.readFromFile("$mixDir/${RunMixnet.shuffledFilename}")
+            val shuffledResult = readShuffledBallotsFromFile( group, mixDir, config.width)
+            if (shuffledResult is Err) {
+                logger.error {"Error reading shuffled ballots in $mixDir = $shuffledResult" }
+                return
+            }
+            val shuffled = shuffledResult.unwrap()
+            RunProofOfShuffleVerifier.logger.info { " Read ${shuffled.size} shuffled ballots" }
+
             val encryptedSns = shuffled.map { Ciphertext(it.elems[0]) }
             val encryptedStyles = shuffled.map { Ciphertext(it.elems[1]) }
 
