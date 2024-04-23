@@ -245,3 +245,4 @@ working/private
 
 ## Authors
 - [John Caron](https://github.com/JohnLCaron)
+- [Douglas Wikström](https://www.verificatum.org/)
