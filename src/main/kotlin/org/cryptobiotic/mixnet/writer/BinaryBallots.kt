@@ -11,15 +11,9 @@ import java.io.FileOutputStream
 import java.io.OutputStream
 
 fun writeBallotsBinaryToFile(filename: String, ballots: List<VectorCiphertext>) {
-    try {
-        FileOutputStream(filename).use { out ->
-            ballots.forEach { it.write(out) }
-            out.flush()
-        }
-    } catch (t: Throwable) {
-        println("Exception on $filename")
-        t.printStackTrace()
-        throw t
+    FileOutputStream(filename).use { out ->
+        ballots.forEach { it.write(out) }
+        out.flush()
     }
 }
 
@@ -37,10 +31,10 @@ fun readBinaryBallotsFromFile(
     filename: String,
     width: Int
 ): Result<List<VectorCiphertext>, ErrorMessages> {
-
+    val errs = ErrorMessages("readBinaryBallotsFromFile $filename with width $width")
     val textSize = group.MAX_BYTES_P
     val blockSize = 2 * textSize * width
-    val result = mutableListOf<VectorCiphertext>()
+    val result = mutableListOf<VectorCiphertext?>()
     var totalBytes = 0
     try {
         val file = File(filename) // gulp the entire file to a byte array
@@ -50,28 +44,31 @@ fun readBinaryBallotsFromFile(
             totalBytes += bytesRead
         }
         if (show) println("  read ${totalBytes} bytes nrows= ${result.size} from $filename")
-        return Ok(result)
+        return if (result.any { it == null }) errs.add("malformed") else Ok(result.filterNotNull())
+
     } catch (t: Throwable) {
         println("Exception on $filename")
-        t.printStackTrace()
-        throw t
+        return errs.add(t.toString())
     }
 }
 
-private fun processRow(group: GroupContext, textSize: Int, width: Int, ba: ByteArray): VectorCiphertext {
+private fun processRow(group: GroupContext, textSize: Int, width: Int, ba: ByteArray): VectorCiphertext? {
     val result = mutableListOf<ElGamalCiphertext>()
     var offset = 0
+    var allOk = true
     repeat(width) {
         val padArray = ByteArray(textSize) { ba[offset + it] }
         offset += textSize
         val dataArray = ByteArray(textSize) { ba[offset + it] }
         offset += textSize
-        result.add(
-            ElGamalCiphertext(
-                group.binaryToElementModPsafe(padArray, 0),
-                group.binaryToElementModPsafe(dataArray, 0),
-            )
-        )
+
+        val pad = group.binaryToElementModP(padArray)
+        val data = group.binaryToElementModP(dataArray)
+        if (pad != null && data != null) {
+            result.add(ElGamalCiphertext(pad, data))
+        } else {
+            allOk = false
+        }
     }
-    return VectorCiphertext(group, result)
+    return if (allOk) VectorCiphertext(group, result) else null
 }

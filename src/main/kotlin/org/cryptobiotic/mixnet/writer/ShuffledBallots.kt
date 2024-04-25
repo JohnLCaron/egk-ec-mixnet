@@ -39,8 +39,10 @@ class ShuffledBallotsJson(
     val rows: List<VectorCiphertextJson>,
 )
 
-fun ShuffledBallotsJson.import(group: GroupContext) : List<VectorCiphertext> {
-    return rows.map{ it.import(group) }
+fun ShuffledBallotsJson.import(group: GroupContext, errs: ErrorMessages) : List<VectorCiphertext> {
+    val importedRows = rows.map { it.import(group) }
+    if (importedRows.any { it == null }) errs.add("malformed Json file")
+    return importedRows.filterNotNull()
 }
 
 fun List<VectorCiphertext>.publishJson() : ShuffledBallotsJson {
@@ -60,7 +62,7 @@ fun readShuffledBallotsJsonFromFile(group: GroupContext, filename: String): Resu
     return try {
         Files.newInputStream(filepath, StandardOpenOption.READ).use { inp ->
             val json = jsonReader.decodeFromStream<ShuffledBallotsJson>(inp)
-            val matrixRows = json.import(group)
+            val matrixRows = json.import(group, errs)
             if (errs.hasErrors()) Err(errs) else Ok(matrixRows)
         }
     } catch (t: Throwable) {
@@ -90,7 +92,6 @@ class ProofOfShuffleJson(
     val Dp: ElementModPJson,
     val Fp: VectorCiphertextJson,
 
-
     val kA: ElementModQJson,
     val kB: VectorQJson,
     val kC: ElementModQJson,
@@ -99,22 +100,38 @@ class ProofOfShuffleJson(
     val kF: VectorQJson,
     )
 
-fun ProofOfShuffleJson.import(group: GroupContext) : ProofOfShuffle {
-    return ProofOfShuffle(
+fun ProofOfShuffleJson.import(group : GroupContext, errs : ErrorMessages): ProofOfShuffle? {
+    val u: VectorP? = this.u.import(group) ?: errs.addNull("malformed u") as VectorP?
+    val Ap = this.Ap.import(group) ?: errs.addNull("malformed Ap") as ElementModP?
+    val B = this.B.import(group) ?: errs.addNull("malformed B") as VectorP?
+    val Bp = this.Bp.import(group) ?: errs.addNull("malformed Bp") as VectorP?
+    val Cp = this.Cp.import(group) ?: errs.addNull("malformed Cp") as ElementModP?
+    val Dp = this.Dp.import(group) ?: errs.addNull("malformed Dp") as ElementModP?
+    val Fp = this.Fp.import(group) ?: errs.addNull("malformed Fp") as VectorCiphertext?
+
+    val kA = this.kA.import(group) ?: errs.addNull("malformed kA") as ElementModQ?
+    val kB = this.kB.import(group) ?: errs.addNull("malformed kB") as VectorQ?
+    val kC = this.kC.import(group) ?: errs.addNull("malformed kC") as ElementModQ?
+    val kD = this.kD.import(group) ?: errs.addNull("malformed kD") as ElementModQ?
+    val kE = this.kE.import(group) ?: errs.addNull("malformed kE") as VectorQ?
+    val kF = this.kF.import(group) ?: errs.addNull("malformed kF") as VectorQ?
+
+    return if (errs.hasErrors()) null
+    else ProofOfShuffle(
         this.mixname,
-        this.u.import(group),
-        this.Ap.import(group)!!,
-        this.B.import(group),
-        this.Bp.import(group),
-        this.Cp.import(group)!!,
-        this.Dp.import(group)!!,
-        this.Fp.import(group),
-        this.kA.import(group)!!,
-        this.kB.import(group),
-        this.kC.import(group)!!,
-        this.kD.import(group)!!,
-        this.kE.import(group),
-        this.kF.import(group),
+        u!!,
+        Ap!!,
+        B!!,
+        Bp!!,
+        Cp!!,
+        Dp!!,
+        Fp!!,
+        kA!!,
+        kB!!,
+        kC!!,
+        kD!!,
+        kE!!,
+        kF!!,
         )
 }
 
@@ -148,8 +165,8 @@ fun readProofOfShuffleJsonFromFile(group: GroupContext, filename: String): Resul
     return try {
         Files.newInputStream(filepath, StandardOpenOption.READ).use { inp ->
             val json = jsonReader.decodeFromStream<ProofOfShuffleJson>(inp)
-            val shuffleProof = json.import(group)
-            if (errs.hasErrors()) Err(errs) else Ok(shuffleProof)
+            val shuffleProof = json.import(group, errs)
+            if (errs.hasErrors()) Err(errs) else Ok(shuffleProof!!)
         }
     } catch (t: Throwable) {
         errs.add("Exception= ${t.message} ${t.stackTraceToString()}")
@@ -171,22 +188,31 @@ fun writeProofOfShuffleJsonToFile(shuffleProof: ProofOfShuffle, filename: String
 class VectorCiphertextJson(
     val elems: List<ElGamalCiphertextJson>,
 )
-fun VectorCiphertextJson.import(group: GroupContext) = VectorCiphertext(group, elems.map{ it.import(group)!! } )
 fun VectorCiphertext.publishJson() = VectorCiphertextJson(this.elems.map { it.publishJson() })
+fun VectorCiphertextJson.import(group: GroupContext): VectorCiphertext? {
+    val texts = elems.map { it.import(group) }
+    return if (texts.any { it == null }) null else VectorCiphertext(group, texts.filterNotNull())
+}
 
 @Serializable
 class VectorQJson(
     val elems: List<ElementModQJson>,
 )
-fun VectorQJson.import(group: GroupContext) = VectorQ(group, elems.map{ it.import(group)!! } )
 fun VectorQ.publishJson() = VectorQJson(this.elems.map { it.publishJson() })
+fun VectorQJson.import(group: GroupContext): VectorQ? {
+    val ques = elems.map { it.import(group) }
+    return if (ques.any { it == null }) null else VectorQ(group, ques.filterNotNull())
+}
 
 @Serializable
 class VectorPJson(
     val elems: List<ElementModPJson>,
 )
-fun VectorPJson.import(group: GroupContext) = VectorP(group, elems.map{ it.import(group)!! } )
 fun VectorP.publishJson() = VectorPJson(this.elems.map { it.publishJson() })
+fun VectorPJson.import(group: GroupContext): VectorP? {
+    val pees = elems.map { it.import(group) }
+    return if (pees.any { it == null }) null else VectorP(group, pees.filterNotNull())
+}
 
 
 
