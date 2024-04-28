@@ -7,8 +7,10 @@ import kotlinx.cli.ArgType
 import kotlinx.cli.default
 import kotlinx.cli.required
 import org.cryptobiotic.eg.publish.makeConsumer
+import org.cryptobiotic.mixnet.cli.RunMixnetTable.Companion
 import org.cryptobiotic.mixnet.writer.*
 import kotlin.random.Random
+import kotlin.system.exitProcess
 
 class RunPballotTable {
 
@@ -38,26 +40,38 @@ class RunPballotTable {
                 shortName = "out",
                 description = "output directory (default is publicDir)"
             )
+            val noexit by parser.option(
+                ArgType.Boolean,
+                shortName = "noexit",
+                description = "Dont call System.exit"
+            ).default(false)
+
             parser.parse(args)
 
             val info = "starting RunPballotTable publicDir= $publicDir\n plaintextBallotDir= $plaintextBallotDir\n" +
                     " missingPct=$missingPct\n outputDir=$outputDir"
             logger.info { info }
 
-            runPballotTable(publicDir, plaintextBallotDir, missingPct, outputDir)
+            try {
+                runPballotTable(publicDir, plaintextBallotDir, missingPct, outputDir, noexit)
+            } catch (t: Throwable) {
+                RunMixnetTable.logger.error { "Exception= ${t.message} ${t.stackTraceToString()}" }
+                if (!noexit) exitProcess(-1)
+            }
         }
 
         fun runPballotTable(
             publicDir: String,
             plaintextBallotDir: String,
             missingPct: Int,
-            outputDir: String?
+            outputDir: String?,
+            noexit: Boolean
         ) {
             val consumerIn = makeConsumer(publicDir)
             val initResult = consumerIn.readElectionInitialized()
             if (initResult is Err) {
                 logger.error { "readElectionInitialized error ${initResult.error}" }
-                return
+                if (!noexit) exitProcess(1) else return
             }
 
             var count = 0

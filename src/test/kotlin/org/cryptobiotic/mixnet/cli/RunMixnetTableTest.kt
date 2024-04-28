@@ -17,7 +17,8 @@ class RunMixnetTableTest {
                 "-publicDir", "$workingDir/public",
                 "--trusteeDir", "${workingDir}/private/trustees",
                 "--mixDir", "${workingDir}/public/mix2",
-                "--outputDir",  outputDir
+                "--outputDir",  outputDir,
+                "--noexit"
             )
         )
     }

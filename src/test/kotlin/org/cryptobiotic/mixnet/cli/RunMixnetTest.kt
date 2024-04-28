@@ -17,7 +17,8 @@ class RunMixnetTest {
             arrayOf(
                 "-publicDir", publicDir,
                 "--mixName", "mix1",
-                "--outputDir",  outputDir
+                "--outputDir",  outputDir,
+                "--noexit"
             )
         )
 
@@ -26,7 +27,8 @@ class RunMixnetTest {
                 "-publicDir", publicDir,
                 "--inputMixDir", "$publicDir/mix1",
                 "--mixName", "mix2",
-                "--outputDir",  outputDir
+                "--outputDir",  outputDir,
+                "--noexit"
             )
         )
     }

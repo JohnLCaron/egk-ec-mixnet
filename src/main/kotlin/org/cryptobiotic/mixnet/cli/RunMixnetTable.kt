@@ -5,6 +5,7 @@ import com.github.michaelbull.result.unwrap
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
+import kotlinx.cli.default
 import kotlinx.cli.required
 import org.cryptobiotic.eg.cli.RunTrustedTallyDecryption
 import org.cryptobiotic.eg.decrypt.CipherDecryptionAndProof
@@ -14,6 +15,7 @@ import org.cryptobiotic.eg.decrypt.Guardians
 import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.mixnet.writer.*
 import org.cryptobiotic.util.ErrorMessages
+import kotlin.system.exitProcess
 
 class RunMixnetTable {
 
@@ -43,6 +45,12 @@ class RunMixnetTable {
                 shortName = "out",
                 description = "output directory (default is publicDir)"
             )
+            val noexit by parser.option(
+                ArgType.Boolean,
+                shortName = "noexit",
+                description = "Dont call System.exit"
+            ).default(false)
+
             parser.parse(args)
 
             val info = buildString {
@@ -58,12 +66,18 @@ class RunMixnetTable {
             val resultConfig = readMixnetConfigFromFile(configFilename)
             if (resultConfig is Err) {
                 RunMixnet.logger.error { "Error reading MixnetConfig from $configFilename err = $resultConfig" }
-                return
+                if (!noexit) exitProcess(1) else return
             }
             val config = resultConfig.unwrap()
 
-            val valid = runGenerateMixnetTable(egkMixnetDir, trusteeDir, mixDir, outputDir, config)
-            logger.info { "valid = $valid" }
+            try {
+                runGenerateMixnetTable(egkMixnetDir, trusteeDir, mixDir, outputDir, config, noexit)
+                logger.info { "Generate MixnetTable success" }
+
+            } catch (t: Throwable) {
+                logger.error { "Exception= ${t.message} ${t.stackTraceToString()}" }
+                if (!noexit) exitProcess(-1)
+            }
         }
 
 
@@ -72,13 +86,14 @@ class RunMixnetTable {
             trusteeDir: String,
             mixDir: String,
             outputDir: String?,
-            config: MixnetConfig
+            config: MixnetConfig,
+            noexit: Boolean
         ) {
             val consumerIn = makeConsumer(publicDir)
             val initResult = consumerIn.readElectionInitialized()
             if (initResult is Err) {
                 logger.error { "readElectionInitialized error ${initResult.error}" }
-                return
+                if (!noexit) exitProcess(2) else return
             }
             val electionInit = initResult.unwrap()
             val group = consumerIn.group
@@ -86,7 +101,7 @@ class RunMixnetTable {
             val shuffledResult = readShuffledBallotsFromFile( group, mixDir, config.width)
             if (shuffledResult is Err) {
                 logger.error {"Error reading shuffled ballots in $mixDir = $shuffledResult" }
-                return
+                if (!noexit) exitProcess(3) else return
             }
             val shuffled = shuffledResult.unwrap()
             RunProofOfShuffleVerifier.logger.info { " Read ${shuffled.size} shuffled ballots" }
@@ -102,8 +117,7 @@ class RunMixnetTable {
             val decryptStylesAndProof: List<CipherDecryptionAndProof>? = decryptor.decrypt(encryptedStyles, errst)
             if (errst.hasErrors()) {
                 logger.error { "failed = $errst"}
-                println("failed errors = $errst")
-                return
+                if (!noexit) exitProcess(4) else return
             }
             requireNotNull(decryptStylesAndProof)
             val decryptStyles: List<Int> = decryptStylesAndProof.map { (decryption, _) ->
@@ -114,8 +128,7 @@ class RunMixnetTable {
             val decryptionAndProofs: List<CipherDecryptionAndProof>? = decryptor.decrypt(encryptedSns, errs)
             if (errs.hasErrors()) {
                 logger.error { "failed = $errs"}
-                println("failed errors = $errs")
-                return
+                if (!noexit) exitProcess(5) else return
             }
             requireNotNull(decryptionAndProofs)
 

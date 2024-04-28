@@ -24,4 +24,6 @@ CLASSPATH="build/libs/egk-ec-mixnet-2.1-SNAPSHOT-uber.jar"
     -pballotDir ${PRIVATE_DIR}/input_ballots \
     --missingPct 10
 
-echo "   [DONE] Generated simulated paper ballot table into ${PUBLIC_DIR}/table-pballot.json"
+retval=$?
+
+echo "   [DONE] Generated simulated paper ballot table into ${PUBLIC_DIR}/table-pballot.json retval=$retval"

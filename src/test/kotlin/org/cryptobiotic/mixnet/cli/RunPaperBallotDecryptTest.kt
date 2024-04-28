@@ -21,6 +21,7 @@ class RunPaperBallotDecryptTest {
                 "-trustees", "$workingDir/private/trustees",
                 "--mixDir", "$workingDir/public/mix2",
                 "-out", outputDir,
+                "--noexit"
             )
         )
     }
@@ -38,6 +39,7 @@ class RunPaperBallotDecryptTest {
                 "-trustees", "$workingDir/private/trustees",
                 "--mixDir", "$workingDir/public/mix2",
                 "-out", outputDir,
+                "--noexit"
             )
         )
     }
@@ -55,6 +57,7 @@ class RunPaperBallotDecryptTest {
                 "-trustees", "$workingDir/private/trustees",
                 "--mixDir", "$workingDir/public/mix2",
                 "-out", outputDir,
+                "--noexit"
             )
         )
     }
@@ -73,6 +76,7 @@ class RunPaperBallotDecryptTest {
                     "-trustees", "$workingDir/private/trustees",
                     "--mixDir", "$workingDir/public/mix2",
                     "-out", outputDir,
+                    "--noexit"
                 )
             )
         })
@@ -93,6 +97,7 @@ class RunPaperBallotDecryptTest {
                     "-trustees", "$workingDir/private/trustees",
                     "--mixDir", "$workingDir/public/mix2",
                     "-out", outputDir,
+                    "--noexit"
                 )
             )
         })
@@ -113,6 +118,7 @@ class RunPaperBallotDecryptTest {
                     "-trustees", "$workingDir/private/trustees",
                     "--mixDir", "$workingDir/public/badMix",
                     "-out", outputDir,
+                    "--noexit"
                 )
             )
         })
@@ -135,6 +141,7 @@ class RunPaperBallotDecryptTest {
                     "-trustees", "$workingDir/private/trustees",
                     "--mixDir", "$workingDir/public/mix1",
                     "-out", outputDir,
+                    "--noexit"
                 )
             )
         })

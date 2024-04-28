@@ -10,6 +10,7 @@ class RunVerifierTest {
             arrayOf(
                 "-publicDir", publicDir,
                 "--outputMixDir", "$publicDir/mix1",
+                "--noexit"
             )
         )
         RunProofOfShuffleVerifier.main(
@@ -17,6 +18,7 @@ class RunVerifierTest {
                 "-publicDir", publicDir,
                 "--inputMixDir", "$publicDir/mix1",
                 "--outputMixDir", "$publicDir/mix2",
+                "--noexit"
             )
         )
     }

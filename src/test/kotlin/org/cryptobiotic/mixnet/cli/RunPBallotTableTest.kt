@@ -17,6 +17,7 @@ class RunPBallotTableTest {
                 "-pballotDir", "$workingDir/private/input_ballots",
                 "--missingPct", "10",
                 "-out", outputDir,
+                "--noexit"
                 )
         )
     }

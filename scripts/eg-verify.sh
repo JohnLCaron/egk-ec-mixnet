@@ -16,4 +16,6 @@ java -classpath $CLASSPATH \
   org.cryptobiotic.eg.cli.RunVerifier \
     -in ${PUBLIC_DIR}
 
-echo "   [DONE] Verifying ElectionGuard record in ${PUBLIC_DIR}"
+retval=$?
+
+echo "   [DONE] Verifying ElectionGuard record in ${PUBLIC_DIR} returns $retval"

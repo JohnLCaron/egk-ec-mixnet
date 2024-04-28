@@ -24,4 +24,6 @@ java -classpath $CLASSPATH \
     -trustees ${PRIVATE_DIR}/trustees \
     -out ${PUBLIC_DIR}
 
-echo "   [DONE] Decrypted electionguard tally into ${PUBLIC_DIR}/tally.json"
+retval=$?
+
+echo "   [DONE] Decrypted electionguard tally into ${PUBLIC_DIR}/tally.json returns $retval"

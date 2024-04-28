@@ -24,4 +24,6 @@ java -classpath $CLASSPATH \
     -trustees ${PRIVATE_DIR}/trustees \
     --mixDir ${PUBLIC_DIR}/mix2
 
-echo " [DONE] Generating decrypted_sns.json "
+retval=$?
+
+echo " [DONE] Generating decrypted_sns.json retval=$retval"

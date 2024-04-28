@@ -26,4 +26,6 @@ java -classpath $CLASSPATH \
     --mixDir ${PUBLIC_DIR}/mix2 \
     -out ${PRIVATE_DIR}/decrypted_ballots
 
-echo "   [DONE] Decrypted paper ballot into${PRIVATE_DIR}/decrypted_ballots/"
+retval=$?
+
+echo "   [DONE] Decrypted paper ballot into${PRIVATE_DIR}/decrypted_ballots/ retval=$retval"

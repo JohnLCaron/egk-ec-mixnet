@@ -5,6 +5,7 @@ import com.github.michaelbull.result.unwrap
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
+import kotlinx.cli.default
 import kotlinx.cli.required
 import org.cryptobiotic.eg.cli.RunTrustedTallyDecryption
 import org.cryptobiotic.eg.core.*
@@ -20,6 +21,7 @@ import org.cryptobiotic.maths.VectorCiphertext
 import org.cryptobiotic.mixnet.writer.*
 import org.cryptobiotic.util.ErrorMessages
 import kotlin.random.Random
+import kotlin.system.exitProcess
 
 /**
  * From a paper ballot's serial number, find the corresponding shuffled ballot and decrypt it.
@@ -58,6 +60,11 @@ class RunPaperBallotDecrypt {
                 shortName = "out",
                 description = "Write decrypted ballot here"
             ).required()
+            val noexit by parser.option(
+                ArgType.Boolean,
+                shortName = "noexit",
+                description = "Dont call System.exit"
+            ).default(false)
 
             parser.parse(args)
 
@@ -70,17 +77,19 @@ class RunPaperBallotDecrypt {
             val resultConfig = readMixnetConfigFromFile(configFilename)
             if (resultConfig is Err) {
                 logger.error { "Error reading MixnetConfig from $configFilename err = $resultConfig" }
-                throw RuntimeException("Error reading MixnetConfig from $configFilename err = $resultConfig")
+                if (!noexit) exitProcess(1)
+                else throw RuntimeException("Error reading MixnetConfig from $configFilename err = $resultConfig")
             }
             val config = resultConfig.unwrap()
-            val decryptor = DecryptFromSn(publicDir, config.width, mixDir)
+            val decryptor = DecryptFromSn(publicDir, config.width, mixDir, noexit)
 
             // open the paper ballot table
             val pballotFile = "$publicDir/${RunMixnet.pballotTableFilename}"
             val pballotTableResult = readPballotTableFromFile(pballotFile)
             if (pballotTableResult is Err) {
                 logger.error { "failed $pballotTableResult" }
-                throw RuntimeException("failed $pballotTableResult")
+                if (!noexit) exitProcess(2)
+                else throw RuntimeException("failed $pballotTableResult")
             }
             val pballotTable = pballotTableResult.unwrap()
             val errs = ErrorMessages("findAndDecrypt")
@@ -94,14 +103,18 @@ class RunPaperBallotDecrypt {
                 val paperBallotEntry = findPaperBallot(pballotTable, ballotSn)
                 if (paperBallotEntry == null) {
                     logger.error { "Cant find paperBallot with serial number= '${ballotSn}'" }
-                    throw RuntimeException("Cant find paperBallot with serial number= '${ballotSn}'")
+                    if (!noexit) exitProcess(3)
+                    else throw RuntimeException("Cant find paperBallot with serial number= '${ballotSn}'")
                 }
                 decryptor.findAndDecrypt(trusteeDir, outputDir, paperBallotEntry, errs)
             }
+
             if (errs.hasErrors()) {
                 logger.error { "decryptShuffledBallot failed errors = $errs" }
-                throw RuntimeException("decryptShuffledBallot failed errors = $errs")
+                if (!noexit) exitProcess(4)
+                else throw RuntimeException("decryptShuffledBallot failed errors = $errs")
             }
+
         }
 
         // find the psn in the paper ballot table
@@ -124,12 +137,13 @@ class RunPaperBallotDecrypt {
                 return pballotTable.entries.find { it.sn == psnAsLong }
             }
         }
-    } // end object
+    }
 
     class DecryptFromSn(
         val publicDir: String,
         val width: Int,
         val mixDir: String,
+        val noexit: Boolean,
     ) {
         val consumerIn = makeConsumer(publicDir)
         val group = consumerIn.group
@@ -140,7 +154,7 @@ class RunPaperBallotDecrypt {
             val initResult = consumerIn.readElectionInitialized()
             if (initResult is Err) {
                 logger.error { "readElectionInitialized error ${initResult.error}" }
-                throw RuntimeException("readElectionInitialized error ${initResult.error}")
+                if (!noexit) exitProcess(5) else throw RuntimeException("readElectionInitialized error ${initResult.error}")
             }
             electionInit = initResult.unwrap()
             publicKey = electionInit.jointPublicKey
@@ -149,8 +163,8 @@ class RunPaperBallotDecrypt {
         fun findAndDecrypt(trusteeDir: String, outputDir: String, pballot: PballotEntry, errs: ErrorMessages) {
             val pair = findShuffledBallot(publicKey, width, mixDir, pballot)
             if (pair == null) {
-                errs.add( "Cant find shuffled ballot for ${pballot}" )
-                return
+                errs.add("Cant find shuffled ballot for ${pballot}")
+                if (!noexit) exitProcess(6) else return
             }
             val (dsn, ballot) = pair
             decryptShuffledBallot(trusteeDir, pballot, dsn, ballot, errs, outputDir)
@@ -172,7 +186,7 @@ class RunPaperBallotDecrypt {
             val decryptedSnsResult = readDecryptedSnsFromFile(decryptedSnsFile)
             if (decryptedSnsResult is Err) {
                 logger.error { "failed $decryptedSnsResult" }
-                throw RuntimeException("failed $decryptedSnsResult")
+                return null
             }
             val decryptedSns = decryptedSnsResult.unwrap()
 
@@ -185,9 +199,9 @@ class RunPaperBallotDecrypt {
             }
             val ballotRow = foundBallot.shuffledRow
 
-            val ballotResult = readShuffledBallotsFromFile( group, mixDir, width)
+            val ballotResult = readShuffledBallotsFromFile(group, mixDir, width)
             if (ballotResult is Err) {
-                logger.error {"Error reading input ballots in $mixDir = $ballotResult" }
+                logger.error { "Error reading input ballots in $mixDir = $ballotResult" }
                 return null
             }
             val shuffled = ballotResult.unwrap()
@@ -210,32 +224,36 @@ class RunPaperBallotDecrypt {
             val group = consumerIn.group
             val trustees = RunTrustedTallyDecryption.readDecryptingTrustees(publicDir, trusteeDir)
             val guardians = Guardians(group, electionInit.guardians)
-            val decryptor = BallotDecryptor(group, electionInit.extendedBaseHash, electionInit.jointPublicKey, guardians, trustees)
+            val decryptor =
+                BallotDecryptor(group, electionInit.extendedBaseHash, electionInit.jointPublicKey, guardians, trustees)
 
             // make an eballot out of it....
             val manifest = consumerIn.makeManifest(electionInit.config.manifestBytes)
-            val eballot = rehydrate(manifest, pballot.sn.toString(), electionInit.extendedBaseHash, dsn.ballotStyleIdx, ballot)
+            val eballot =
+                rehydrate(manifest, pballot.sn.toString(), electionInit.extendedBaseHash, dsn.ballotStyleIdx, ballot)
 
-            try {
-                val decryptedBallot = decryptor.decrypt(eballot, errs.nested("Ballot id='${eballot.ballotId}"))
-                if (errs.hasErrors()) {
-                    return
-                }
-                requireNotNull(decryptedBallot)
-
-                val publisher = makePublisher(outputDir, false)
-                val sink: DecryptedBallotSinkIF = publisher.decryptedBallotSink(outputDir)
-                sink.writeDecryptedBallot(decryptedBallot)
-                logger.info { "decrypt and write shuffled ballot sn=${pballot.sn} to output directory $outputDir " }
-            } catch (t: Throwable) {
-                errs.add("Exception= ${t.message} ${t.stackTraceToString()}")
+            val decryptedBallot = decryptor.decrypt(eballot, errs.nested("Ballot id='${eballot.ballotId}"))
+            if (errs.hasErrors()) {
+                return
             }
+            requireNotNull(decryptedBallot)
+
+            val publisher = makePublisher(outputDir, false)
+            val sink: DecryptedBallotSinkIF = publisher.decryptedBallotSink(outputDir)
+            sink.writeDecryptedBallot(decryptedBallot)
+            logger.info { "decrypt and write shuffled ballot sn=${pballot.sn} to output directory $outputDir " }
         }
     }
 
 }
 
-fun rehydrate(manifest: ManifestIF, ballotId: String, electionId: UInt256, ballotStyleIdx: Int, row: VectorCiphertext): EncryptedBallotIF {
+fun rehydrate(
+    manifest: ManifestIF,
+    ballotId: String,
+    electionId: UInt256,
+    ballotStyleIdx: Int,
+    row: VectorCiphertext
+): EncryptedBallotIF {
     val encryptedSn = row.elems[0]
     var colIdx = 2
     val ballotStyleId = manifest.ballotStyleIds[ballotStyleIdx]
