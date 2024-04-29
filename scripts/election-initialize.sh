@@ -37,12 +37,18 @@ java -classpath $CLASSPATH org.cryptobiotic.eg.cli.RunCreateElectionConfig \
     -quorum 3 \
     -out ${PRIVATE_DIR}
 
-echo "   run KeyCeremony to generate the election keypair"
+retval=$?
+
+echo "   run CreateElectionConfig to generate configuration returns $retval"
 
 java -classpath $CLASSPATH org.cryptobiotic.eg.cli.RunTrustedKeyCeremony \
     -in ${PRIVATE_DIR} \
     -trustees ${PRIVATE_DIR}/trustees \
     -out ${PRIVATE_DIR}
+
+retval=$?
+
+echo "   run TrustedKeyCeremony to generate the election keypair returns $retval"
 
 echo "   copy electionguard files to public workspace ${PUBLIC_DIR}"
 

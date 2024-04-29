@@ -6,6 +6,7 @@ import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.required
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.cli.default
 import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.eg.core.encrypt
 import org.cryptobiotic.eg.election.Manifest
@@ -20,6 +21,7 @@ import org.cryptobiotic.mixnet.ProofOfShuffle
 import org.cryptobiotic.mixnet.runProof
 import org.cryptobiotic.mixnet.shuffle
 import org.cryptobiotic.mixnet.writer.*
+import kotlin.system.exitProcess
 
 class RunMixnet {
 
@@ -56,6 +58,12 @@ class RunMixnet {
                 shortName = "out",
                 description = "output directory (default is publicDir)"
             )
+            val noexit by parser.option(
+                ArgType.Boolean,
+                shortName = "noexit",
+                description = "Dont call System.exit"
+            ).default(false)
+
             parser.parse(args)
 
             val info = buildString {
@@ -79,14 +87,14 @@ class RunMixnet {
                 val result = readMixnetConfigFromFile(lastFilename)
                 if (result is Err) {
                     logger.error {"Error reading MixnetConfig err = $result" }
-                    return
+                    if (!noexit) exitProcess(1) else return
                 }
                 val previousConfig = result.unwrap()
                 width = previousConfig.width
                 val ballotResult = readShuffledBallotsFromFile( mixnet.group, inputMixDir!!, previousConfig.width)
                 if (ballotResult is Err) {
                     logger.error {"Error reading input ballots in $inputMixDir = $ballotResult" }
-                    return
+                    if (!noexit) exitProcess(2) else return
                 }
                 inputBallots = ballotResult.unwrap()
                 ballotStyles = previousConfig.ballotStyles
@@ -101,17 +109,23 @@ class RunMixnet {
                 noncesSeed = seed.toUInt256safe().publishJson()
             }
 
-            logger.info { "runShuffleProof with ${inputBallots.size} ballots" }
-            val (shuffled, proof) = mixnet.runShuffleProof(inputBallots, mixName)
+            try {
+                logger.info { "runShuffleProof with ${inputBallots.size} ballots" }
+                val (shuffled, proof) = mixnet.runShuffleProof(inputBallots, mixName)
 
-            val topdir = outputDir ?: publicDir
-            val outputDirMix = "$topdir/$mixName"
-            writeShuffledBallotsToFile(true, outputDirMix, shuffled)
-            writeProofOfShuffleJsonToFile(proof, "$outputDirMix/$proofFilename")
+                val topdir = outputDir ?: publicDir
+                val outputDirMix = "$topdir/$mixName"
+                writeShuffledBallotsToFile(true, outputDirMix, shuffled)
+                writeProofOfShuffleJsonToFile(proof, "$outputDirMix/$proofFilename")
 
-            val config = MixnetConfig(mixName, mixnet.electionId.publishJson(), ballotStyles, width, noncesSeed)
-            writeMixnetConfigToFile(config, "$outputDirMix/$configFilename")
-            logger.info { "success" }
+                val config = MixnetConfig(mixName, mixnet.electionId.publishJson(), ballotStyles, width, noncesSeed)
+                writeMixnetConfigToFile(config, "$outputDirMix/$configFilename")
+                logger.info { "ShuffleProof success" }
+
+            } catch (t: Throwable) {
+                logger.error { "Exception= ${t.message} ${t.stackTraceToString()}" }
+                if (!noexit) exitProcess(-1)
+            }
         }
     }
 }

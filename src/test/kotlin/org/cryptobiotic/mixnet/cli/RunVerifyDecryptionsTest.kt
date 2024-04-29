@@ -14,7 +14,8 @@ class RunVerifyDecryptionsTest {
                 "-publicDir", publicDir,
                 "-dballots", "$privateDir/decrypted_ballots",
                 "-pballots", "$privateDir/input_ballots",
-                "--show"
+                "--show",
+                "--noexit"
             )
         )
     }

@@ -19,4 +19,6 @@ java -classpath $CLASSPATH \
     -out ${PUBLIC_DIR} \
     -count
 
-echo "   [DONE] Tallying encrypted ballots."
+retval=$?
+
+echo "   [DONE] Tallying encrypted ballots returns $retval"

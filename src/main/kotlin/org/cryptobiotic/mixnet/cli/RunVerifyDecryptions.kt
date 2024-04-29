@@ -15,6 +15,7 @@ import org.cryptobiotic.eg.verifier.VerifyDecryption
 import org.cryptobiotic.mixnet.writer.*
 import org.cryptobiotic.util.ErrorMessages
 import org.cryptobiotic.util.Stats
+import kotlin.system.exitProcess
 
 // Verify the proofs in the decrypted ballots and serial numbers.
 // If the original, plaintext ballots are available, compare the ballot decryptions to the originals.
@@ -47,6 +48,11 @@ class RunVerifyDecryptions {
                 shortName = "show",
                 description = "Show values"
             ).default(false)
+            val noexit by parser.option(
+                ArgType.Boolean,
+                shortName = "noexit",
+                description = "Dont call System.exit"
+            ).default(false)
 
             parser.parse(args)
 
@@ -58,47 +64,62 @@ class RunVerifyDecryptions {
             }
             logger.info { info }
 
-            val consumerIn = makeConsumer(publicDir)
-            val initResult = consumerIn.readElectionInitialized()
-            if (initResult is Err) {
-                RunPaperBallotDecrypt.logger.error { "readElectionInitialized error ${initResult.error}" }
-                return
-            }
-            val electionInit = initResult.unwrap()
+            try {
+                val consumerIn = makeConsumer(publicDir)
+                val initResult = consumerIn.readElectionInitialized()
+                if (initResult is Err) {
+                    RunPaperBallotDecrypt.logger.error { "readElectionInitialized error ${initResult.error}" }
+                    if (!noexit) exitProcess(1) else return
+                }
+                val electionInit = initResult.unwrap()
 
-            val errsSns = ErrorMessages("runVerifySnDecryptions")
-            val snMap = runVerifySnDecryptions(publicDir, consumerIn, electionInit, errsSns, show)
-            if (errsSns.hasErrors()) {
-                logger.error { errsSns.toString() }
-            } else {
-                logger.info { "verify sn decryptions all ok" }
-            }
-
-            if (decryptedBallotDir != null) {
-                val errsVerify = ErrorMessages("runVerifyBallots")
-                val verify = runVerifyBallots(consumerIn, electionInit, decryptedBallotDir!!, errsVerify, show)
-                if (errsVerify.hasErrors()) {
-                    logger.error { errsVerify.toString() }
+                val errsSns = ErrorMessages("runVerifySnDecryptions")
+                val allOk = runVerifySnDecryptions(publicDir, consumerIn, electionInit, errsSns, show)
+                if (errsSns.hasErrors()) {
+                    logger.error { errsSns.toString() }
+                    if (!noexit) exitProcess(2) else return
                 } else {
-                    logger.info { "verify ballots = $verify" }
+                    logger.info { "verify sn decryptions allOk=$allOk" }
                 }
 
-                if (originalBallotDir != null) {
-                    val errsCompare = ErrorMessages("runCompareBallots")
-                    val pballotMap = makePballotMap("$publicDir/${RunMixnet.pballotTableFilename}", errsCompare)
-                    if (errsCompare.hasErrors()) {
-                        logger.error { errsCompare.toString() }
+                if (decryptedBallotDir != null) {
+                    val errsVerify = ErrorMessages("runVerifyBallots")
+                    val verify = runVerifyBallots(consumerIn, electionInit, decryptedBallotDir!!, errsVerify, show)
+                    if (errsVerify.hasErrors()) {
+                        logger.error { errsVerify.toString() }
+                        if (!noexit) exitProcess(3) else return
                     } else {
-                        requireNotNull(pballotMap)
-                        val compare =
-                            runCompareBallots(publicDir, decryptedBallotDir!!, originalBallotDir!!, pballotMap, errsCompare, show)
+                        logger.info { "verify ballots ok = $verify" }
+                    }
+
+                    if (originalBallotDir != null) {
+                        val errsCompare = ErrorMessages("runCompareBallots")
+                        val pballotMap = makePballotMap("$publicDir/${RunMixnet.pballotTableFilename}", errsCompare)
                         if (errsCompare.hasErrors()) {
                             logger.error { errsCompare.toString() }
                         } else {
-                            logger.info { "compare ballots = $compare" }
+                            requireNotNull(pballotMap)
+                            val compare =
+                                runCompareBallots(
+                                    publicDir,
+                                    decryptedBallotDir!!,
+                                    originalBallotDir!!,
+                                    pballotMap,
+                                    errsCompare,
+                                    show
+                                )
+                            if (errsCompare.hasErrors()) {
+                                logger.error { errsCompare.toString() }
+                                if (!noexit) exitProcess(4) else return
+                            } else {
+                                logger.info { "compare ballots = $compare" }
+                            }
                         }
                     }
                 }
+            } catch (t: Throwable) {
+                logger.error { "Exception= ${t.message} ${t.stackTraceToString()}" }
+                if (!noexit) exitProcess(-1)
             }
         }
 
@@ -108,8 +129,7 @@ class RunVerifyDecryptions {
             electionInit: ElectionInitialized,
             errs: ErrorMessages,
             show: Boolean,
-        ): List<DecryptedSn> {
-            val decSns = mutableListOf<DecryptedSn>()
+        ): Boolean {
             var allOk = true
 
             val decryptedSnsFile = "$publicDir/${RunMixnet.decryptedSnsFilename}"
@@ -131,12 +151,11 @@ class RunVerifyDecryptions {
                         electionInit.extendedBaseHash, electionInit.jointPublicKey, decryptedSn.encrypted_sn,
                         decryptedSn.Ksn
                     )
-                    decSns.add(decryptedSn)
                     if (show) println(" verify decryptedSn row=${decryptedSn.shuffledRow} is $verify")
                     allOk = allOk && verify
                 }
             }
-            return decSns
+            return allOk
         }
 
         fun runVerifyBallots(

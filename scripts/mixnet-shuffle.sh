@@ -20,7 +20,9 @@ java -classpath $CLASSPATH \
     -publicDir ${PUBLIC_DIR} \
     --mixName mix1
 
-echo "  mixnet-shuffle and proof written to ${PUBLIC_DIR}/mix1"
+retval=$?
+
+echo "  mixnet-shuffle and proof written to ${PUBLIC_DIR}/mix1 retval=$retval"
 
 java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.cli.RunMixnet \
@@ -28,4 +30,6 @@ java -classpath $CLASSPATH \
     --inputMixDir ${PUBLIC_DIR}/mix1 \
     --mixName mix2
 
-echo "  [DONE] mixnet-shuffle and proof written to ${PUBLIC_DIR}/mix2"
+retval=$?
+
+echo "  [DONE] mixnet-shuffle and proof written to ${PUBLIC_DIR}/mix2 retval=$retval"

@@ -7,6 +7,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.cryptobiotic.eg.core.*
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
+import kotlinx.cli.default
 import kotlinx.cli.required
 import org.cryptobiotic.eg.publish.Consumer
 import org.cryptobiotic.eg.publish.json.import
@@ -20,6 +21,7 @@ import org.cryptobiotic.util.Stopwatch
 import org.cryptobiotic.mixnet.writer.readMixnetConfigFromFile
 import org.cryptobiotic.mixnet.writer.readProofOfShuffleJsonFromFile
 import org.cryptobiotic.mixnet.writer.readShuffledBallotsFromFile
+import kotlin.system.exitProcess
 
 class RunProofOfShuffleVerifier {
 
@@ -44,87 +46,105 @@ class RunProofOfShuffleVerifier {
                 shortName = "mix",
                 description = "Output Mix directory"
             ).required()
+            val noexit by parser.option(
+                ArgType.Boolean,
+                shortName = "noexit",
+                description = "Dont call System.exit"
+            ).default(false)
 
             parser.parse(args)
 
             val info = buildString {
                 append("start")
-                append( "   publicDir= $publicDir,")
-                append( "   inputMixDir= $inputMixDir,")
-                append( "   outputMixDir= $outputMixDir")
+                append("   publicDir= $publicDir,")
+                append("   inputMixDir= $inputMixDir,")
+                append("   outputMixDir= $outputMixDir")
             }
-            logger.info{ info }
+            logger.info { info }
 
             val mixnet = Mixnet(publicDir)
             val verifier = Verifier(publicDir)
 
-            val resultPos: Result<ProofOfShuffle, ErrorMessages> = readProofOfShuffleJsonFromFile(verifier.group, "$outputMixDir/$proofFilename")
+            val resultPos: Result<ProofOfShuffle, ErrorMessages> =
+                readProofOfShuffleJsonFromFile(verifier.group, "$outputMixDir/$proofFilename")
             if (resultPos is Err) {
                 logger.error { "Error reading proof = $resultPos" }
-                throw RuntimeException("Error reading proof")
+                if (!noexit) exitProcess(1) else return
             }
             val pos = resultPos.unwrap()
 
             val configFilename = "$outputMixDir/${RunMixnet.configFilename}"
             val resultConfig = readMixnetConfigFromFile(configFilename)
             if (resultConfig is Err) {
-                logger.error {"Error reading MixnetConfig from $configFilename err = $resultConfig" }
-                return
+                logger.error { "Error reading MixnetConfig from $configFilename err = $resultConfig" }
+                if (!noexit) exitProcess(2) else return
             }
             val config = resultConfig.unwrap()
 
-            val ballots: List<VectorCiphertext>
-            if (inputMixDir != null) {
-                val ballotResult = readShuffledBallotsFromFile( verifier.group, inputMixDir!!, config.width)
-                if (ballotResult is Err) {
-                    logger.error {"Error reading input ballots in $inputMixDir = $ballotResult" }
-                    return
+            try {
+                val ballots: List<VectorCiphertext>
+                if (inputMixDir != null) {
+                    val ballotResult = readShuffledBallotsFromFile(verifier.group, inputMixDir!!, config.width)
+                    if (ballotResult is Err) {
+                        logger.error { "Error reading input ballots in $inputMixDir = $ballotResult" }
+                        if (!noexit) exitProcess(3) else return
+                    }
+                    ballots = ballotResult.unwrap()
+                    logger.info { " Read ${ballots.size} input ballots" }
+
+                } else {
+                    val seed: ElementModQ = config.nonces_seed?.import()?.toElementModQ(verifier.group)!!
+                    val nonces = Nonces(seed, config.mix_name) // used for the extra ciphertexts to make even rows
+                    val pair = mixnet.readEncryptedBallots(nonces)
+                    ballots = pair.first
+                    logger.info { " Read ${ballots.size} encryptedBallots ballots" }
+                    val ciphertexts = ballots.flatMap { it.elems }
+                    println(
+                        "readEncryptedBallots ${ciphertexts.size} hash(ciphertexts) ${
+                            hashFunction(
+                                mixnet.electionId.bytes,
+                                ciphertexts
+                            )
+                        }"
+                    )
                 }
-                ballots = ballotResult.unwrap()
-                logger.info { " Read ${ballots.size} input ballots" }
 
-            } else {
-                val seed: ElementModQ = config.nonces_seed?.import()?.toElementModQ(verifier.group)!!
-                val nonces = Nonces(seed, config.mix_name) // used for the extra ciphertexts to make even rows
-                val pair = mixnet.readEncryptedBallots(nonces)
-                ballots = pair.first
-                logger.info { " Read ${ballots.size} encryptedBallots ballots" }
-                val ciphertexts = ballots.flatMap { it.elems }
-                println("readEncryptedBallots ${ciphertexts.size} hash(ciphertexts) ${hashFunction(mixnet.electionId.bytes, ciphertexts)}")
-            }
+                val shuffledResult = readShuffledBallotsFromFile(verifier.group, outputMixDir, config.width)
+                if (shuffledResult is Err) {
+                    logger.error { "Error reading shuffled ballots in $outputMixDir = $shuffledResult" }
+                    if (!noexit) exitProcess(4) else return
+                }
+                val shuffled = shuffledResult.unwrap()
+                logger.info { " Read ${shuffled.size} shuffled ballots" }
 
-            val shuffledResult = readShuffledBallotsFromFile( verifier.group, outputMixDir, config.width)
-            if (shuffledResult is Err) {
-                logger.error {"Error reading shuffled ballots in $outputMixDir = $shuffledResult" }
-                return
-            }
-            val shuffled = shuffledResult.unwrap()
-            logger.info { " Read ${shuffled.size} shuffled ballots" }
+                if (ballots.size != shuffled.size) {
+                    logger.error { "size mismatch ballots ballots ${ballots.size} != ${shuffled.size}" }
+                    if (!noexit) exitProcess(5) else return
+                }
+                if (ballots[0].nelems != shuffled[0].nelems) {
+                    logger.error { "width mismatch ballots ${ballots[0].nelems} != ${shuffled[0].nelems}" }
+                    if (!noexit) exitProcess(6) else return
+                }
 
-            if (ballots.size != shuffled.size) {
-                logger.error { "size mismatch ballots ballots ${ballots.size} != ${shuffled.size}" }
-                throw RuntimeException("size mismatch")
-            }
-            if (ballots[0].nelems != shuffled[0].nelems) {
-                logger.error { "width mismatch ballots ${ballots[0].nelems} != ${shuffled[0].nelems}" }
-                throw RuntimeException("width mismatch")
-            }
+                val valid = verifier.runVerifier(ballots, shuffled, pos)
+                if (!valid) {
+                    logger.error { "Validate failed!!" }
+                    if (!noexit) exitProcess(7) else return
+                } else {
+                    logger.info { "Validation of ${config.mix_name} success" }
+                }
 
-            val valid = verifier.runVerifier(ballots, shuffled, pos)
-            if (!valid) {
-                logger.error {"Validate failed!!" }
-                throw RuntimeException("Validate failed!!")
-            } else {
-                logger.info {"Validation of ${config.mix_name} success" }
+            } catch (t: Throwable) {
+                logger.error { "Exception= ${t.message} ${t.stackTraceToString()}" }
+                if (!noexit) exitProcess(-1)
             }
         }
     }
 }
 
 
-
-class Verifier(egDir:String) {
-    val consumer : Consumer = makeConsumer(egDir)
+class Verifier(egDir: String) {
+    val consumer: Consumer = makeConsumer(egDir)
     val group = consumer.group
     val publicKey: ElGamalPublicKey
 

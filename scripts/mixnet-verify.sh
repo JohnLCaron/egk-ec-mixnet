@@ -17,10 +17,14 @@ java -classpath $CLASSPATH \
     -publicDir ${PUBLIC_DIR} \
     --outputMixDir ${PUBLIC_DIR}/mix1
 
+retval1=$?
+
 java -classpath $CLASSPATH \
   org.cryptobiotic.mixnet.cli.RunProofOfShuffleVerifier \
     -publicDir ${PUBLIC_DIR} \
     --inputMixDir ${PUBLIC_DIR}/mix1 \
     --outputMixDir ${PUBLIC_DIR}/mix2
 
-echo " [DONE] Verifying mix1 and mix2 "
+retval2=$?
+
+echo " [DONE] Verifying mix1 retval=$retval1 and mix2 retval=$retval2"

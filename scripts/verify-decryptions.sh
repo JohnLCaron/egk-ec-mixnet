@@ -25,4 +25,6 @@ java -classpath $CLASSPATH \
     -pballots ${PRIVATE_DIR}/input_ballots \
     --show
 
-echo "   [DONE] verified decrypted ballots"
+retval=$?
+
+echo "   [DONE] verified decrypted ballots retval=$retval"
