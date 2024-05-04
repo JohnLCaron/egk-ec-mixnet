@@ -27,8 +27,15 @@ fun getBatchingVectorAndChallenge(
     return Pair(batchVector, challenge.toElementModQ(group))
 }
 
-//// PoST 114
-//         // Generate a seed to the PRG for batching.
+//// PoSTW 95
+//     public void prove(final Log log,
+//                      final PGroupElement pkey,
+//                      final PGroupElementArray w,
+//                      final PGroupElementArray wp,
+//                      final PRingElementArray s) {
+// ...
+//// PoSTW 114
+//        // Generate a seed to the PRG for batching.
 //        tempLog.info("Generate batching vector.");
 //        Log tempLog2 = tempLog.newChildLog();
 //
@@ -40,15 +47,81 @@ fun getBatchingVectorAndChallenge(
 //                                  w.toByteTree(),
 //                                  wp.toByteTree());
 //
-//        final byte[] prgSeed =
-//            challenger.challenge(tempLog2,
-//                                 challengeData,
-//                                 8 * prg.minNoSeedBytes(),
-//                                 rbitlen);
+// make a seed from challengeData
+//        final byte[] prgSeed = challenger.challenge(tempLog2, challengeData, 8 * prg.minNoSeedBytes(), rbitlen);
 //
-//        // Compute and publish commitment.
 //        tempLog.info("Compute commitment.");
 //        final ByteTreeBasic commitment = P.commit(prgSeed);
+// ..
+// PoSTW 143
+//        // Generate a challenge.
+//        challengeData = new ByteTreeContainer(new ByteTree(prgSeed), commitment);
+//        final byte[] challengeBytes = challenger.challenge(tempLog2, challengeData, vbitlen(), rbitlen);
+//        final LargeInteger integerChallenge = LargeInteger.toPositive(challengeBytes);
+//
+//         // Compute and publish reply.
+//        final ByteTreeBasic reply = P.reply(integerChallenge);
+//        bullBoard.publish("Reply", reply, tempLog);
+
+
+//     public ByteTreeBasic commit(final byte[] prgSeed) {
+//
+//        setBatchVector(prgSeed);
+//
+//        // ################# Permuted Batching Vector #############
+//        final Permutation piinv = pi.inv();
+//        ipe = e.permute(piinv);
+//        piinv.free();
+//
+//        // ################# Bridging Commitments #################
+//
+//        final PGroupElement h0 = h.get(0)
+//        b = pRing.randomElementArray(size, randomSource, rbitlen);
+//
+//        final Pair<PRingElementArray, PRingElement> p = b.recLin(ipe);
+//        final PRingElementArray x = p.first;
+//        d = p.second;
+//        final PRingElementArray y = ipe.prods();
+//        final PGroupElementArray g_exp_x = g.exp(x);
+//        final PGroupElementArray h0_exp_y = h0.exp(y);
+//        B = g_exp_x.mul(h0_exp_y);
+//
+//        // ################# Proof Commitments ####################
+//        beta = pRing.randomElementArray(size, randomSource, rbitlen);
+//
+//        final PRingElementArray xp = x.shiftPush(x.getPRing().getZERO());
+//        final PRingElementArray yp = y.shiftPush(y.getPRing().getONE());
+//        final PRingElementArray xp_mul_epsilon = xp.mul(epsilon);
+//        final PRingElementArray beta_add_prod = beta.add(xp_mul_epsilon);
+//        final PGroupElementArray g_exp_beta_add_prod = g.exp(beta_add_prod);
+//        final PRingElementArray yp_mul_epsilon = yp.mul(epsilon);
+//        final PGroupElementArray h0_exp_yp_mul_epsilon = h0.exp(yp_mul_epsilon);
+//
+//        Bp = g_exp_beta_add_prod.mul(h0_exp_yp_mul_epsilon);
+//        gamma = pRing.randomElement(randomSource, rbitlen);
+//        Cp = g.exp(gamma);
+//        delta = pRing.randomElement(randomSource, rbitlen);
+//        Dp = g.exp(delta);
+//        final PRing ciphPRing = pkey.project(0).getPGroup().getPRing();
+//        phi = ciphPRing.randomElement(randomSource, rbitlen);
+//
+//        PGroupElement temp = wp.expProd(epsilon);
+//        Fp = pkey.exp(phi.neg()).mul(temp);
+//
+//        // this is "the committment"
+//        return new ByteTreeContainer(B.toByteTree(),
+//                                     Ap.toByteTree(),
+//                                     Bp.toByteTree(),
+//                                     Cp.toByteTree(),
+//                                     Dp.toByteTree(),
+//                                     Fp.toByteTree());
+//    }
+
+
+
+
+
+
 // which calls         setBatchVector(prgSeed);
 
 // PoSBasicTW 552
@@ -59,28 +132,9 @@ fun getBatchingVectorAndChallenge(
 //        this.e = pField.unsafeToElementArray(lia);
 //    }
 
+
+
 //// PoSTW 143 Generate a challenge. Uses same prgSeed to create new challengeData
 //        challengeData = new ByteTreeContainer(new ByteTree(prgSeed), commitment);
 //        final byte[] challengeBytes = challenger.challenge(tempLog2, challengeData, vbitlen(), rbitlen);
 //        final LargeInteger integerChallenge = LargeInteger.toPositive(challengeBytes);
-
-// ChallengeRO
-//     public byte[] challenge(final Log log,
-//                            final ByteTreeBasic data,
-//                            final int vbitlen,
-//                            final int rbitlen) {
-//
-//        // Define a random oracle with the given output length.
-//        final RandomOracle ro = new RandomOracle(roHashfunction, vbitlen);
-//
-//        // Compute the digest of the byte tree.
-//        final Hashdigest d = ro.getDigest();
-//
-//        d.update(globalPrefix);
-//        data.update(d);
-//
-//        final byte[] digest = d.digest();
-//
-//        return digest;
-//    }
-//}

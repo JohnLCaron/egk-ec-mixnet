@@ -39,6 +39,8 @@ import org.cryptobiotic.maths.*
 
 private val useRegularB = false
 
+// PoSBasicTW
+
 fun runProof(
     group: GroupContext,
     mixName: String,

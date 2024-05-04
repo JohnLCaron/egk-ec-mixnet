@@ -1,164 +1,102 @@
 package org.cryptobiotic.mixnet
 
-import org.cryptobiotic.eg.election.parameterBaseHash
 import org.cryptobiotic.eg.core.*
+import org.cryptobiotic.eg.core.ecgroup.EcElementModP
+import org.cryptobiotic.eg.core.ecgroup.EcGroupContext
+import org.cryptobiotic.eg.core.ecgroup.VecGroup.Companion.jacobiSymbol
+import org.cryptobiotic.eg.core.intgroup.ProductionElementModP
+import org.cryptobiotic.eg.core.intgroup.ProductionGroupContext
+import org.cryptobiotic.eg.election.GroupType
+import org.cryptobiotic.eg.election.parameterBaseHash
 import org.cryptobiotic.maths.*
+import java.math.BigInteger
+import kotlin.math.min
 
 // generate a set of n independent generators
+// section 6.8 "Deriving Group Elements from Random Strings" in "How to Implement a Stand-Alone Verifier"
+// These have to be reproducible by the verifier, so we can't use group.randomElementModP()
 
 fun getGeneratorsVmn(group: GroupContext, n: Int, mixName: String): VectorP {
-    // Generate a seed to the PRG for batching.
-    val baseHash = parameterBaseHash(group.constants)
-    val prgSeed = hashFunction(baseHash.bytes, 0x102.toByte(), mixName)
+    // This corresponds to RO_seed(rho, "generators") in section 8.2.
+    // TODO beef up the seed parameters?
+    val seed = parameterBaseHash(group.constants).bytes
+    val prg = PRG(seed, mixName)
+    val prgSeq = PRGsequence(prg)
 
-    // not sure if this is good enough, TODO cryptographer review.
-    val nonces = Nonces(prgSeed.toElementModQ(group), mixName).take(n)
-    val h0 = group.gPowP(nonces[0]).acceleratePow()
-    val generators = List(n) { if (it == 0) h0 else ( h0 powP nonces[it]) } // CE n acc
-
-    return VectorP(group, generators)
+    return if (group.constants.type == GroupType.IntegerGroup) getGeneratorsIntGroup(group, n, prgSeq)
+           else getGeneratorsECgroup(group, n, prgSeq)
 }
 
-// MixNetElGamalVerifyFiatShamirSession, line 556
-//            final IndependentGeneratorsRO igRO =
-//                new IndependentGeneratorsRO("generators",
-//                                            v.roHashfunction,
-//                                            globalPrefix,
-//                                            v.rbitlen);
-//            generators = igRO.generate(null, v.pGroup, maxciph);
+// section 6.8 "Multiplicative Group"
+fun getGeneratorsIntGroup(group: GroupContext, numberOfGenerators: Int, prgSeq: PRGsequence): VectorP {
+    val statDistBytes = 128 / 8 // TODO what should this be?
+    val nbytes = group.MAX_BYTES_P + statDistBytes
 
-/*
+    val intGroup = group as ProductionGroupContext
+    val exp = (intGroup.p - BigInteger.ONE).div(intGroup.q) // (p-1)/q
 
-/**
- * com.verificatum.protocol.distr.IndependentGeneratorsRO
- *
- * Uses a "random oracle" to derive a list of "independent"
- * generators, i.e., a list of generators for which finding any
- * non-trivial representation implies that the discrete logarithm
- * assumption is violated.
- *
- * @author Douglas Wikstrom
- */
-class IndependentGeneratorsRO(
-    val sid: String, // Session identifier distinguishing this derivation from other
-    val roHashfunction: Hashfunction, // Hashfunction on which the "random oracle" is based.
-    val globalPrefix: ByteArray, // Prefix used with each invocation of the random oracle
-    val rbitlen: Int // Decides the statistical distance from the uniform distribution assuming that the random oracle is truly random
-) {
+    val result = mutableListOf<ElementModP>()
+    while (result.size < numberOfGenerators) {
+        val ba = prgSeq.next(nbytes)
+        val bi = BigInteger(1, ba)
+        val ti = bi.modPow(exp, intGroup.p)
+        result.add(ProductionElementModP(ti, intGroup))
+    }
+    return VectorP(group, result)
+}
 
-    fun generate(
-        pGroup: PGroup,
-        numberOfGenerators: Int
-    ): PGroupElementArray {
+// section 6.8 "Elliptic curves over prime order fields"
+fun getGeneratorsECgroup(group: GroupContext, numberOfGenerators: Int, prgSeq: PRGsequence): VectorP {
+    val statDistBytes = 128 / 8 // TODO
+    val nbytes = group.MAX_BYTES_P + statDistBytes
 
-        val prg: PRG = PRGHeuristic(roHashfunction)
-        val ro = RandomOracle(
-            roHashfunction,
-            8 * prg.minNoSeedBytes()
-        )
+    val ecGroup = group as EcGroupContext
+    val vecGroup = ecGroup.vecGroup
 
-        val d = ro.digest
-        d.update(*globalPrefix)
-        d.update(*ByteTree(ExtIO.getBytes(sid)).toByteArray())
+    val result = mutableListOf<ElementModP>()
+    while (result.size < numberOfGenerators) {
+        val ba = prgSeq.next(nbytes)
+        val bi = BigInteger(1, ba)
+        val zi = bi.mod(vecGroup.primeModulus)
+        val fx = vecGroup.equationf(zi)
+        // This follow ECqPGroup.randomElementArray(), line 435: if (rfxArray[i].legendre(modulus) == 1)
+        // presumably its equivilent to y^((p-1)/2) == 1 as described in \cite{Haines20} (tested in egk-ec)
+        if (jacobiSymbol(fx, vecGroup.primeModulus) == 1) {
+            val y2 = vecGroup.sqrt(fx) // TODO use smaller root?? Doesnt seem necessary
+            val ec = vecGroup.makeVecModP(zi, y2)
+            result.add(EcElementModP(ecGroup, ec))
+        }
+    }
+    return VectorP(group, result)
+}
 
-        val seed = d.digest()
+/** Psuedo Random Generator. */
+class PRG(seed: ByteArray, name: String) {
+    val internalSeed = hashFunction(seed, 0x102.toByte(), name).bytes
 
-        prg.setSeed(seed)
-
-        return pGroup.randomElementArray(numberOfGenerators, prg, rbitlen)
+    // generate a psuedo-random array of bytes of size result.size
+    // put the generated bytes in result; return the ending index
+    fun getBytes(result: ByteArray, startIndex : Int = 1): Int {
+        val nbytes = result.size
+        var index = startIndex
+        var bytesLeft = nbytes
+        while (bytesLeft > 0) {
+            val nextHashBytes = hashFunction(internalSeed, index).bytes
+            val need = min(nextHashBytes.size, bytesLeft)
+            System.arraycopy(nextHashBytes, 0, result, nbytes - bytesLeft, need)
+            bytesLeft -= need
+            index++
+        }
+        return index
     }
 }
 
-//     public PGroupElementArray generate(final Log log,
-//                                       final PGroup pGroup,
-//                                       final int numberOfGenerators) {
-//        if (log != null) {
-//            log.info("Derive independent generators using RO.");
-//        }
-//
-//        final PRG prg = new PRGHeuristic(roHashfunction);
-//        final RandomOracle ro = new RandomOracle(roHashfunction,
-//                                                 8 * prg.minNoSeedBytes());
-//
-//        final Hashdigest d = ro.getDigest();
-//        d.update(globalPrefix);
-//        d.update(new ByteTree(ExtIO.getBytes(sid)).toByteArray());
-//
-//        final byte[] seed = d.digest();
-//
-//        prg.setSeed(seed);
-//
-//        return pGroup.randomElementArray(numberOfGenerators, prg, rbitlen);
-//    }
+class PRGsequence(val prg: PRG) {
+    var nextIndex = 1
 
-fun setGlobalPrefix() {
-    val rosid: String = v.sid + "." + auxsid
-
-    val versionBT = ByteTree(ExtIO.getBytes(VCR.version()))
-    val rosidBT = ByteTree(ExtIO.getBytes(rosid))
-    val rbitlenBT = ByteTree.intToByteTree(v.rbitlen)
-    val vbitlenroBT = ByteTree.intToByteTree(v.vbitlenro)
-    val ebitlenroBT = ByteTree.intToByteTree(v.ebitlenro)
-    val prgStringBT = ByteTree(ExtIO.getBytes(v.prgString))
-    val pGroupStringBT = ByteTree(ExtIO.getBytes(v.pGroupString))
-    val roHashfunctionStringBT = ByteTree(ExtIO.getBytes(v.roHashfunctionString))
-
-    val bt =
-        ByteTree(
-            versionBT,
-            rosidBT,
-            rbitlenBT,
-            vbitlenroBT,
-            ebitlenroBT,
-            prgStringBT,
-            pGroupStringBT,
-            roHashfunctionStringBT
-        )
-
-    globalPrefix = v.roHashfunction.hash(*bt.toByteArray())
+    fun next(sizeBytes: Int) : ByteArray {
+        val ba = ByteArray(sizeBytes)
+        nextIndex = prg.getBytes(ba, nextIndex)
+        return ba
+    }
 }
-
-//    String auxsid; // Auxiliary session identifier
-//    String sid; // Session identifier of mix-net.
-//    int certainty; // Certainty with which parameters tested probabilistically are  correct.
-//    int rbitlen; // Decides the statistical distance from the uniform distribution
-//    int vbitlenro; // Number of bits in the challenge
-//    int ebitlenro; // Number of bits used during batching
-//    String pGroupString; // Description of group in which the protocol was executed
-//    String prgString; // Description of PRG used to derive random vectors during batching
-//    String roHashfunctionString: String; // Description of hash function used to implement random oracles
-
-//     protected void setGlobalPrefix() {
-//
-//        final String rosid = v.sid + "." + auxsid;
-//
-//        v.checkPrintTestVector("par.sid", v.sid);
-//
-//        final ByteTree versionBT =
-//            new ByteTree(ExtIO.getBytes(VCR.version()));
-//        final ByteTree rosidBT = new ByteTree(ExtIO.getBytes(rosid));
-//        final ByteTree rbitlenBT = ByteTree.intToByteTree(v.rbitlen);
-//        final ByteTree vbitlenroBT = ByteTree.intToByteTree(v.vbitlenro);
-//        final ByteTree ebitlenroBT = ByteTree.intToByteTree(v.ebitlenro);
-//        final ByteTree prgStringBT = new ByteTree(ExtIO.getBytes(v.prgString));
-//        final ByteTree pGroupStringBT =
-//            new ByteTree(ExtIO.getBytes(v.pGroupString));
-//        final ByteTree roHashfunctionStringBT =
-//            new ByteTree(ExtIO.getBytes(v.roHashfunctionString));
-//
-//        final ByteTree bt =
-//            new ByteTree(versionBT,
-//                         rosidBT,
-//                         rbitlenBT,
-//                         vbitlenroBT,
-//                         ebitlenroBT,
-//                         prgStringBT,
-//                         pGroupStringBT,
-//                         roHashfunctionStringBT);
-//
-//        globalPrefix = v.roHashfunction.hash(bt.toByteArray());
-//
-//        v.checkPrintTestVector("der.rho", Hex.toHexString(globalPrefix));
-//    }
-
- */
