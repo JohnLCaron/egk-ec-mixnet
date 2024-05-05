@@ -4,7 +4,8 @@ import org.cryptobiotic.eg.election.parameterBaseHash
 import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.maths.*
 
-fun getBatchingVectorAndChallenge(
+// Generate a seed to the PRG for batching. TODO cryptographer review.
+fun makeBatchingVector(
     group: GroupContext,
     mixName: String,
     h: VectorP,
@@ -12,19 +13,53 @@ fun getBatchingVectorAndChallenge(
     pk: ElGamalPublicKey,
     w: List<VectorCiphertext>,
     wp: List<VectorCiphertext>,
-): Pair<VectorQ, ElementModQ> {
-    // Generate a seed to the PRG for batching. TODO cryptographer review.
+): Pair<UInt256, VectorQ> {
+    //        ByteTreeContainer challengeData =
+    //            new ByteTreeContainer(P.g.toByteTree(), // group generator
+    //                                  P.h.toByteTree(), // generators
+    //                                  P.u.toByteTree(),
+    //                                  pkey.toByteTree(),
+    //                                  w.toByteTree(),
+    //                                  wp.toByteTree());
     val baseHash = parameterBaseHash(group.constants)
     val ciphertexts = w.flatMap { it.elems }
     val shuffled = wp.flatMap { it.elems }
     val prgSeed = hashFunction(baseHash.bytes, 0x101.toByte(), h.elems, u.elems, pk, ciphertexts, shuffled)
 
+    // TODO use PRG with n_r ??
     // generate "batching vector"
-    val batchVector = VectorQ(group, Nonces(prgSeed.toElementModQ(group), mixName).take(h.nelems))
-    // create another nonce for the challenge
-    val challenge = hashFunction(prgSeed.bytes, 0x102.toByte(), mixName)
+    return Pair(prgSeed, VectorQ(group, Nonces(prgSeed.toElementModQ(group), mixName).take(h.nelems)))
+}
 
-    return Pair(batchVector, challenge.toElementModQ(group))
+// data class ProofCommittment (
+//    val u: VectorP, // permutation commitment = pcommit
+//    val d: ElementModQ, // x[n-1]
+//    val e: VectorQ,
+//
+//    val Ap: ElementModP, // Proof commitment used for the bridging commitments
+//    val B: VectorP, // Bridging commitments used to build up a product in the exponent
+//    val Bp: VectorP, // Proof commitments for the bridging commitments
+//    val Cp: ElementModP, // Proof commitment for proving sum of random components
+//    val Dp: ElementModP, // Proof commitment for proving product of random components.
+//
+//    val Fp: VectorCiphertext, // width
+//)
+fun makeChallenge(
+    group: GroupContext,
+    prgSeed: UInt256,
+    pos: ProofCommittment,
+): ElementModQ {
+    //        return new ByteTreeContainer(B.toByteTree(),
+    //                                     Ap.toByteTree(),
+    //                                     Bp.toByteTree(),
+    //                                     Cp.toByteTree(),
+    //                                     Dp.toByteTree(),
+    //                                     Fp.toByteTree());
+
+    // TODO use PRG with n_r ??
+    val challenge = hashFunction(prgSeed.bytes, 0x102.toByte(), pos.Ap, pos.B.elems, pos.Bp.elems, pos.Cp, pos.Dp, pos.Fp.elems)
+
+    return challenge.toElementModQ(group)
 }
 
 //// PoSTW 95
@@ -47,14 +82,13 @@ fun getBatchingVectorAndChallenge(
 //                                  w.toByteTree(),
 //                                  wp.toByteTree());
 //
-// make a seed from challengeData
+// make a seed from challengeData, use it in commit
 //        final byte[] prgSeed = challenger.challenge(tempLog2, challengeData, 8 * prg.minNoSeedBytes(), rbitlen);
 //
 //        tempLog.info("Compute commitment.");
 //        final ByteTreeBasic commitment = P.commit(prgSeed);
 // ..
-// PoSTW 143
-//        // Generate a challenge.
+//// PoSTW 143 Generate a challenge. Uses same prgSeed to create new challengeData
 //        challengeData = new ByteTreeContainer(new ByteTree(prgSeed), commitment);
 //        final byte[] challengeBytes = challenger.challenge(tempLog2, challengeData, vbitlen(), rbitlen);
 //        final LargeInteger integerChallenge = LargeInteger.toPositive(challengeBytes);
@@ -118,23 +152,10 @@ fun getBatchingVectorAndChallenge(
 //    }
 
 
-
-
-
-
-// which calls         setBatchVector(prgSeed);
-
-// PoSBasicTW 552
+// PoSBasicTW 552: set the "batch vector"
 //     public void setBatchVector(final byte[] prgSeed) {
 //        prg.setSeed(prgSeed);
 //        final LargeIntegerArray lia =
 //            LargeIntegerArray.random(size, ebitlen, prg);
 //        this.e = pField.unsafeToElementArray(lia);
 //    }
-
-
-
-//// PoSTW 143 Generate a challenge. Uses same prgSeed to create new challengeData
-//        challengeData = new ByteTreeContainer(new ByteTree(prgSeed), commitment);
-//        final byte[] challengeBytes = challenger.challenge(tempLog2, challengeData, vbitlen(), rbitlen);
-//        final LargeInteger integerChallenge = LargeInteger.toPositive(challengeBytes);

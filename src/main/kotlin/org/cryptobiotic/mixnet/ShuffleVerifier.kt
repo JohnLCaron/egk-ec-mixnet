@@ -48,7 +48,9 @@ fun runVerify(
 ):Boolean {
     // these are the deterministic nonces and generators that prover must also be able to generate
     val generators = getGeneratorsVmn(group, w.size, pos.mixname) // CE 1 acc n exp
-    val (e, challenge) = getBatchingVectorAndChallenge(group, pos.mixname, generators, pos.u, publicKey, w, wp)
+    val (prgSeed, e) = makeBatchingVector(group, pos.mixname, generators, pos.u, publicKey, w, wp)
+    val d = group.randomElementModQ() // dont need d
+    val challenge = makeChallenge(group, prgSeed, ProofCommittment(pos, d, e))
 
     val verifier = VerifierV(
         group,
@@ -59,6 +61,7 @@ fun runVerify(
         w,
         wp,
     )
+
     return verifier.verify(pos, nthreads)
 }
 

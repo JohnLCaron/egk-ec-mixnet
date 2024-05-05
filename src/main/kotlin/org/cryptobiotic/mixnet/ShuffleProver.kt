@@ -54,7 +54,7 @@ fun runProof(
     // these are the deterministic nonces and generators that verifier must also be able to generate
     val generators = getGeneratorsVmn(group, w.size, mixName) // CE n + 1 acc
     val (pcommit, pnonces) = permutationCommitmentVmn(group, psi, generators)
-    val (e, challenge) = getBatchingVectorAndChallenge(group, mixName, generators, pcommit, publicKey, w, wp)
+    val (prgSeed, e) = makeBatchingVector(group, mixName, generators, pcommit, publicKey, w, wp)
 
     val prover = ProverV(   // CE n acc
         group,
@@ -69,6 +69,7 @@ fun runProof(
         psi,
     )
     val pos = prover.commit(nthreads)
+    val challenge = makeChallenge(group, prgSeed, pos)
     return prover.reply(pos, challenge)
 }
 
@@ -266,7 +267,7 @@ fun innerProductColumn(matrixq: MatrixQ, exps: VectorQ): VectorQ {
     return VectorQ(exps.group, result)
 }
 
-data class ProofCommittment (
+data class ProofCommittment(
     val u: VectorP, // permutation commitment = pcommit
     val d: ElementModQ, // x[n-1]
     val e: VectorQ,
@@ -278,7 +279,9 @@ data class ProofCommittment (
     val Dp: ElementModP, // Proof commitment for proving product of random components.
 
     val Fp: VectorCiphertext, // width
-)
+) {
+    constructor(pos: ProofOfShuffle, d: ElementModQ, e: VectorQ) : this(pos.u, d, e, pos.Ap, pos.B, pos.Bp, pos.Cp, pos.Dp, pos.Fp)
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
