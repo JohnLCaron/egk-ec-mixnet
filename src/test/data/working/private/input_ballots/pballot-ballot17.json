@@ -1,6 +1,6 @@
 {
     "ballot_id": "ballot17",
-    "ballot_style": "BallotStyle3",
+    "ballot_style": "BallotStyle4",
     "contests": [
         {
             "contest_id": "contest1",
@@ -9,12 +9,12 @@
                 {
                     "selection_id": "selection1",
                     "sequence_order": 1,
-                    "vote": 1
+                    "vote": 0
                 },
                 {
                     "selection_id": "selection2",
                     "sequence_order": 2,
-                    "vote": 0
+                    "vote": 1
                 },
                 {
                     "selection_id": "selection3",
@@ -26,16 +26,29 @@
             ]
         },
         {
-            "contest_id": "contest5",
-            "sequence_order": 5,
+            "contest_id": "contest2",
+            "sequence_order": 2,
             "selections": [
                 {
-                    "selection_id": "selection9",
+                    "selection_id": "selection4",
+                    "sequence_order": 1,
+                    "vote": 1
+                }
+            ],
+            "write_ins": [
+            ]
+        },
+        {
+            "contest_id": "contest3",
+            "sequence_order": 3,
+            "selections": [
+                {
+                    "selection_id": "selection5",
                     "sequence_order": 1,
                     "vote": 1
                 },
                 {
-                    "selection_id": "selection10",
+                    "selection_id": "selection6",
                     "sequence_order": 2,
                     "vote": 0
                 }
@@ -67,30 +80,22 @@
             ]
         },
         {
-            "contest_id": "contest12",
-            "sequence_order": 12,
+            "contest_id": "contest13",
+            "sequence_order": 13,
             "selections": [
                 {
-                    "selection_id": "selection24",
-                    "sequence_order": 1,
-                    "vote": 1
-                }
-            ],
-            "write_ins": [
-            ]
-        },
-        {
-            "contest_id": "contest16",
-            "sequence_order": 16,
-            "selections": [
-                {
-                    "selection_id": "selection31",
+                    "selection_id": "selection25",
                     "sequence_order": 1,
                     "vote": 0
                 },
                 {
-                    "selection_id": "selection32",
+                    "selection_id": "selection26",
                     "sequence_order": 2,
+                    "vote": 1
+                },
+                {
+                    "selection_id": "selection27",
+                    "sequence_order": 3,
                     "vote": 0
                 }
             ],
@@ -104,17 +109,35 @@
                 {
                     "selection_id": "selection36",
                     "sequence_order": 1,
-                    "vote": 0
+                    "vote": 1
                 },
                 {
                     "selection_id": "selection37",
                     "sequence_order": 2,
+                    "vote": 0
+                }
+            ],
+            "write_ins": [
+            ]
+        },
+        {
+            "contest_id": "contest19",
+            "sequence_order": 19,
+            "selections": [
+                {
+                    "selection_id": "selection38",
+                    "sequence_order": 1,
                     "vote": 1
+                },
+                {
+                    "selection_id": "selection39",
+                    "sequence_order": 2,
+                    "vote": 0
                 }
             ],
             "write_ins": [
             ]
         }
     ],
-    "sn": 4661254416380613122
+    "sn": 3077760439229087445
 }

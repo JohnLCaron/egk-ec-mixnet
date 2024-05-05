@@ -12,6 +12,8 @@ import org.cryptobiotic.maths.*
 //        final PGroupElementArray tmp1 = g.exp(r);
 //        final PGroupElementArray tmp2 = h.mul(tmp1);
 //        u = tmp2.permute(pi);
+
+/** Compute n committments */
 fun permutationCommitmentVmn(group: GroupContext,
                              psi: Permutation,
                              generators: VectorP) : Pair<VectorP, VectorQ> {

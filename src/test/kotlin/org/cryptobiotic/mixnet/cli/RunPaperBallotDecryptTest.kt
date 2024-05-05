@@ -53,7 +53,7 @@ class RunPaperBallotDecryptTest {
         RunPaperBallotDecrypt.main(
             arrayOf(
                 "-publicDir", "$workingDir/public",
-                "-psn", "2295645618272218480",
+                "-psn", "5162714776696514800",
                 "-trustees", "$workingDir/private/trustees",
                 "--mixDir", "$workingDir/public/mix2",
                 "-out", outputDir,

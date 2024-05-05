@@ -37,7 +37,7 @@ class ProverTest {
 
         // alternative calculation of B
         val gexps: VectorQ = prover.gexpsCalc(prover.b, prover.ipe)
-        val d = gexps.elems[nrows - 1]
+        // val d = gexps.elems[nrows - 1]
         val hexps: VectorQ = prover.hexpsCalc(prover.ipe)
         val balt : Pair<VectorP, VectorP> = prover.computeBalt(gexps, hexps)
 
@@ -57,7 +57,7 @@ class ProverTest {
         // these are the deterministic nonces and generators that verifier must also be able to generate
         val generators = getGeneratorsVmn(group, w.size, mixName) // CE n + 1 acc
         val (pcommit, pnonces) = permutationCommitmentVmn(group, psi, generators)
-        val (e, challenge) = getBatchingVectorAndChallenge(group, mixName, generators, pcommit, publicKey, w, wp)
+        val (_, e) = makeBatchingVector(group, mixName, generators, pcommit, publicKey, w, wp)
 
         return ProverV(
             group,

@@ -131,7 +131,7 @@ class RunProofOfShuffleVerifier {
                     logger.error { "Validate failed!!" }
                     if (!noexit) exitProcess(7) else return
                 } else {
-                    logger.info { "Validation of ${config.mix_name} success" }
+                    logger.info { "Validation of ${config.mix_name} is successful" }
                 }
 
             } catch (t: Throwable) {
