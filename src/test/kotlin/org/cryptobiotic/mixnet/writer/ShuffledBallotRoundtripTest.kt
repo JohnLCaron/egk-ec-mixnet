@@ -70,7 +70,7 @@ class ShuffledBallotRoundtripTest {
         val testOutDir = "${Testing.testOutMixnet}/testBallotWriterFailsBinOverides"
         createDirectories(testOutDir)
         testBallotWriter(group, 100,34, testOutDir, false)
-        val ex = assertFailsWith<AssertionFailedError> {
+        assertFailsWith<AssertionFailedError> {
             testBallotWriter(group, 100,34, testOutDir, true)
         }
     }

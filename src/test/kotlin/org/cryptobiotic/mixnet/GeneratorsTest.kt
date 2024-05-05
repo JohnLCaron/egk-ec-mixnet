@@ -5,6 +5,7 @@ import org.cryptobiotic.eg.core.ecgroup.EcGroupContext
 import org.cryptobiotic.eg.core.productionGroup
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class GeneratorsTest {
     val groups = listOf(
@@ -24,7 +25,8 @@ class GeneratorsTest {
         assertEquals(g1.nelems, g2.nelems)
         g1.elems.forEachIndexed{ idx, g1elem ->
             assertEquals(g1elem, g2.elems[idx])
-            assertEquals(group, g1elem.context)
+            assertEquals(group, g1elem.group)
+            assertTrue( g1elem.isValidElement() )
         }
     }
 

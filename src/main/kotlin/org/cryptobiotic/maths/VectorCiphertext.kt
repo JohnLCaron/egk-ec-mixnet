@@ -13,7 +13,7 @@ data class VectorCiphertext(val group: GroupContext, val elems: List<ElGamalCiph
 
     fun reencrypt(publicKey: ElGamalPublicKey): Pair<VectorCiphertext, VectorQ> {
         val group = publicKey.context
-        val nonces = List(this.nelems) { group.randomElementModQ(minimum = 1) }
+        val nonces = List(this.nelems) { group.randomElementModQ() }
         val reencrypt = this.elems.mapIndexed { idx, text ->
             text.reencrypt(publicKey, nonces[idx])
         }
