@@ -46,7 +46,7 @@ fun runVerify(
     pos: ProofOfShuffle,
     nthreads: Int = 10,
 ):Boolean {
-    // these are the deterministic nonces and generators that prover must also be able to generate
+    // both prover and verifier must be able to generate deterministically
     val generators = getGeneratorsVmn(group, w.size, pos.mixname) // CE 1 acc n exp
     val (prgSeed, e) = makeBatchingVector(group, pos.mixname, generators, pos.u, publicKey, w, wp)
     val d = group.randomElementModQ() // dont need d
@@ -176,7 +176,7 @@ class PverifyB(
     val challenge: ElementModQ,
     val nthreads: Int = 10,
 ) {
-    val group = h.context
+    val group = h.group
     val nrows = proof.B.nelems
     var isValid = true
 

@@ -131,7 +131,7 @@ class TimingTest {
 
         var stopwatch = Stopwatch()
         repeat(times) {
-            val pows = bases.mapIndexed { idx, it -> it powP nonces[idx] }
+            val pows = bases.mapIndexed { idx, pit -> pit powP nonces[idx] }
             val prod = pows.reduce { a, b -> a * b }
         }
         var duration = stopwatch.stop()

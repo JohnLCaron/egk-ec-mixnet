@@ -51,10 +51,9 @@ fun runProof(
     psi: Permutation, // nrows
     nthreads: Int = 10,
 ): ProofOfShuffle {
-    // these are the deterministic nonces and generators that verifier must also be able to generate
-    val generators = getGeneratorsVmn(group, w.size, mixName) // CE n + 1 acc
-    val (pcommit, pnonces) = permutationCommitmentVmn(group, psi, generators)
-    val (prgSeed, e) = makeBatchingVector(group, mixName, generators, pcommit, publicKey, w, wp)
+    val generators = getGeneratorsVmn(group, w.size, mixName) // CE n + 1 acc // deterministic
+    val (pcommit, pnonces) = permutationCommitmentVmn(group, psi, generators) // not shared with Verifier
+    val (prgSeed, e) = makeBatchingVector(group, mixName, generators, pcommit, publicKey, w, wp) // deterministic
 
     val prover = ProverV(   // CE n acc
         group,
@@ -69,7 +68,7 @@ fun runProof(
         psi,
     )
     val pos = prover.commit(nthreads)
-    val challenge = makeChallenge(group, prgSeed, pos)
+    val challenge = makeChallenge(group, prgSeed, pos) // deterministic
     return prover.reply(pos, challenge)
 }
 

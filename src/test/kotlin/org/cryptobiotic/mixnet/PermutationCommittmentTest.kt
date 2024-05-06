@@ -90,7 +90,7 @@ fun commit(
     generators: VectorP,
     nonce: ElementModQ,
 ): ElementModP {
-    val group = nonce.context
+    val group = nonce.group
     val exp = generators.elems.mapIndexed { idx, it -> it powP psi.of(idx).toElementModQ(group) }
     val vexp = VectorP(group, exp)
     return group.gPowP(nonce) * vexp.product()
@@ -101,7 +101,7 @@ fun commit(
     generators: VectorP,
     nonce: ElementModQ,
 ): ElementModP {
-    val group = nonce.context
+    val group = nonce.group
     val exp = generators.elems.mapIndexed { idx, it -> it powP column[idx].toElementModQ(group) }
     val vexp = VectorP(group, exp)
     return group.gPowP(nonce) * vexp.product()

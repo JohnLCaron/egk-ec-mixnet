@@ -100,7 +100,7 @@ class RunMixnet {
                 ballotStyles = previousConfig.ballotStyles
 
             } else {
-                val seed = mixnet.group.randomElementModQ(minimum = 1)
+                val seed = mixnet.group.randomElementModQ()
                 val nonces = Nonces(seed, mixName) // used for the extra ciphertexts to make even rows
                 val pair = mixnet.readEncryptedBallots(nonces)
                 inputBallots = pair.first

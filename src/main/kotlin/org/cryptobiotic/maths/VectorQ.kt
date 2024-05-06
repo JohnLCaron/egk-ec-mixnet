@@ -74,7 +74,7 @@ data class VectorQ(val group: GroupContext, val elems: List<ElementModQ> ) {
 
     companion object {
         fun randomQ(group: GroupContext, n: Int): VectorQ {
-            val elems = List(n) { group.randomElementModQ(minimum = 1) }
+            val elems = List(n) { group.randomElementModQ() }
             return VectorQ(group, elems)
         }
 
