@@ -86,7 +86,7 @@ class RunMixnetTable {
             trusteeDir: String,
             mixDir: String,
             outputDir: String?,
-            config: MixnetConfig,
+            config: MixnetConfigJson,
             noexit: Boolean
         ) {
             val consumerIn = makeConsumer(publicDir)

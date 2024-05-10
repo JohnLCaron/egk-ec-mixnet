@@ -4,8 +4,8 @@ import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.eg.core.ecgroup.EcElementModP
 import org.cryptobiotic.eg.core.ecgroup.EcGroupContext
 import org.cryptobiotic.eg.core.ecgroup.VecGroup.Companion.jacobiSymbol
-import org.cryptobiotic.eg.core.intgroup.ProductionElementModP
-import org.cryptobiotic.eg.core.intgroup.ProductionGroupContext
+import org.cryptobiotic.eg.core.intgroup.IntElementModP
+import org.cryptobiotic.eg.core.intgroup.IntGroupContext
 import org.cryptobiotic.eg.election.GroupType
 import org.cryptobiotic.eg.election.parameterBaseHash
 import org.cryptobiotic.maths.*
@@ -32,7 +32,7 @@ fun getGeneratorsIntGroup(group: GroupContext, numberOfGenerators: Int, prgSeq: 
     val statDistBytes = 128 / 8 // TODO what should this be?
     val nbytes = group.MAX_BYTES_P + statDistBytes
 
-    val intGroup = group as ProductionGroupContext
+    val intGroup = group as IntGroupContext
     val exp = (intGroup.p - BigInteger.ONE).div(intGroup.q) // (p-1)/q
 
     val result = mutableListOf<ElementModP>()
@@ -40,7 +40,7 @@ fun getGeneratorsIntGroup(group: GroupContext, numberOfGenerators: Int, prgSeq: 
         val ba = prgSeq.next(nbytes)
         val bi = BigInteger(1, ba)
         val ti = bi.modPow(exp, intGroup.p)
-        result.add(ProductionElementModP(ti, intGroup))
+        result.add(IntElementModP(ti, intGroup))
     }
     return VectorP(group, result)
 }

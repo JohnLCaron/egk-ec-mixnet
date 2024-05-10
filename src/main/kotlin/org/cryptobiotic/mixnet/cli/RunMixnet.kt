@@ -12,7 +12,7 @@ import org.cryptobiotic.eg.core.encrypt
 import org.cryptobiotic.eg.election.Manifest
 import org.cryptobiotic.eg.election.ManifestIF
 import org.cryptobiotic.eg.publish.Consumer
-import org.cryptobiotic.eg.publish.json.UInt256Json
+import org.cryptobiotic.eg.publish.json.ElementModQJson
 import org.cryptobiotic.eg.publish.makeConsumer
 import org.cryptobiotic.eg.publish.json.publishJson
 import org.cryptobiotic.util.Stopwatch
@@ -80,7 +80,7 @@ class RunMixnet {
             var width = 0
             val inputBallots: List<VectorCiphertext>
             val ballotStyles: List<String>
-            var noncesSeed : UInt256Json? = null
+            var noncesSeed : ElementModQJson? = null
 
             if (inputMixDir != null) {
                 val lastFilename = "$inputMixDir/$configFilename"
@@ -106,7 +106,7 @@ class RunMixnet {
                 inputBallots = pair.first
                 ballotStyles = pair.second
                 if (inputBallots.size > 0) width = inputBallots[0].nelems
-                noncesSeed = seed.toUInt256safe().publishJson()
+                noncesSeed = seed.publishJson()
             }
 
             try {
@@ -118,7 +118,7 @@ class RunMixnet {
                 writeShuffledBallotsToFile(true, outputDirMix, shuffled)
                 writeProofOfShuffleJsonToFile(proof, "$outputDirMix/$proofFilename")
 
-                val config = MixnetConfig(mixName, mixnet.electionId.publishJson(), ballotStyles, width, noncesSeed)
+                val config = MixnetConfigJson(mixName, mixnet.electionId.publishJson(), ballotStyles, width, noncesSeed)
                 writeMixnetConfigToFile(config, "$outputDirMix/$configFilename")
                 logger.info { "ShuffleProof success" }
 
