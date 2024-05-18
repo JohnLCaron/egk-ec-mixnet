@@ -16,9 +16,22 @@ class GeneratorsTest {
     @Test
     fun generatorsReproducible() {
         groups.forEach { generatorsReproducible(it, 42) }
+        groups.forEach { generatorsReproducibleVmn(it, 42) }
     }
 
     fun generatorsReproducible(group: GroupContext, n: Int) {
+        val g1 = getGenerators(group, n, "mixName")
+        val g2 = getGenerators(group, n, "mixName")
+        assertEquals(n, g2.nelems)
+        assertEquals(g1.nelems, g2.nelems)
+        g1.elems.forEachIndexed{ idx, g1elem ->
+            assertEquals(g1elem, g2.elems[idx])
+            assertEquals(group, g1elem.group)
+            assertTrue( g1elem.isValidElement() )
+        }
+    }
+
+    fun generatorsReproducibleVmn(group: GroupContext, n: Int) {
         val g1 = getGeneratorsVmn(group, n, "mixName")
         val g2 = getGeneratorsVmn(group, n, "mixName")
         assertEquals(n, g2.nelems)

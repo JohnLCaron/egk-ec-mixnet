@@ -55,7 +55,7 @@ class VerifierTest {
         pos: ProofOfShuffle,
     ): VerifierV {
         // these are the deterministic nonces and generators that prover must also be able to generate
-        val generators = getGeneratorsVmn(group, w.size, pos.mixname) // CE 1 acc n exp
+        val generators = getGenerators(group, w.size, pos.mixname) // CE 1 acc n exp
         val (prgSeed, e) = makeBatchingVector(group, pos.mixname, generators, pos.u, publicKey, w, wp)
         val d = group.randomElementModQ() // dont need d
         val challenge = makeChallenge(group, prgSeed, ProofCommittment(pos, d, e))

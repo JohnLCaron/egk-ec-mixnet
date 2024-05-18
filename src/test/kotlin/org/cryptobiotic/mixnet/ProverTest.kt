@@ -55,7 +55,7 @@ class ProverTest {
         psi: Permutation, // nrows
     ): ProverV {
         // these are the deterministic nonces and generators that verifier must also be able to generate
-        val generators = getGeneratorsVmn(group, w.size, mixName) // CE n + 1 acc
+        val generators = getGenerators(group, w.size, mixName) // CE n + 1 acc
         val (pcommit, pnonces) = permutationCommitmentVmn(group, psi, generators)
         val (_, e) = makeBatchingVector(group, mixName, generators, pcommit, publicKey, w, wp)
 

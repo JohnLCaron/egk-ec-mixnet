@@ -1,10 +1,10 @@
 [![License](https://img.shields.io/github/license/JohnLCaron/egk-ec)](https://github.com/JohnLCaron/egk-ec-mixnet/blob/main/LICENSE.txt)
 ![GitHub branch checks state](https://img.shields.io/github/actions/workflow/status/JohnLCaron/egk-ec-mixnet/unit-tests.yml)
-![Coverage](https://img.shields.io/badge/coverage-89.5%25%20LOC%20(1470/1642)-blue)
+![Coverage](https://img.shields.io/badge/coverage-90.0%25%20LOC%20(1573/1748)-blue)
 
 # Egk Elliptic Curves Mixnet 
 
-_last update 05/05/2024_
+_last update 05/18/2024_
 
 Implementation of a mixnet using the [ElectionGuard Kotlin Elliptical Curve library](https://github.com/JohnLCaron/egk-ec),
 and the [Verificatum library](https://www.verificatum.org/). The mixnet uses the Terelius / Wikström (TW) mixnet

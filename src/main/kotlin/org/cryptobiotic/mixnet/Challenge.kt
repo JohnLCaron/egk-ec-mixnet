@@ -24,10 +24,7 @@ fun makeBatchingVector(
     val baseHash = parameterBaseHash(group.constants)
     val ciphertexts = w.flatMap { it.elems }
     val shuffled = wp.flatMap { it.elems }
-    val prgSeed = hashFunction(baseHash.bytes, 0x101.toByte(), h.elems, u.elems, pk, ciphertexts, shuffled)
-
-    // TODO use PRG with n_r ??
-    // generate "batching vector"
+    val prgSeed = recursiveSHA256(baseHash.bytes, 0x51.toByte(), h.elems, u.elems, pk, ciphertexts, shuffled).toUInt256()!!
     return Pair(prgSeed, VectorQ(group, Nonces(prgSeed.toElementModQ(group), mixName).take(h.nelems)))
 }
 
@@ -56,9 +53,7 @@ fun makeChallenge(
     //                                     Dp.toByteTree(),
     //                                     Fp.toByteTree());
 
-    // TODO use PRG with n_r ??
-    val challenge = hashFunction(prgSeed.bytes, 0x102.toByte(), pos.Ap, pos.B.elems, pos.Bp.elems, pos.Cp, pos.Dp, pos.Fp.elems)
-
+    val challenge = recursiveSHA256(prgSeed.bytes, 0x52.toByte(), pos.Ap, pos.B.elems, pos.Bp.elems, pos.Cp, pos.Dp, pos.Fp.elems).toUInt256()!!
     return challenge.toElementModQ(group)
 }
 

@@ -6,6 +6,7 @@ class RunVerifierTest {
     @Test
     fun testRunVerifier() {
         val publicDir = "src/test/data/working/public"
+        // val publicDir = "/home/stormy/temp/testOut/egkmixnet"
         RunProofOfShuffleVerifier.main(
             arrayOf(
                 "-publicDir", publicDir,
