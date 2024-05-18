@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
+import org.cryptobiotic.eg.publish.json.ElementModQJson
 import org.cryptobiotic.eg.publish.json.UInt256Json
 import org.cryptobiotic.util.ErrorMessages
 import java.io.FileOutputStream
@@ -18,15 +19,15 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 
 @Serializable
-data class MixnetConfig(
+data class MixnetConfigJson(
     val mix_name: String,
     val election_id: UInt256Json,
     val ballotStyles: List<String>, // needed ??
     val width: Int,
-    val nonces_seed: UInt256Json?,
+    val nonces_seed: ElementModQJson?,
 )
 
-fun writeMixnetConfigToFile(mixnetConfig: MixnetConfig, filename: String) {
+fun writeMixnetConfigToFile(mixnetConfig: MixnetConfigJson, filename: String) {
     val jsonReader = Json { explicitNulls = false; ignoreUnknownKeys = true; prettyPrint = true }
     FileOutputStream(filename).use { out ->
         jsonReader.encodeToStream(mixnetConfig, out)
@@ -34,7 +35,7 @@ fun writeMixnetConfigToFile(mixnetConfig: MixnetConfig, filename: String) {
     }
 }
 
-fun readMixnetConfigFromFile(filename: String): Result<MixnetConfig, ErrorMessages> {
+fun readMixnetConfigFromFile(filename: String): Result<MixnetConfigJson, ErrorMessages> {
     val errs = ErrorMessages("readMixnetConfigFromFile '${filename}'")
     val filepath = Path.of(filename)
     if (!Files.exists(filepath)) {
@@ -44,7 +45,7 @@ fun readMixnetConfigFromFile(filename: String): Result<MixnetConfig, ErrorMessag
 
     return try {
         Files.newInputStream(filepath, StandardOpenOption.READ).use { inp ->
-            val mixnetConfig = jsonReader.decodeFromStream<MixnetConfig>(inp)
+            val mixnetConfig = jsonReader.decodeFromStream<MixnetConfigJson>(inp)
             if (errs.hasErrors()) Err(errs) else Ok(mixnetConfig)
         }
     } catch (t: Throwable) {

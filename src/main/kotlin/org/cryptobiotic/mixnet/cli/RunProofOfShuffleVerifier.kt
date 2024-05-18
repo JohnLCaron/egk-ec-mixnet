@@ -93,7 +93,7 @@ class RunProofOfShuffleVerifier {
                     logger.info { " Read ${ballots.size} input ballots" }
 
                 } else {
-                    val seed: ElementModQ = config.nonces_seed?.import()?.toElementModQ(verifier.group)!!
+                    val seed: ElementModQ = config.nonces_seed?.import(verifier.group)!!
                     val nonces = Nonces(seed, config.mix_name) // used for the extra ciphertexts to make even rows
                     val pair = mixnet.readEncryptedBallots(nonces)
                     ballots = pair.first
