@@ -100,12 +100,7 @@ class RunProofOfShuffleVerifier {
                     logger.info { " Read ${ballots.size} encryptedBallots ballots" }
                     val ciphertexts = ballots.flatMap { it.elems }
                     println(
-                        "readEncryptedBallots ${ciphertexts.size} hash(ciphertexts) ${
-                            hashFunction(
-                                mixnet.electionId.bytes,
-                                ciphertexts
-                            )
-                        }"
+                        "read ${ciphertexts.size} EncryptedBallots"
                     )
                 }
 
