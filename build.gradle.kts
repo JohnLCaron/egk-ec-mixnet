@@ -17,7 +17,7 @@ dependencies {
     implementation(files("libs/egk-ec-2.1-SNAPSHOT.jar"))
     implementation(files("libs/verificatum-vecj-2.2.0.jar"))
     implementation(libs.bundles.eglib)
-    implementation(libs.bundles.xmlutil)
+    // implementation(libs.bundles.xmlutil)
     implementation(libs.bundles.logging)
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
