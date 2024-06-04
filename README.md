@@ -4,7 +4,7 @@
 
 # Egk Elliptic Curves Mixnet 
 
-_last update 05/22/2024_
+_last update 06/03/2024_
 
 Implementation of a mixnet using the [ElectionGuard Kotlin Elliptical Curve library](https://github.com/JohnLCaron/egk-ec),
 and the [Verificatum library](https://www.verificatum.org/). The mixnet uses the Terelius / Wikström (TW) mixnet
