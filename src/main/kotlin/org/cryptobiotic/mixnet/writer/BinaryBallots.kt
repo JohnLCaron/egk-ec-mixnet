@@ -37,7 +37,7 @@ fun readBinaryBallotsFromFile(
     val result = mutableListOf<VectorCiphertext?>()
     var totalBytes = 0
     try {
-        val file = File(filename) // gulp the entire file to a byte array
+        val file = File(filename)
 
         file.forEachBlock(blockSize) { buffer, bytesRead ->
             result.add(processRow(group, textSize, width, buffer))

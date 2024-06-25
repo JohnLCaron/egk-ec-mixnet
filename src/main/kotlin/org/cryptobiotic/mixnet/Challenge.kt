@@ -4,7 +4,11 @@ import org.cryptobiotic.eg.election.parameterBaseHash
 import org.cryptobiotic.eg.core.*
 import org.cryptobiotic.maths.*
 
-// Generate a seed to the PRG for batching. TODO cryptographer review.
+// Generate the batching vector (section 2.2.2). TODO cryptographer review.
+// From Thomas Haines: "It is possible to replace the batching vector with a single element using the Vandermonde
+// matrix trick which I first saw in the Bayer-Groth mixnet paper. I’m not sure if this would be convenient or not
+// as I don’t know how efficient the EGK nonces library is. The trick certainly simplifies the security analysis
+// but actual security difference does not justify any change if the current solution is more efficient."
 fun makeBatchingVector(
     group: GroupContext,
     mixName: String,
@@ -41,6 +45,7 @@ fun makeBatchingVector(
 //
 //    val Fp: VectorCiphertext, // width
 //)
+// Generate the challenge (section 2.2.3). TODO cryptographer review.
 fun makeChallenge(
     group: GroupContext,
     prgSeed: UInt256,
