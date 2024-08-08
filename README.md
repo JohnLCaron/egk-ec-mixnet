@@ -4,7 +4,7 @@
 
 # Egk Elliptic Curves Mixnet 
 
-_last update 06/03/2024_
+_last update 08/09/2024_
 
 Implementation of a mixnet using the [ElectionGuard Kotlin Elliptical Curve library](https://github.com/JohnLCaron/egk-ec),
 and the [Verificatum library](https://www.verificatum.org/). The mixnet uses the Terelius / Wikström (TW) mixnet
@@ -32,7 +32,9 @@ Also see: [Workflow Notes](docs/cacvote-workflow.md)
   * [Build](#build)
   * [Rebuild](#rebuild)
   * [Build the Verificatum C library using GMP (optional)](#build-the-verificatum-c-library-using-gmp-optional)
-  * [Sample Workflow for testing](#sample-workflow-for-testing)
+  * [Complete Workflow for testing](#complete-workflow-for-testing)
+  * [Encryption Workflow for testing](#encryption-workflow-for-testing)
+  * [Workflow components](#workflow-components)
     * [electionguard](#electionguard)
       * [election-initialize.sh](#election-initializesh)
       * [generate-and-encrypt-ballots.sh](#generate-and-encrypt-ballotssh)
@@ -118,7 +120,7 @@ Follow the instructions in [Egk-ec Getting Started](https://github.com/JohnLCaro
 
 This is needed for good performance.
 
-## Sample Workflow for testing
+## Complete Workflow for testing
 
 ````
 ~/dev/github/egk-ec-mixnet:$ ./scripts/completeWorkflow.sh working
@@ -128,7 +130,22 @@ Runs a complete test of the workflow and writes the output to whatever you set _
 
 After running, examine the log file at **_egkMixnet.log_**.
 
-The components of this workflow are:
+## Encryption Workflow for testing
+
+Note that election_initialize.sh uses a manifest from _src/test/data/mixnetInput_. Change that to the correct manifest if needed.
+
+You might want to first delete the log file at **_egkMixnet.log_**.
+
+````
+~/dev/github/egk-ec-mixnet:$ ./scripts/encryptionWorkflow.sh working
+````
+
+Runs a test of the encryption workflow and writes the output to whatever you set _working_ to.
+
+After running, examine the log file at **_egkMixnet.log_**.
+
+
+## Workflow components
 
 ### electionguard
 
